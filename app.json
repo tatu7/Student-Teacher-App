@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "Inspektor",
+    "slug": "Inspektor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "jsEngine": "hermes",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "newArchEnabled": true,
+      "supportsTablet": true,
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSLocationWhenInUseUsageDescription": "Bu ilova sizning joylashuvingizni xaritada ko'rsatish uchun ishlatadi",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Bu ilova sizning joylashuvingizni xaritada ko'rsatish uchun ishlatadi"
+      }
+    },
+    "android": {
+      "newArchEnabled": true,
+      "config": {
+        "usesCleartextTraffic": true,
+        "googleMaps": {
+          "apiKey": "AIzaSyBuYb-BaRXXu8KN8ZMNfXPiaWbshRSqKI4"
+        }
+      },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "icon": "./assets/icon.png",
+      "versionCode": 17,
+      "package": "com.realmarket2.reallmarket2",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.INTERNET"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Bu ilova sizning joylashuvingizni xaritada ko'rsatish uchun ishlatadi."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c7a8264f-36ed-4f3c-bcbf-aa230181bb4b"
+      }
+    }
+  }
+}
