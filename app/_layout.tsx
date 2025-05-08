@@ -11,6 +11,7 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { UserRole } from "../lib/supabase";
 
 // Auth navigation guard component
 function RootNavigationGuard({ children }: { children: React.ReactNode }) {
@@ -22,16 +23,24 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 		if (loading) return; // Wait for auth state to be checked
 
 		const inAuthGroup = segments[0] === "auth";
+
 		// If user isn't signed in and isn't on an auth screen, redirect to login
 		if (!user && !inAuthGroup) {
-			router.replace("/auth/login");
+			// Only redirect if we're not already on the login page
+			if (segments.join("/") !== "auth/login") {
+				router.replace("/auth/login");
+			}
 		}
 		// If user is signed in and is on an auth screen, redirect based on role
 		else if (user && inAuthGroup) {
-			if (user.role === "teacher") {
-				router.replace("/teacher/dashboard");
-			} else {
-				router.replace("/student/dashboard");
+			const targetPath =
+				user.role === UserRole.TEACHER
+					? "/teacher/dashboard"
+					: "/student/dashboard";
+
+			// Only redirect if we're not already at the target path
+			if (segments.join("/") !== targetPath.substring(1)) {
+				router.replace(targetPath);
 			}
 		}
 	}, [user, loading, segments]);
@@ -56,7 +65,6 @@ export default function RootLayout() {
 				<ThemeProvider
 					value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 					<Stack>
-						<Stack.Screen name='(tabs)' options={{ headerShown: false }} />
 						<Stack.Screen name='auth' options={{ headerShown: false }} />
 						<Stack.Screen name='teacher' options={{ headerShown: false }} />
 						<Stack.Screen name='student' options={{ headerShown: false }} />

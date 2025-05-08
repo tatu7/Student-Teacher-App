@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useSegments } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { UserRole } from "../../lib/supabase";
 import { useEffect } from "react";
@@ -6,14 +6,18 @@ import { router } from "expo-router";
 
 export default function StudentLayout() {
 	const { user, loading } = useAuth();
+	const segments = useSegments();
 
 	// Role-based navigation guard
 	useEffect(() => {
 		if (!loading && (!user || user.role !== UserRole.STUDENT)) {
-			// Redirect to login if not authenticated or not a student
-			router.replace("/auth/login");
+			// Only redirect if we're not already on the login page
+			if (segments.join("/") !== "auth/login") {
+				// Redirect to login if not authenticated or not a student
+				router.replace("/auth/login");
+			}
 		}
-	}, [user, loading]);
+	}, [user, loading, segments]);
 
 	// Show nothing while checking authentication
 	if (loading || !user) return null;

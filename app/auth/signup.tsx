@@ -13,7 +13,7 @@ import {
 	ScrollView,
 	Image,
 } from "react-native";
-import { Link, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { UserRole } from "../../lib/supabase";
 
@@ -169,9 +169,9 @@ export default function SignupScreen() {
 
 						<View style={styles.footer}>
 							<Text style={styles.footerText}>Already have an account? </Text>
-							<Link href='/auth/login'>
+							<TouchableOpacity onPress={() => router.push("/auth/login")}>
 								<Text style={styles.link}>Log In</Text>
-							</Link>
+							</TouchableOpacity>
 						</View>
 					</View>
 				</ScrollView>

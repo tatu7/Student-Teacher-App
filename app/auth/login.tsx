@@ -13,7 +13,7 @@ import {
 	Platform,
 	ScrollView,
 } from "react-native";
-import { Link, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 
 export default function LoginScreen() {
@@ -102,11 +102,12 @@ export default function LoginScreen() {
 							/>
 
 							<View style={styles.forgotPassword}>
-								<Link href='/auth/forgot-password'>
+								<TouchableOpacity
+									onPress={() => router.push("/auth/forgot-password")}>
 									<Text style={styles.forgotPasswordText}>
 										Forgot Password?
 									</Text>
-								</Link>
+								</TouchableOpacity>
 							</View>
 						</View>
 
@@ -123,9 +124,9 @@ export default function LoginScreen() {
 
 						<View style={styles.footer}>
 							<Text style={styles.footerText}>Don't have an account? </Text>
-							<Link href='/auth/signup'>
+							<TouchableOpacity onPress={() => router.push("/auth/signup")}>
 								<Text style={styles.link}>Sign Up</Text>
-							</Link>
+							</TouchableOpacity>
 						</View>
 					</View>
 				</ScrollView>

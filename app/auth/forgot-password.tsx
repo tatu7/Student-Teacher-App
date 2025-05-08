@@ -8,7 +8,7 @@ import {
 	Alert,
 	ActivityIndicator,
 } from "react-native";
-import { Stack, Link } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ForgotPasswordScreen() {
@@ -62,11 +62,11 @@ export default function ForgotPasswordScreen() {
 						We've sent password reset instructions to {email}. Please check your
 						email inbox.
 					</Text>
-					<Link href='/auth/login'>
-						<TouchableOpacity style={styles.button}>
-							<Text style={styles.buttonText}>Back to Login</Text>
-						</TouchableOpacity>
-					</Link>
+					<TouchableOpacity
+						style={styles.button}
+						onPress={() => router.push("/auth/login")}>
+						<Text style={styles.buttonText}>Back to Login</Text>
+					</TouchableOpacity>
 				</View>
 			) : (
 				<>
@@ -100,9 +100,9 @@ export default function ForgotPasswordScreen() {
 
 					<View style={styles.footer}>
 						<Text style={styles.footerText}>Remembered your password? </Text>
-						<Link href='/auth/login'>
+						<TouchableOpacity onPress={() => router.push("/auth/login")}>
 							<Text style={styles.link}>Login</Text>
-						</Link>
+						</TouchableOpacity>
 					</View>
 				</>
 			)}
