@@ -9,6 +9,7 @@ import {
 	ActivityIndicator,
 } from "react-native";
 import { Stack, Link } from "expo-router";
+import { supabase } from "../../lib/supabase";
 
 export default function ForgotPasswordScreen() {
 	const [email, setEmail] = useState("");
@@ -31,15 +32,21 @@ export default function ForgotPasswordScreen() {
 
 		setLoading(true);
 		try {
-			// In a real app, you would call an API to reset the password
-			// For this demo, just simulate a successful password reset
-			setTimeout(() => {
+			// For Supabase v1, the method is different
+			const { error } = await supabase.auth.api.resetPasswordForEmail(email);
+
+			if (error) {
+				Alert.alert(
+					"Error",
+					error.message || "Failed to send password reset email"
+				);
+			} else {
 				setResetSent(true);
-				setLoading(false);
-			}, 1500);
+			}
 		} catch (err) {
 			Alert.alert("Error", "An unexpected error occurred");
 			console.error(err);
+		} finally {
 			setLoading(false);
 		}
 	};

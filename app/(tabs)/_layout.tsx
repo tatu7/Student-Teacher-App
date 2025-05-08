@@ -1,5 +1,7 @@
+import React, { useEffect } from "react";
 import { Tabs } from "expo-router";
-import React from "react";
+import { router, usePathname } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
 import { Platform } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -8,8 +10,21 @@ import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
-export default function TabLayout() {
+export default function TabsLayout() {
+	const { user, loading } = useAuth();
+	const pathname = usePathname();
 	const colorScheme = useColorScheme();
+
+	// Redirect to login if not authenticated
+	useEffect(() => {
+		if (!loading && !user) {
+			router.replace("/auth/login");
+		}
+	}, [user, loading, pathname]);
+
+	if (!user) {
+		return null; // Don't render anything if not authenticated
+	}
 
 	return (
 		<Tabs

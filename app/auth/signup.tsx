@@ -10,7 +10,8 @@ import {
 	ScrollView,
 } from "react-native";
 import { Link, Stack } from "expo-router";
-import { useAuth, UserRole } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
+import { UserRole } from "../../lib/supabase";
 
 export default function SignupScreen() {
 	const [email, setEmail] = useState("");
@@ -56,6 +57,7 @@ export default function SignupScreen() {
 		setLoading(true);
 		try {
 			const { error } = await signUp(email, password, selectedRole);
+			console.log("Error", error);
 
 			if (error) {
 				Alert.alert(

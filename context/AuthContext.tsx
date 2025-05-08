@@ -1,35 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-
-// User types
-export enum UserRole {
-	TEACHER = "teacher",
-	STUDENT = "student",
-}
-
-export type User = {
-	id: string;
-	email: string;
-	role: UserRole;
-};
-
-// Mock users for local development (replace with real API calls in production)
-const MOCK_USERS = [
-	{
-		email: "teacher@example.com",
-		password: "password123",
-		role: UserRole.TEACHER,
-	},
-	{
-		email: "student@example.com",
-		password: "password123",
-		role: UserRole.STUDENT,
-	},
-];
+import { supabase, AuthUser, UserRole } from "../lib/supabase";
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
 
 type AuthContextType = {
-	user: User | null;
+	user: AuthUser | null;
 	loading: boolean;
 	signUp: (
 		email: string,
@@ -43,34 +19,40 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const storeUser = async (user: User) => {
-	await SecureStore.setItemAsync("user", JSON.stringify(user));
-};
-
-const getStoredUser = async (): Promise<User | null> => {
-	const userData = await SecureStore.getItemAsync("user");
-	return userData ? JSON.parse(userData) : null;
-};
-
 // Provider component that wraps your app and makes auth available
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-	const [user, setUser] = useState<User | null>(null);
+	const [user, setUser] = useState<AuthUser | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	// Check for stored session on mount
+	// Check for user session on mount
 	useEffect(() => {
 		const checkUser = async () => {
 			try {
 				setLoading(true);
-				const storedUser = await getStoredUser();
 
-				if (storedUser) {
-					setUser(storedUser);
+				// Get current session (v1 syntax)
+				const session = supabase.auth.session();
+
+				if (session && session.user) {
+					// Get user's role from a Supabase table
+					const { data, error } = await supabase
+						.from("user_profiles")
+						.select("role")
+						.eq("user_id", session.user.id)
+						.single();
+
+					if (error) throw error;
+
+					setUser({
+						id: session.user.id,
+						email: session.user.email!,
+						role: data.role as UserRole,
+					});
 
 					// Redirect to the appropriate dashboard based on role
-					if (storedUser.role === UserRole.TEACHER) {
+					if (data.role === UserRole.TEACHER) {
 						router.replace("/teacher/dashboard");
-					} else if (storedUser.role === UserRole.STUDENT) {
+					} else if (data.role === UserRole.STUDENT) {
 						router.replace("/student/dashboard");
 					}
 				}
@@ -82,39 +64,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		};
 
 		checkUser();
+
+		// Listen for auth state changes (v1 syntax)
+		const authListener = supabase.auth.onAuthStateChange(
+			async (event, session) => {
+				if (event === "SIGNED_OUT") {
+					setUser(null);
+					router.replace("/auth/login");
+				} else if (
+					session &&
+					session.user &&
+					(event === "SIGNED_IN" || event === "USER_UPDATED")
+				) {
+					// Fetch user role
+					const { data, error } = await supabase
+						.from("user_profiles")
+						.select("role")
+						.eq("user_id", session.user.id)
+						.single();
+
+					if (!error && data) {
+						setUser({
+							id: session.user.id,
+							email: session.user.email!,
+							role: data.role as UserRole,
+						});
+
+						// Navigate based on role
+						if (data.role === UserRole.TEACHER) {
+							router.replace("/teacher/dashboard");
+						} else if (data.role === UserRole.STUDENT) {
+							router.replace("/student/dashboard");
+						}
+					}
+				}
+			}
+		);
+
+		return () => {
+			// v1 cleanup is different
+			supabase.removeAllSubscriptions();
+		};
 	}, []);
 
-	// Sign up function (using mock data for demonstration)
+	// Sign up function (v1 syntax)
 	const signUp = async (email: string, password: string, role: UserRole) => {
 		try {
-			// Check if user with this email already exists
-			const existingUser = MOCK_USERS.find((user) => user.email === email);
-			if (existingUser) {
-				return { error: { message: "User with this email already exists" } };
-			}
-
-			// In a real app, you would make an API call to register user
-			// For demo, we'll create a mock user
-			const newUser: User = {
-				id: Math.random().toString(36).substring(2, 15),
+			// Register user with Supabase Auth
+			const { user: newUser, error } = await supabase.auth.signUp({
 				email,
-				role,
-			};
+				password,
+			});
 
-			// For demo purposes, add to mock users array
-			MOCK_USERS.push({ email, password, role });
+			if (error) return { error };
 
-			// Store user in secure storage
-			await storeUser(newUser);
+			if (newUser) {
+				// Add user's role to a separate table - use the auth.uid() function to ensure RLS works
+				const { error: profileError } = await supabase
+					.from("user_profiles")
+					.insert({
+						id: newUser.id, // Use the same ID from the auth.users table
+						user_id: newUser.id,
+						email,
+						role,
+						created_at: new Date().toISOString(),
+					})
+					.match({ user_id: newUser.id }); // Add match filter to help with RLS
 
-			// Update state
-			setUser(newUser);
+				if (profileError) return { error: profileError };
 
-			// Navigate based on role
-			if (role === UserRole.TEACHER) {
-				router.replace("/teacher/dashboard");
-			} else {
-				router.replace("/student/dashboard");
+				// Set user state
+				setUser({
+					id: newUser.id,
+					email,
+					role,
+				});
+
+				// Navigate based on role
+				if (role === UserRole.TEACHER) {
+					router.replace("/teacher/dashboard");
+				} else {
+					router.replace("/student/dashboard");
+				}
 			}
 
 			return { error: null };
@@ -123,52 +154,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
-	// Sign in function
+	// Sign in function (v1 syntax)
 	const signIn = async (email: string, password: string) => {
 		try {
-			// In a real app, make an API call to authenticate
-			// For demo, check against mock users
-			const matchedUser = MOCK_USERS.find(
-				(user) => user.email === email && user.password === password
-			);
+			const { error, user } = await supabase.auth.signIn({
+				email,
+				password,
+			});
 
-			if (!matchedUser) {
-				return { error: { message: "Invalid email or password" } };
-			}
+			if (error) return { error };
 
-			// Create user object
-			const authUser: User = {
-				id: Math.random().toString(36).substring(2, 15),
-				email: matchedUser.email,
-				role: matchedUser.role,
-			};
-
-			// Store in secure storage
-			await storeUser(authUser);
-
-			// Update state
-			setUser(authUser);
-
-			// Navigate based on role
-			if (authUser.role === UserRole.TEACHER) {
-				router.replace("/teacher/dashboard");
-			} else {
-				router.replace("/student/dashboard");
-			}
-
+			// User role is fetched by the auth state change listener
 			return { error: null };
 		} catch (error) {
 			return { error };
 		}
 	};
 
-	// Sign out function
+	// Sign out function (v1 syntax)
 	const signOut = async () => {
-		// Clear secure storage
-		await SecureStore.deleteItemAsync("user");
-		// Update state
+		await supabase.auth.signOut();
 		setUser(null);
-		// Navigate to login
 		router.replace("/auth/login");
 	};
 
@@ -177,13 +183,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		if (!user) return { error: new Error("No user logged in") };
 
 		try {
-			const updatedUser = { ...user, role };
+			// Update the role in the database
+			const { error } = await supabase
+				.from("user_profiles")
+				.update({ role })
+				.eq("user_id", user.id);
 
-			// Update secure storage
-			await storeUser(updatedUser);
+			if (error) return { error };
 
-			// Update state
-			setUser(updatedUser);
+			// Update local state
+			setUser({ ...user, role });
 
 			// Navigate based on new role
 			if (role === UserRole.TEACHER) {
