@@ -1,13 +1,18 @@
 {
   "expo": {
-    "name": "StudentTeacherApp",
-    "slug": "StudentTeacherApp",
+    "name": "Student Teacher",
+    "slug": "student-teacher-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "studentteacherapp",
+    "scheme": "StudentTeacher",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yourcompany.studentteacherapp"
@@ -27,18 +32,15 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "434168af-2f04-4953-90d8-ed6ffc9279e6"
+      }
     }
   }
 }

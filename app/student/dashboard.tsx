@@ -227,15 +227,7 @@ export default function StudentDashboard() {
 	if (loading) {
 		return (
 			<SafeAreaView style={styles.container}>
-				<Stack.Screen
-					options={{
-						title: "Student Dashboard",
-						headerTitleStyle: {
-							fontWeight: "bold",
-						},
-						headerTitleAlign: "center",
-					}}
-				/>
+				<Stack.Screen />
 				<View style={styles.loadingContainer}>
 					<ActivityIndicator size='large' color='#3f51b5' />
 				</View>
@@ -245,16 +237,6 @@ export default function StudentDashboard() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "Student Dashboard",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-					headerTitleAlign: "center",
-				}}
-			/>
-
 			<ScrollView style={styles.content}>
 				<View style={styles.header}>
 					<Text style={styles.welcomeText}>Welcome, Student</Text>
