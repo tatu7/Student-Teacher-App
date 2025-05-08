@@ -258,9 +258,6 @@ export default function StudentDashboard() {
 				<View style={styles.header}>
 					<Text style={styles.welcomeText}>Welcome, Student</Text>
 					<Text style={styles.emailText}>{user?.email}</Text>
-					<TouchableOpacity onPress={signOut}>
-						<Ionicons name='log-out-outline' size={24} color='#3f51b5' />
-					</TouchableOpacity>
 				</View>
 
 				{/* Main Menu Cards */}
@@ -336,10 +333,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 	},
-	logoutButton: {
-		marginLeft: -15,
-		marginTop: -4,
-	},
+
 	content: {
 		flex: 1,
 		padding: 16,

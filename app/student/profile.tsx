@@ -15,6 +15,7 @@ import {
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 
@@ -28,7 +29,7 @@ type Profile = {
 };
 
 export default function StudentProfileScreen() {
-	const { user, signOut, resetPassword } = useAuth();
+	const { user, signOut } = useAuth();
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -79,7 +80,6 @@ export default function StudentProfileScreen() {
 			const updates = {
 				id: user.id,
 				name,
-				updated_at: new Date().toISOString(),
 			};
 
 			const { error } = await supabase
@@ -100,24 +100,6 @@ export default function StudentProfileScreen() {
 		}
 	};
 
-	const handlePasswordReset = async () => {
-		if (!user?.email) return;
-
-		try {
-			const { error } = await resetPassword(user.email);
-
-			if (error) throw error;
-
-			Alert.alert(
-				"Password Reset",
-				"A password reset link has been sent to your email"
-			);
-		} catch (error) {
-			console.error("Error sending password reset:", error);
-			Alert.alert("Error", "Failed to send password reset email");
-		}
-	};
-
 	const pickImage = async () => {
 		try {
 			// Request permissions
@@ -134,7 +116,7 @@ export default function StudentProfileScreen() {
 
 			// Launch image picker
 			const result = await ImagePicker.launchImageLibraryAsync({
-				mediaTypes: ImagePicker.MediaTypeOptions.Images,
+				mediaTypes: "images",
 				allowsEditing: true,
 				aspect: [1, 1],
 				quality: 0.8,
@@ -156,21 +138,68 @@ export default function StudentProfileScreen() {
 		try {
 			setUploading(true);
 
+			// Ensure URI is valid
+			if (!uri.startsWith("file://") && Platform.OS === "ios") {
+				uri = "file://" + uri;
+			}
+
 			// Get file extension
 			const fileExt = uri.split(".").pop()?.toLowerCase() || "jpg";
 			const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 			const filePath = `avatars/${fileName}`;
 
-			// Convert image to blob
-			const response = await fetch(uri);
-			const blob = await response.blob();
+			if (Platform.OS === "web") {
+				// Web platform handling
+				const response = await fetch(uri);
+				const blob = await response.blob();
 
-			// Upload to Supabase Storage
-			const { error: uploadError } = await supabase.storage
-				.from("profiles")
-				.upload(filePath, blob);
+				// Call RPC function to upload file (bypassing RLS)
+				const { data: uploadData, error: uploadError } = await supabase.rpc(
+					"upload_profile_image",
+					{
+						bucket_name: "profiles",
+						file_path: filePath,
+						file_data: await blobToBase64(blob),
+						content_type: `image/${fileExt}`,
+					}
+				);
 
-			if (uploadError) throw uploadError;
+				if (uploadError) throw uploadError;
+			} else {
+				// Native platforms (iOS/Android)
+				try {
+					let fileUri = uri;
+
+					// Get file info
+					const fileInfo = await FileSystem.getInfoAsync(fileUri);
+
+					if (!fileInfo.exists) {
+						throw new Error("File does not exist");
+					}
+
+					// Read file as base64 string
+					const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+						encoding: FileSystem.EncodingType.Base64,
+					});
+
+					// Call RPC function to upload file (bypassing RLS)
+					const { data: uploadData, error: uploadError } = await supabase.rpc(
+						"upload_profile_image",
+						{
+							bucket_name: "profiles",
+							file_path: filePath,
+							file_data: fileContent,
+							content_type: `image/${fileExt}`,
+						}
+					);
+
+					if (uploadError) throw uploadError;
+				} catch (readError) {
+					console.error("Error reading file:", readError);
+					Alert.alert("Error", "Failed to read image file");
+					return;
+				}
+			}
 
 			// Get public URL
 			const { data: publicUrlData } = supabase.storage
@@ -198,6 +227,21 @@ export default function StudentProfileScreen() {
 		} finally {
 			setUploading(false);
 		}
+	};
+
+	// Helper function to convert blob to base64
+	const blobToBase64 = (blob: Blob): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const base64String = reader.result as string;
+				// Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+				const base64 = base64String.split(",")[1];
+				resolve(base64);
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
 	};
 
 	const handleLogout = async () => {
@@ -327,7 +371,15 @@ export default function StudentProfileScreen() {
 								{saving ? (
 									<ActivityIndicator size='small' color='white' />
 								) : (
-									<Text style={styles.actionButtonText}>Save Changes</Text>
+									<>
+										<Ionicons
+											name='checkmark-circle'
+											size={22}
+											color='white'
+											style={styles.buttonIcon}
+										/>
+										<Text style={styles.actionButtonText}>Save Changes</Text>
+									</>
 								)}
 							</TouchableOpacity>
 							<TouchableOpacity
@@ -337,6 +389,12 @@ export default function StudentProfileScreen() {
 									setName(profile?.name || "");
 									setAvatarUrl(profile?.avatar_url || null);
 								}}>
+								<Ionicons
+									name='close-circle'
+									size={22}
+									color='#666'
+									style={styles.buttonIcon}
+								/>
 								<Text style={styles.cancelButtonText}>Cancel</Text>
 							</TouchableOpacity>
 						</>
@@ -344,19 +402,25 @@ export default function StudentProfileScreen() {
 						<TouchableOpacity
 							style={[styles.actionButton, styles.editButton]}
 							onPress={() => setEditMode(true)}>
+							<Ionicons
+								name='create-outline'
+								size={22}
+								color='white'
+								style={styles.buttonIcon}
+							/>
 							<Text style={styles.actionButtonText}>Edit Profile</Text>
 						</TouchableOpacity>
 					)}
 
 					<TouchableOpacity
-						style={[styles.actionButton, styles.passwordButton]}
-						onPress={handlePasswordReset}>
-						<Text style={styles.actionButtonText}>Reset Password</Text>
-					</TouchableOpacity>
-
-					<TouchableOpacity
 						style={[styles.actionButton, styles.logoutButton]}
 						onPress={handleLogout}>
+						<Ionicons
+							name='log-out-outline'
+							size={22}
+							color='white'
+							style={styles.buttonIcon}
+						/>
 						<Text style={styles.actionButtonText}>Logout</Text>
 					</TouchableOpacity>
 				</View>
@@ -449,29 +513,37 @@ const styles = StyleSheet.create({
 	},
 	actionButtonsContainer: {
 		marginBottom: 30,
+		paddingHorizontal: 10,
 	},
 	actionButton: {
-		paddingVertical: 14,
-		paddingHorizontal: 20,
-		borderRadius: 8,
+		paddingVertical: 16,
+		paddingHorizontal: 24,
+		borderRadius: 12,
+		flexDirection: "row",
 		alignItems: "center",
-		marginBottom: 12,
+		justifyContent: "center",
+		marginBottom: 14,
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
+		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
-		shadowRadius: 2,
-		elevation: 1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	actionButtonText: {
 		fontSize: 16,
 		fontWeight: "600",
 		color: "white",
 	},
+	buttonIcon: {
+		marginRight: 10,
+	},
 	editButton: {
 		backgroundColor: "#3f51b5",
+		borderWidth: 0,
 	},
 	saveButton: {
 		backgroundColor: "#4caf50",
+		borderWidth: 0,
 	},
 	cancelButton: {
 		backgroundColor: "white",
@@ -484,8 +556,10 @@ const styles = StyleSheet.create({
 	},
 	passwordButton: {
 		backgroundColor: "#ff9800",
+		borderWidth: 0,
 	},
 	logoutButton: {
 		backgroundColor: "#f44336",
+		borderWidth: 0,
 	},
 });
