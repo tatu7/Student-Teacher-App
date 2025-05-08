@@ -97,58 +97,6 @@ export default function TeacherDashboard() {
 						</TouchableOpacity>
 					</View>
 				</View>
-
-				{/* Recent Activity Section */}
-				<View style={styles.activitySection}>
-					<View style={styles.sectionHeader}>
-						<Text style={styles.sectionTitle}>Recent Activity</Text>
-						<TouchableOpacity>
-							<Text style={styles.seeAllText}>See All</Text>
-						</TouchableOpacity>
-					</View>
-
-					<View style={styles.activityList}>
-						<View style={styles.activityItem}>
-							<View
-								style={[styles.activityIcon, { backgroundColor: "#e3f2fd" }]}>
-								<Ionicons name='create-outline' size={20} color='#2196f3' />
-							</View>
-							<View style={styles.activityContent}>
-								<Text style={styles.activityTitle}>New task created</Text>
-								<Text style={styles.activityDetails}>
-									Math Exam for Group A
-								</Text>
-								<Text style={styles.activityTime}>Today, 2:30 PM</Text>
-							</View>
-						</View>
-
-						<View style={styles.activityItem}>
-							<View
-								style={[styles.activityIcon, { backgroundColor: "#e8f5e9" }]}>
-								<Ionicons name='person-add-outline' size={20} color='#4caf50' />
-							</View>
-							<View style={styles.activityContent}>
-								<Text style={styles.activityTitle}>Added new student</Text>
-								<Text style={styles.activityDetails}>John Doe to Group B</Text>
-								<Text style={styles.activityTime}>Yesterday, 10:15 AM</Text>
-							</View>
-						</View>
-
-						<View style={styles.activityItem}>
-							<View
-								style={[styles.activityIcon, { backgroundColor: "#fff8e1" }]}>
-								<MaterialIcons name='rate-review' size={20} color='#ffa000' />
-							</View>
-							<View style={styles.activityContent}>
-								<Text style={styles.activityTitle}>Graded submission</Text>
-								<Text style={styles.activityDetails}>
-									Physics assignment from Alice Smith
-								</Text>
-								<Text style={styles.activityTime}>Nov 5, 4:45 PM</Text>
-							</View>
-						</View>
-					</View>
-				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);
@@ -160,7 +108,8 @@ const styles = StyleSheet.create({
 		backgroundColor: "#f5f5f7",
 	},
 	logoutButton: {
-		marginRight: 15,
+		marginLeft: -15,
+		marginTop: -4,
 	},
 	content: {
 		flex: 1,
