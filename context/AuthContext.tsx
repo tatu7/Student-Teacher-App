@@ -110,15 +110,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	// Sign up function (v1 syntax)
 	const signUp = async (email: string, password: string, role: UserRole) => {
 		try {
-			// Register user with Supabase Auth
-			const { user: newUser, error } = await supabase.auth.signUp({
-				email,
-				password,
-			});
+			// Register user with Supabase Auth (old version syntax)
+			const { user: newUser, error } = await supabase.auth.signUp(
+				{
+					email,
+					password,
+				},
+				{
+					data: { role }, // Store role in user metadata
+				}
+			);
 
 			if (error) return { error };
 
 			if (newUser) {
+				// For v1, we need to disable email confirmation through Supabase dashboard settings
+
 				// Add user's role to a separate table - use the auth.uid() function to ensure RLS works
 				const { error: profileError } = await supabase
 					.from("user_profiles")
@@ -132,6 +139,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					.match({ user_id: newUser.id }); // Add match filter to help with RLS
 
 				if (profileError) return { error: profileError };
+
+				// Auto sign in after successful registration to bypass email confirmation
+				const { error: signInError } = await supabase.auth.signIn({
+					email,
+					password,
+				});
+
+				if (signInError) return { error: signInError };
 
 				// Set user state
 				setUser({
