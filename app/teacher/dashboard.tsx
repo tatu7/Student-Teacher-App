@@ -18,6 +18,7 @@ export default function TeacherDashboard() {
 	const navigateToGroups = () => router.push("/teacher/groups");
 	const navigateToTasks = () => router.push("/teacher/tasks");
 	const navigateToSubmissions = () => router.push("/teacher/submissions");
+	const navigateToCalendar = () => router.push("/teacher/calendar");
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -72,14 +73,16 @@ export default function TeacherDashboard() {
 							<Text style={styles.menuCardSubtitle}>Review & grade work</Text>
 						</TouchableOpacity>
 
-						{/* Analytics Card */}
-						<TouchableOpacity style={styles.menuCard}>
+						{/* Calendar Card (replaced Analytics) */}
+						<TouchableOpacity
+							style={styles.menuCard}
+							onPress={navigateToCalendar}>
 							<View
 								style={[styles.iconContainer, { backgroundColor: "#f3e5f5" }]}>
-								<Ionicons name='analytics' size={32} color='#9c27b0' />
+								<Ionicons name='calendar' size={32} color='#9c27b0' />
 							</View>
-							<Text style={styles.menuCardTitle}>Analytics</Text>
-							<Text style={styles.menuCardSubtitle}>Performance insights</Text>
+							<Text style={styles.menuCardTitle}>Calendar</Text>
+							<Text style={styles.menuCardSubtitle}>Schedule & due dates</Text>
 						</TouchableOpacity>
 					</View>
 				</View>
