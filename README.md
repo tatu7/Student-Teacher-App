@@ -1,50 +1,83 @@
-# Welcome to your Expo app 👋
+# Student-Teacher App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile application built with React Native and Expo that provides a platform for teachers and students with role-based authentication powered by Supabase.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Authentication** with email and password using Supabase
+- **Role-based access control** for Teachers and Students
+- **Dynamic navigation** based on user role
+- **Secure token storage** using Expo SecureStore
+- **Password reset** functionality
+- **Role-specific dashboards** for teachers and students
 
-   ```bash
-   npm install
-   ```
+## Prerequisites
 
-2. Start the app
+- Node.js (v14 or newer)
+- npm or Yarn
+- Expo CLI (`npm install -g expo-cli`)
+- Supabase account and project
 
-   ```bash
-   npx expo start
-   ```
+## Setup
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+1. Clone the repository:
 
 ```bash
-npm run reset-project
+git clone https://github.com/your-username/Student-Teacher-App.git
+cd Student-Teacher-App
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies:
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Create a Supabase project:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+   - Sign up at [Supabase](https://supabase.io)
+   - Create a new project
+   - Get your Supabase URL and anon key
 
-## Join the community
+4. Set up the Supabase database:
 
-Join our community of developers creating universal apps.
+   - Create a `user_profiles` table with the following schema:
+     - `id` (uuid, primary key, auto-generated)
+     - `user_id` (uuid, references auth.users.id)
+     - `email` (text)
+     - `role` (text, can be 'teacher' or 'student')
+     - `created_at` (timestamp with timezone)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+5. Update the Supabase configuration:
+
+   - Open `lib/supabase.ts`
+   - Replace `YOUR_SUPABASE_URL` with your Supabase URL
+   - Replace `YOUR_SUPABASE_ANON_KEY` with your Supabase anon key
+
+6. Run the app:
+
+```bash
+npm start
+```
+
+## Project Structure
+
+- `/app` - Expo Router app directory
+  - `/auth` - Authentication screens (login, signup, forgot password)
+  - `/teacher` - Teacher-specific screens
+  - `/student` - Student-specific screens
+- `/context` - React Context for state management
+- `/lib` - Utility functions and configurations
+  - `/supabase.ts` - Supabase client setup
+
+## Authentication Flow
+
+1. Users can sign up with email, password, and role selection (teacher or student)
+2. Supabase creates a user record in the auth.users table
+3. Our app adds the role information to the user_profiles table
+4. On login, the app fetches the user's role from the user_profiles table
+5. The app redirects to the appropriate dashboard based on the user's role
+
+## License
+
+MIT
