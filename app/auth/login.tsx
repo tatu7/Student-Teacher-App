@@ -7,6 +7,11 @@ import {
 	TouchableOpacity,
 	Alert,
 	ActivityIndicator,
+	SafeAreaView,
+	Image,
+	KeyboardAvoidingView,
+	Platform,
+	ScrollView,
 } from "react-native";
 import { Link, Stack } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -51,89 +56,178 @@ export default function LoginScreen() {
 	};
 
 	return (
-		<View style={styles.container}>
-			<Stack.Screen options={{ title: "Login" }} />
+		<SafeAreaView style={styles.container}>
+			<Stack.Screen options={{ headerShown: false }} />
 
-			<Text style={styles.title}>Login</Text>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				style={styles.keyboardAvoidView}>
+				<ScrollView
+					contentContainerStyle={styles.scrollContent}
+					showsVerticalScrollIndicator={false}>
+					<View style={styles.logoContainer}>
+						<Image
+							source={require("../../assets/images/logo.png")}
+							style={styles.logo}
+							resizeMode='contain'
+						/>
+						<Text style={styles.appName}>EduConnect</Text>
+						<Text style={styles.appTagline}>
+							Student-Teacher Learning Platform
+						</Text>
+					</View>
 
-			<View style={styles.inputContainer}>
-				<TextInput
-					style={styles.input}
-					placeholder='Email'
-					value={email}
-					onChangeText={setEmail}
-					autoCapitalize='none'
-					keyboardType='email-address'
-				/>
+					<View style={styles.formContainer}>
+						<Text style={styles.title}>Welcome Back</Text>
+						<Text style={styles.subtitle}>Log in to your account</Text>
 
-				<TextInput
-					style={styles.input}
-					placeholder='Password'
-					value={password}
-					onChangeText={setPassword}
-					secureTextEntry
-				/>
-			</View>
+						<View style={styles.inputContainer}>
+							<Text style={styles.inputLabel}>Email</Text>
+							<TextInput
+								style={styles.input}
+								placeholder='Enter your email'
+								value={email}
+								onChangeText={setEmail}
+								autoCapitalize='none'
+								keyboardType='email-address'
+							/>
 
-			<TouchableOpacity
-				style={styles.button}
-				onPress={handleLogin}
-				disabled={loading}>
-				{loading ? (
-					<ActivityIndicator color='#fff' />
-				) : (
-					<Text style={styles.buttonText}>Login</Text>
-				)}
-			</TouchableOpacity>
+							<Text style={styles.inputLabel}>Password</Text>
+							<TextInput
+								style={styles.input}
+								placeholder='Enter your password'
+								value={password}
+								onChangeText={setPassword}
+								secureTextEntry
+							/>
 
-			<View style={styles.footer}>
-				<Text style={styles.footerText}>Don't have an account? </Text>
-				<Link href='/auth/signup' asChild>
-					<TouchableOpacity>
-						<Text style={styles.link}>Sign Up</Text>
-					</TouchableOpacity>
-				</Link>
-			</View>
+							<View style={styles.forgotPassword}>
+								<Link href='/auth/forgot-password'>
+									<Text style={styles.forgotPasswordText}>
+										Forgot Password?
+									</Text>
+								</Link>
+							</View>
+						</View>
 
-			<Link href='/auth/forgot-password' asChild>
-				<TouchableOpacity style={styles.forgotPassword}>
-					<Text style={styles.link}>Forgot Password?</Text>
-				</TouchableOpacity>
-			</Link>
-		</View>
+						<TouchableOpacity
+							style={styles.button}
+							onPress={handleLogin}
+							disabled={loading}>
+							{loading ? (
+								<ActivityIndicator color='#fff' size='small' />
+							) : (
+								<Text style={styles.buttonText}>Log In</Text>
+							)}
+						</TouchableOpacity>
+
+						<View style={styles.footer}>
+							<Text style={styles.footerText}>Don't have an account? </Text>
+							<Link href='/auth/signup'>
+								<Text style={styles.link}>Sign Up</Text>
+							</Link>
+						</View>
+					</View>
+				</ScrollView>
+			</KeyboardAvoidingView>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 20,
+		backgroundColor: "#f9f9f9",
+	},
+	keyboardAvoidView: {
+		flex: 1,
+	},
+	scrollContent: {
+		flexGrow: 1,
 		justifyContent: "center",
-		backgroundColor: "#f5f5f5",
+		padding: 24,
+	},
+	logoContainer: {
+		alignItems: "center",
+		marginBottom: 40,
+	},
+	logo: {
+		width: 80,
+		height: 80,
+		marginBottom: 16,
+	},
+	appName: {
+		fontSize: 28,
+		fontWeight: "bold",
+		color: "#3f51b5",
+		marginBottom: 8,
+	},
+	appTagline: {
+		fontSize: 16,
+		color: "#666",
+		textAlign: "center",
+	},
+	formContainer: {
+		backgroundColor: "white",
+		borderRadius: 16,
+		padding: 24,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 10,
+		elevation: 5,
 	},
 	title: {
-		fontSize: 26,
+		fontSize: 24,
 		fontWeight: "bold",
-		marginBottom: 30,
+		marginBottom: 8,
+		color: "#333",
+		textAlign: "center",
+	},
+	subtitle: {
+		fontSize: 16,
+		color: "#666",
+		marginBottom: 24,
 		textAlign: "center",
 	},
 	inputContainer: {
 		width: "100%",
-		marginBottom: 20,
+		marginBottom: 24,
+	},
+	inputLabel: {
+		fontSize: 14,
+		fontWeight: "600",
+		color: "#333",
+		marginBottom: 8,
 	},
 	input: {
-		backgroundColor: "white",
-		padding: 15,
-		borderRadius: 8,
-		marginBottom: 15,
+		backgroundColor: "#f5f7fa",
+		padding: 16,
+		borderRadius: 12,
+		marginBottom: 20,
 		borderWidth: 1,
-		borderColor: "#ddd",
+		borderColor: "#e0e6ed",
+		fontSize: 16,
+	},
+	forgotPassword: {
+		alignSelf: "flex-end",
+		marginBottom: 16,
+	},
+	forgotPasswordText: {
+		color: "#3f51b5",
+		fontWeight: "600",
+		fontSize: 14,
 	},
 	button: {
-		backgroundColor: "#007AFF",
-		padding: 15,
-		borderRadius: 8,
+		backgroundColor: "#3f51b5",
+		padding: 16,
+		borderRadius: 12,
 		alignItems: "center",
+		shadowColor: "#3f51b5",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+		elevation: 4,
 	},
 	buttonText: {
 		color: "white",
@@ -141,19 +235,17 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	footer: {
-		marginTop: 20,
+		marginTop: 24,
 		flexDirection: "row",
 		justifyContent: "center",
 	},
 	footerText: {
 		color: "#666",
+		fontSize: 15,
 	},
 	link: {
-		color: "#007AFF",
+		color: "#3f51b5",
 		fontWeight: "bold",
-	},
-	forgotPassword: {
-		marginTop: 15,
-		alignItems: "center",
+		fontSize: 15,
 	},
 });

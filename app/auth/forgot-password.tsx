@@ -62,7 +62,7 @@ export default function ForgotPasswordScreen() {
 						We've sent password reset instructions to {email}. Please check your
 						email inbox.
 					</Text>
-					<Link href='/auth/login' asChild>
+					<Link href='/auth/login'>
 						<TouchableOpacity style={styles.button}>
 							<Text style={styles.buttonText}>Back to Login</Text>
 						</TouchableOpacity>
@@ -100,10 +100,8 @@ export default function ForgotPasswordScreen() {
 
 					<View style={styles.footer}>
 						<Text style={styles.footerText}>Remembered your password? </Text>
-						<Link href='/auth/login' asChild>
-							<TouchableOpacity>
-								<Text style={styles.link}>Login</Text>
-							</TouchableOpacity>
+						<Link href='/auth/login'>
+							<Text style={styles.link}>Login</Text>
 						</Link>
 					</View>
 				</>
