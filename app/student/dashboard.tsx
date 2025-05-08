@@ -321,30 +321,6 @@ export default function StudentDashboard() {
 						</View>
 					)}
 				</View>
-
-				{/* Recent Tasks Section */}
-				<View style={styles.section}>
-					<View style={styles.sectionHeader}>
-						<Text style={styles.sectionTitle}>Recent Tasks</Text>
-						<TouchableOpacity onPress={navigateToTasks}>
-							<Text style={styles.seeAllText}>See All</Text>
-						</TouchableOpacity>
-					</View>
-
-					{recentTasks.length > 0 ? (
-						<FlatList
-							data={recentTasks}
-							renderItem={renderTaskItem}
-							keyExtractor={(item) => item.id}
-							scrollEnabled={false}
-						/>
-					) : (
-						<View style={styles.emptyState}>
-							<MaterialIcons name='assignment' size={48} color='#ccc' />
-							<Text style={styles.emptyStateText}>No tasks assigned yet</Text>
-						</View>
-					)}
-				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);

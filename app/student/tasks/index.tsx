@@ -24,15 +24,15 @@ type Task = {
 	group_name: string;
 	status: "pending" | "completed" | "overdue";
 	feedback?: string;
-	grade?: number;
+	rating?: number;
 };
 
 interface Submission {
 	id: string;
 	student_id: string;
-	created_at: string;
+	updated_at: string;
 	feedback?: string;
-	grade?: number;
+	rating?: number;
 }
 
 export default function StudentTasksScreen() {
@@ -84,7 +84,7 @@ export default function StudentTasksScreen() {
           description,
           due_date,
           group_id,
-          submissions(id, student_id, created_at, feedback, grade)
+          submissions(id, student_id, updated_at, feedback, rating)
         `
 				)
 				.in("group_id", groupIds)
@@ -123,7 +123,7 @@ export default function StudentTasksScreen() {
 						group_name: group ? group.groups.name : "Unknown Group",
 						status,
 						feedback: submission?.feedback,
-						grade: submission?.grade,
+						rating: submission?.rating,
 					};
 				});
 
@@ -218,9 +218,9 @@ export default function StudentTasksScreen() {
 						]}>
 						{item.status.charAt(0).toUpperCase() + item.status.slice(1)}
 					</Text>
-					{item.status === "completed" && item.grade && (
+					{item.status === "completed" && item.rating && (
 						<View style={styles.gradeContainer}>
-							<Text style={styles.gradeText}>{item.grade}/100</Text>
+							<Text style={styles.gradeText}>{item.rating}/100</Text>
 						</View>
 					)}
 				</View>

@@ -26,9 +26,9 @@ type Task = {
 interface Submission {
 	id: string;
 	student_id: string;
-	created_at: string;
+	updated_at: string;
 	feedback?: string;
-	grade?: number;
+	rating?: number;
 }
 
 export default function GroupDetailsScreen() {
@@ -97,7 +97,7 @@ export default function GroupDetailsScreen() {
           title,
           description,
           due_date,
-          submissions(id, student_id, created_at, feedback, grade)
+          submissions(id, student_id, updated_at, feedback, rating)
         `
 				)
 				.eq("group_id", id)
