@@ -149,6 +149,7 @@ export default function StudentDashboard() {
 
 	const navigateToGroups = () => router.push("/student/groups");
 	const navigateToTasks = () => router.push("/student/tasks");
+	const navigateToCalendar = () => router.push("/student/calendar");
 
 	const renderGroupItem = ({ item }: { item: Group }) => (
 		<TouchableOpacity
@@ -289,6 +290,17 @@ export default function StudentDashboard() {
 							<Text style={styles.menuCardSubtitle}>
 								Manage your assignments
 							</Text>
+						</TouchableOpacity>
+
+						{/* Calendar Card */}
+						<TouchableOpacity
+							style={styles.menuCard}
+							onPress={navigateToCalendar}>
+							<View style={styles.menuIconContainer}>
+								<Ionicons name='calendar' size={32} color='#3f51b5' />
+							</View>
+							<Text style={styles.menuCardTitle}>Calendar</Text>
+							<Text style={styles.menuCardSubtitle}>Track your deadlines</Text>
 						</TouchableOpacity>
 					</View>
 				</View>
@@ -506,5 +518,19 @@ const styles = StyleSheet.create({
 		color: "#666",
 		marginTop: 12,
 		textAlign: "center",
+	},
+	menuIconContainer: {
+		width: 60,
+		height: 60,
+		borderRadius: 12,
+		justifyContent: "center",
+		alignItems: "center",
+		marginBottom: 12,
+	},
+	menuSectionTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#333",
+		marginBottom: 16,
 	},
 });

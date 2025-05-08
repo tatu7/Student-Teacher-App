@@ -29,10 +29,10 @@ type Task = {
 type Submission = {
 	id: string;
 	content: string;
-	created_at: string;
+	submitted_at: string;
 	updated_at: string;
 	feedback?: string;
-	grade?: number;
+	rating?: number;
 };
 
 export default function TaskDetailsScreen() {
@@ -82,10 +82,10 @@ export default function TaskDetailsScreen() {
 					`
           id,
           content,
-          created_at,
+          submitted_at,
           updated_at,
           feedback,
-          grade
+          rating
         `
 				)
 				.eq("task_id", id)
@@ -154,7 +154,7 @@ export default function TaskDetailsScreen() {
 					task_id: id,
 					student_id: user.id,
 					content: submissionContent,
-					created_at: new Date().toISOString(),
+					submitted_at: new Date().toISOString(),
 					updated_at: new Date().toISOString(),
 				});
 
@@ -214,18 +214,18 @@ export default function TaskDetailsScreen() {
 				{submission ? (
 					<View style={styles.submissionInfo}>
 						<Text style={styles.submissionDate}>
-							Submitted: {new Date(submission.created_at).toLocaleString()}
-							{submission.updated_at !== submission.created_at
+							Submitted: {new Date(submission.submitted_at).toLocaleString()}
+							{submission.updated_at !== submission.submitted_at
 								? ` (Updated: ${new Date(
 										submission.updated_at
 								  ).toLocaleString()})`
 								: ""}
 						</Text>
 
-						{submission.grade ? (
+						{submission.rating ? (
 							<View style={styles.gradeContainer}>
 								<Text style={styles.gradeLabel}>Grade:</Text>
-								<Text style={styles.gradeValue}>{submission.grade}/100</Text>
+								<Text style={styles.gradeValue}>{submission.rating}/100</Text>
 							</View>
 						) : null}
 
