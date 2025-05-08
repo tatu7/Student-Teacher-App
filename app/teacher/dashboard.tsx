@@ -27,11 +27,6 @@ export default function TeacherDashboard() {
 					headerTitleStyle: {
 						fontWeight: "bold",
 					},
-					headerRight: () => (
-						<TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-							<Ionicons name='log-out-outline' size={24} color='#3f51b5' />
-						</TouchableOpacity>
-					),
 				}}
 			/>
 
@@ -39,6 +34,9 @@ export default function TeacherDashboard() {
 				<View style={styles.header}>
 					<Text style={styles.welcomeText}>Welcome, Teacher</Text>
 					<Text style={styles.emailText}>{user?.email}</Text>
+					<TouchableOpacity onPress={signOut}>
+						<Ionicons name='log-out-outline' size={24} color='#3f51b5' />
+					</TouchableOpacity>
 				</View>
 
 				{/* Main Menu Cards */}
