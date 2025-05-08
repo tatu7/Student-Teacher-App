@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
-import { useAuth, UserRole } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
+import { UserRole } from "../../lib/supabase";
 import { useEffect } from "react";
 import { router } from "expo-router";
 
