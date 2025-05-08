@@ -60,8 +60,7 @@ export default function SubmissionDetailScreen() {
           attachment_url,
           rating,
           feedback,
-          submitted_at,
-          user_profiles!inner(email)
+          submitted_at
         `
 				)
 				.eq("id", submissionId)
@@ -69,11 +68,25 @@ export default function SubmissionDetailScreen() {
 
 			if (error) throw error;
 
+			// Fetch student email from auth.users
+			const { data: studentData, error: studentError } = await supabase
+				.from("auth.users")
+				.select("email")
+				.eq("id", data.student_id)
+				.single();
+
+			if (studentError) {
+				console.error("Error fetching student data:", studentError);
+				// Proceed with unknown email
+			}
+
+			const studentEmail = studentData?.email || "unknown@email.com";
+
 			const formattedSubmission = {
 				id: data.id,
 				task_id: data.task_id,
 				student_id: data.student_id,
-				student_email: data.user_profiles.email,
+				student_email: studentEmail,
 				content: data.content || "",
 				attachment_url: data.attachment_url,
 				rating: data.rating,

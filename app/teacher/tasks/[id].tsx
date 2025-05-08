@@ -86,7 +86,7 @@ export default function TaskDetailsScreen() {
 		try {
 			setSubmissionsLoading(true);
 
-			// Get all submissions for this task with student information
+			// Get all submissions for this task
 			const { data, error } = await supabase
 				.from("submissions")
 				.select(
@@ -94,8 +94,7 @@ export default function TaskDetailsScreen() {
           id,
           submitted_at,
           rating,
-          group_students!inner(student_email),
-          user_profiles!inner(email)
+          student_id
         `
 				)
 				.eq("task_id", taskId);
@@ -103,14 +102,33 @@ export default function TaskDetailsScreen() {
 			if (error) throw error;
 
 			if (data && data.length > 0) {
+				// Get the student IDs
+				const studentIds = data.map((item) => item.student_id);
+
+				// Fetch student emails from auth.users
+				const { data: studentData, error: studentError } = await supabase
+					.from("auth.users")
+					.select("id, email")
+					.in("id", studentIds);
+
+				if (studentError) {
+					console.error("Error fetching student data:", studentError);
+					// Continue with partial data
+				}
+
 				// Process the submissions data
-				const processedSubmissions = data.map((item) => ({
-					id: item.id,
-					student_email: item.user_profiles.email,
-					student_name: item.user_profiles.email.split("@")[0], // Using email username as name
-					submitted_at: item.submitted_at,
-					rating: item.rating,
-				}));
+				const processedSubmissions = data.map((item) => {
+					const student = studentData?.find((s) => s.id === item.student_id);
+					const email = student?.email || "unknown@email.com";
+
+					return {
+						id: item.id,
+						student_email: email,
+						student_name: email.split("@")[0], // Using email username as name
+						submitted_at: item.submitted_at,
+						rating: item.rating,
+					};
+				});
 
 				setSubmissions(processedSubmissions);
 			} else {

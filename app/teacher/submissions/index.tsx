@@ -114,7 +114,7 @@ export default function SubmissionsScreen() {
           submitted_at,
           rating,
           tasks!inner(id, title, group_id),
-          user_profiles!inner(id, email)
+          student_id
         `
 				)
 				.order("submitted_at", { ascending: false });
@@ -143,22 +143,42 @@ export default function SubmissionsScreen() {
 
 				if (groupsError) throw groupsError;
 
-				// Map the data
-				const processedSubmissions = data.map((item) => {
-					const group = groupsData.find((g) => g.id === item.tasks.group_id);
-					return {
-						id: item.id,
-						task_title: item.tasks.title,
-						task_id: item.tasks.id,
-						student_name: item.user_profiles.email.split("@")[0], // Using email username as name
-						student_email: item.user_profiles.email,
-						group_name: group ? group.name : "Unknown Group",
-						submitted_at: item.submitted_at,
-						rating: item.rating,
-					};
-				});
+				// Fetch user profiles for all student IDs
+				const studentIds = [...new Set(data.map((item) => item.student_id))];
 
-				setSubmissions(processedSubmissions);
+				if (studentIds.length > 0) {
+					const { data: profilesData, error: profilesError } = await supabase
+						.from("auth.users")
+						.select("id, email")
+						.in("id", studentIds);
+
+					if (profilesError) {
+						console.error("Error fetching student profiles:", profilesError);
+						throw profilesError;
+					}
+
+					// Map the data
+					const processedSubmissions = data.map((item) => {
+						const group = groupsData.find((g) => g.id === item.tasks.group_id);
+						const profile = profilesData?.find((p) => p.id === item.student_id);
+						const email = profile?.email || "unknown@email.com";
+
+						return {
+							id: item.id,
+							task_title: item.tasks.title,
+							task_id: item.tasks.id,
+							student_name: email.split("@")[0], // Using email username as name
+							student_email: email,
+							group_name: group ? group.name : "Unknown Group",
+							submitted_at: item.submitted_at,
+							rating: item.rating,
+						};
+					});
+
+					setSubmissions(processedSubmissions);
+				} else {
+					setSubmissions([]);
+				}
 			} else {
 				setSubmissions([]);
 			}

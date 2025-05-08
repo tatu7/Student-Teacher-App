@@ -19,7 +19,7 @@ export default function StudentDashboard() {
 				options={{
 					title: "Student Dashboard",
 					headerRight: () => (
-						<TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+						<TouchableOpacity onPress={signOut}>
 							<Ionicons name='log-out-outline' size={24} color='#007AFF' />
 						</TouchableOpacity>
 					),
@@ -131,9 +131,6 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f5f5f5",
-	},
-	logoutButton: {
-		marginRight: 15,
 	},
 	content: {
 		flex: 1,

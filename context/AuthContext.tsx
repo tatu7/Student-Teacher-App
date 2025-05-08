@@ -1,8 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { router } from "expo-router";
 import { supabase, AuthUser, UserRole } from "../lib/supabase";
-import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
 
 type AuthContextType = {
 	user: AuthUser | null;
@@ -35,26 +33,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				const session = supabase.auth.session();
 
 				if (session && session.user) {
-					// Get user's role from a Supabase table
-					const { data, error } = await supabase
-						.from("user_profiles")
-						.select("role")
-						.eq("user_id", session.user.id)
-						.single();
+					try {
+						// Get user's role from profiles table
+						const { data, error } = await supabase
+							.from("user_profiles")
+							.select("role")
+							.eq("id", session.user.id);
 
-					if (error) throw error;
+						if (error) throw error;
 
-					setUser({
-						id: session.user.id,
-						email: session.user.email!,
-						role: data.role as UserRole,
-					});
+						// Check if profile exists
+						if (data && data.length > 0) {
+							setUser({
+								id: session.user.id,
+								email: session.user.email!,
+								role: data[0].role as UserRole,
+							});
 
-					// Redirect to the appropriate dashboard based on role
-					if (data.role === UserRole.TEACHER) {
-						router.replace("/teacher/dashboard");
-					} else if (data.role === UserRole.STUDENT) {
-						router.replace("/student/dashboard");
+							// Redirect based on role
+							if (data[0].role === UserRole.TEACHER) {
+								router.replace("/teacher/dashboard");
+							} else if (data[0].role === UserRole.STUDENT) {
+								router.replace("/student/dashboard");
+							}
+						} else {
+							// Profile doesn't exist, create it
+							console.log("No profile found, creating new profile");
+							const { error: insertError } = await supabase
+								.from("user_profiles")
+								.insert({
+									id: session.user.id,
+									email: session.user.email,
+									role: UserRole.STUDENT, // Default role
+								});
+
+							if (insertError) {
+								console.error("Error creating profile:", insertError);
+							} else {
+								setUser({
+									id: session.user.id,
+									email: session.user.email!,
+									role: UserRole.STUDENT,
+								});
+								router.replace("/student/dashboard");
+							}
+						}
+					} catch (profileError) {
+						console.error("Error fetching user profile:", profileError);
 					}
 				}
 			} catch (error) {
@@ -67,96 +92,182 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		checkUser();
 
 		// Listen for auth state changes (v1 syntax)
-		const authListener = supabase.auth.onAuthStateChange(
+		const { data: authListener } = supabase.auth.onAuthStateChange(
 			async (event, session) => {
 				if (event === "SIGNED_OUT") {
 					setUser(null);
 					router.replace("/auth/login");
 				} else if (
-					session &&
-					session.user &&
+					session?.user &&
 					(event === "SIGNED_IN" || event === "USER_UPDATED")
 				) {
-					// Fetch user role
-					const { data, error } = await supabase
-						.from("user_profiles")
-						.select("role")
-						.eq("user_id", session.user.id)
-						.single();
+					try {
+						// Fetch user role
+						const { data, error } = await supabase
+							.from("user_profiles")
+							.select("role")
+							.eq("id", session.user.id);
 
-					if (!error && data) {
-						setUser({
-							id: session.user.id,
-							email: session.user.email!,
-							role: data.role as UserRole,
-						});
+						if (error) throw error;
 
-						// Navigate based on role
-						if (data.role === UserRole.TEACHER) {
-							router.replace("/teacher/dashboard");
-						} else if (data.role === UserRole.STUDENT) {
-							router.replace("/student/dashboard");
+						if (data && data.length > 0) {
+							setUser({
+								id: session.user.id,
+								email: session.user.email!,
+								role: data[0].role as UserRole,
+							});
+
+							// Navigate based on role
+							if (data[0].role === UserRole.TEACHER) {
+								router.replace("/teacher/dashboard");
+							} else if (data[0].role === UserRole.STUDENT) {
+								router.replace("/student/dashboard");
+							}
+						} else {
+							// Create profile if it doesn't exist
+							const { error: insertError } = await supabase
+								.from("user_profiles")
+								.insert({
+									id: session.user.id,
+									email: session.user.email,
+									role: UserRole.STUDENT, // Default role
+								});
+
+							if (insertError) {
+								console.error("Error creating profile:", insertError);
+							} else {
+								setUser({
+									id: session.user.id,
+									email: session.user.email!,
+									role: UserRole.STUDENT,
+								});
+								router.replace("/student/dashboard");
+							}
 						}
+					} catch (profileError) {
+						console.error("Error handling auth change:", profileError);
 					}
 				}
 			}
 		);
 
 		return () => {
-			// v1 cleanup is different
-			supabase.removeAllSubscriptions();
+			authListener?.unsubscribe();
 		};
 	}, []);
 
-	// Sign up function (v1 syntax)
+	// Sign up function
 	const signUp = async (email: string, password: string, role: UserRole) => {
 		try {
-			// Register user with Supabase Auth (old version syntax)
-			const { user: newUser, error } = await supabase.auth.signUp(
-				{
-					email,
-					password,
-				},
-				{
-					data: { role }, // Store role in user metadata
+			// First check if user already exists in auth system by trying to log in
+			const { error: signInError } = await supabase.auth.signIn({
+				email,
+				password,
+			});
+
+			if (!signInError) {
+				console.log("User already exists, proceeding to login flow");
+
+				// User exists and password is correct, just sign them in
+				const session = await supabase.auth.session();
+
+				if (session && session.user) {
+					// Get or create profile silently - errors here are ignored
+					try {
+						// Get existing profile
+						const { data } = await supabase
+							.from("user_profiles")
+							.select("role")
+							.eq("id", session.user.id);
+
+						let userRole = role; // Default to passed role
+
+						// If profile exists, use its role
+						if (data && data.length > 0) {
+							userRole = data[0].role as UserRole;
+						} else {
+							// Silently try to create profile, ignore any errors
+							try {
+								await supabase.from("user_profiles").upsert(
+									{
+										id: session.user.id,
+										email,
+										role,
+									},
+									{ onConflict: "id" }
+								);
+							} catch (e) {
+								// Completely ignore any errors in profile creation
+								console.log("Ignoring profile creation error:", e);
+							}
+						}
+
+						// Set user and redirect regardless of profile creation result
+						setUser({
+							id: session.user.id,
+							email,
+							role: userRole,
+						});
+
+						if (userRole === UserRole.TEACHER) {
+							router.replace("/teacher/dashboard");
+						} else {
+							router.replace("/student/dashboard");
+						}
+					} catch (e) {
+						// Ignore any errors in profile flow
+						console.log("Ignoring profile retrieval error:", e);
+
+						// Just set basic user and redirect
+						setUser({
+							id: session.user.id,
+							email,
+							role,
+						});
+
+						if (role === UserRole.TEACHER) {
+							router.replace("/teacher/dashboard");
+						} else {
+							router.replace("/student/dashboard");
+						}
+					}
+
+					return { error: null };
 				}
-			);
+			}
+
+			// User doesn't exist, create new
+			const { user: newUser, error } = await supabase.auth.signUp({
+				email,
+				password,
+			});
 
 			if (error) return { error };
 
 			if (newUser) {
-				// For v1, we need to disable email confirmation through Supabase dashboard settings
-
-				// Add user's role to a separate table - use the auth.uid() function to ensure RLS works
-				const { error: profileError } = await supabase
-					.from("user_profiles")
-					.insert({
-						id: newUser.id, // Use the same ID from the auth.users table
-						user_id: newUser.id,
-						email,
-						role,
-						created_at: new Date().toISOString(),
-					})
-					.match({ user_id: newUser.id }); // Add match filter to help with RLS
-
-				if (profileError) return { error: profileError };
-
-				// Auto sign in after successful registration to bypass email confirmation
-				const { error: signInError } = await supabase.auth.signIn({
-					email,
-					password,
-				});
-
-				if (signInError) return { error: signInError };
-
-				// Set user state
+				// Set user regardless of profile creation success
 				setUser({
 					id: newUser.id,
 					email,
 					role,
 				});
 
-				// Navigate based on role
+				// Try to create profile but don't fail if it errors
+				try {
+					await supabase.from("user_profiles").upsert(
+						{
+							id: newUser.id,
+							email,
+							role,
+						},
+						{ onConflict: "id" }
+					);
+				} catch (e) {
+					// Completely ignore profile errors
+					console.log("Ignoring profile creation error for new user:", e);
+				}
+
+				// Always redirect regardless of profile creation
 				if (role === UserRole.TEACHER) {
 					router.replace("/teacher/dashboard");
 				} else {
@@ -166,14 +277,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 			return { error: null };
 		} catch (error) {
+			console.error("Signup process error:", error);
 			return { error };
 		}
 	};
 
-	// Sign in function (v1 syntax)
+	// Sign in function
 	const signIn = async (email: string, password: string) => {
 		try {
-			const { error, user } = await supabase.auth.signIn({
+			// v1 syntax
+			const { error, user: authUser } = await supabase.auth.signIn({
 				email,
 				password,
 			});
@@ -187,7 +300,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
-	// Sign out function (v1 syntax)
+	// Sign out function
 	const signOut = async () => {
 		await supabase.auth.signOut();
 		setUser(null);
@@ -203,7 +316,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			const { error } = await supabase
 				.from("user_profiles")
 				.update({ role })
-				.eq("user_id", user.id);
+				.eq("id", user.id);
 
 			if (error) return { error };
 
