@@ -5,22 +5,31 @@ import {
 	Text,
 	TouchableOpacity,
 	ScrollView,
+	SafeAreaView,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 
 export default function TeacherDashboard() {
 	const { user, signOut } = useAuth();
 
+	// Navigate to different sections
+	const navigateToGroups = () => router.push("/teacher/groups");
+	const navigateToTasks = () => router.push("/teacher/tasks");
+	const navigateToSubmissions = () => router.push("/teacher/submissions");
+
 	return (
-		<View style={styles.container}>
+		<SafeAreaView style={styles.container}>
 			<Stack.Screen
 				options={{
 					title: "Teacher Dashboard",
+					headerTitleStyle: {
+						fontWeight: "bold",
+					},
 					headerRight: () => (
 						<TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-							<Ionicons name='log-out-outline' size={24} color='#007AFF' />
+							<Ionicons name='log-out-outline' size={24} color='#3f51b5' />
 						</TouchableOpacity>
 					),
 				}}
@@ -32,65 +41,123 @@ export default function TeacherDashboard() {
 					<Text style={styles.emailText}>{user?.email}</Text>
 				</View>
 
-				<View style={styles.cardSection}>
-					<Text style={styles.sectionTitle}>Your Classes</Text>
-					<View style={styles.cardContainer}>
-						<View style={styles.card}>
-							<Ionicons name='people-outline' size={30} color='#007AFF' />
-							<Text style={styles.cardTitle}>Math 101</Text>
-							<Text style={styles.cardSubtitle}>28 Students</Text>
-						</View>
+				{/* Main Menu Cards */}
+				<View style={styles.menuSection}>
+					<Text style={styles.sectionTitle}>Teacher Tools</Text>
 
-						<View style={styles.card}>
-							<Ionicons name='people-outline' size={30} color='#007AFF' />
-							<Text style={styles.cardTitle}>Science 202</Text>
-							<Text style={styles.cardSubtitle}>24 Students</Text>
-						</View>
+					<View style={styles.menuGrid}>
+						{/* Groups Card */}
+						<TouchableOpacity
+							style={styles.menuCard}
+							onPress={navigateToGroups}>
+							<View
+								style={[styles.iconContainer, { backgroundColor: "#e3f2fd" }]}>
+								<Ionicons name='people' size={32} color='#2196f3' />
+							</View>
+							<Text style={styles.menuCardTitle}>Groups</Text>
+							<Text style={styles.menuCardSubtitle}>Manage student groups</Text>
+						</TouchableOpacity>
 
-						<View style={styles.card}>
-							<Ionicons name='add-circle-outline' size={30} color='#007AFF' />
-							<Text style={styles.cardTitle}>Add New Class</Text>
-						</View>
+						{/* Tasks Card */}
+						<TouchableOpacity style={styles.menuCard} onPress={navigateToTasks}>
+							<View
+								style={[styles.iconContainer, { backgroundColor: "#e8f5e9" }]}>
+								<MaterialIcons name='assignment' size={32} color='#4caf50' />
+							</View>
+							<Text style={styles.menuCardTitle}>Tasks</Text>
+							<Text style={styles.menuCardSubtitle}>
+								Create & manage assignments
+							</Text>
+						</TouchableOpacity>
+
+						{/* Submissions Card */}
+						<TouchableOpacity
+							style={styles.menuCard}
+							onPress={navigateToSubmissions}>
+							<View
+								style={[styles.iconContainer, { backgroundColor: "#fff8e1" }]}>
+								<FontAwesome5
+									name='clipboard-check'
+									size={28}
+									color='#ffa000'
+								/>
+							</View>
+							<Text style={styles.menuCardTitle}>Submissions</Text>
+							<Text style={styles.menuCardSubtitle}>Review & grade work</Text>
+						</TouchableOpacity>
+
+						{/* Analytics Card */}
+						<TouchableOpacity style={styles.menuCard}>
+							<View
+								style={[styles.iconContainer, { backgroundColor: "#f3e5f5" }]}>
+								<Ionicons name='analytics' size={32} color='#9c27b0' />
+							</View>
+							<Text style={styles.menuCardTitle}>Analytics</Text>
+							<Text style={styles.menuCardSubtitle}>Performance insights</Text>
+						</TouchableOpacity>
 					</View>
 				</View>
 
-				<View style={styles.cardSection}>
-					<Text style={styles.sectionTitle}>Upcoming Events</Text>
-					<View style={styles.eventList}>
-						<View style={styles.eventItem}>
-							<View style={styles.eventDate}>
-								<Text style={styles.eventDateDay}>15</Text>
-								<Text style={styles.eventDateMonth}>Nov</Text>
+				{/* Recent Activity Section */}
+				<View style={styles.activitySection}>
+					<View style={styles.sectionHeader}>
+						<Text style={styles.sectionTitle}>Recent Activity</Text>
+						<TouchableOpacity>
+							<Text style={styles.seeAllText}>See All</Text>
+						</TouchableOpacity>
+					</View>
+
+					<View style={styles.activityList}>
+						<View style={styles.activityItem}>
+							<View
+								style={[styles.activityIcon, { backgroundColor: "#e3f2fd" }]}>
+								<Ionicons name='create-outline' size={20} color='#2196f3' />
 							</View>
-							<View style={styles.eventDetails}>
-								<Text style={styles.eventTitle}>Math 101 Final Exam</Text>
-								<Text style={styles.eventTime}>10:00 AM - 12:00 PM</Text>
+							<View style={styles.activityContent}>
+								<Text style={styles.activityTitle}>New task created</Text>
+								<Text style={styles.activityDetails}>
+									Math Exam for Group A
+								</Text>
+								<Text style={styles.activityTime}>Today, 2:30 PM</Text>
 							</View>
 						</View>
 
-						<View style={styles.eventItem}>
-							<View style={styles.eventDate}>
-								<Text style={styles.eventDateDay}>18</Text>
-								<Text style={styles.eventDateMonth}>Nov</Text>
+						<View style={styles.activityItem}>
+							<View
+								style={[styles.activityIcon, { backgroundColor: "#e8f5e9" }]}>
+								<Ionicons name='person-add-outline' size={20} color='#4caf50' />
 							</View>
-							<View style={styles.eventDetails}>
-								<Text style={styles.eventTitle}>
-									Science 202 Project Presentation
+							<View style={styles.activityContent}>
+								<Text style={styles.activityTitle}>Added new student</Text>
+								<Text style={styles.activityDetails}>John Doe to Group B</Text>
+								<Text style={styles.activityTime}>Yesterday, 10:15 AM</Text>
+							</View>
+						</View>
+
+						<View style={styles.activityItem}>
+							<View
+								style={[styles.activityIcon, { backgroundColor: "#fff8e1" }]}>
+								<MaterialIcons name='rate-review' size={20} color='#ffa000' />
+							</View>
+							<View style={styles.activityContent}>
+								<Text style={styles.activityTitle}>Graded submission</Text>
+								<Text style={styles.activityDetails}>
+									Physics assignment from Alice Smith
 								</Text>
-								<Text style={styles.eventTime}>2:00 PM - 4:00 PM</Text>
+								<Text style={styles.activityTime}>Nov 5, 4:45 PM</Text>
 							</View>
 						</View>
 					</View>
 				</View>
 			</ScrollView>
-		</View>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f5",
+		backgroundColor: "#f5f5f7",
 	},
 	logoutButton: {
 		marginRight: 15,
@@ -103,96 +170,113 @@ const styles = StyleSheet.create({
 		marginBottom: 25,
 	},
 	welcomeText: {
-		fontSize: 24,
+		fontSize: 28,
 		fontWeight: "bold",
+		color: "#333",
 	},
 	emailText: {
-		fontSize: 14,
+		fontSize: 16,
 		color: "#666",
 		marginTop: 5,
 	},
-	cardSection: {
-		marginBottom: 25,
+	menuSection: {
+		marginBottom: 30,
 	},
-	sectionTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
+	sectionHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 		marginBottom: 15,
 	},
-	cardContainer: {
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: "bold",
+		color: "#333",
+		marginBottom: 15,
+	},
+	seeAllText: {
+		color: "#3f51b5",
+		fontWeight: "600",
+	},
+	menuGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
 		justifyContent: "space-between",
 	},
-	card: {
+	menuCard: {
 		backgroundColor: "white",
-		borderRadius: 12,
+		borderRadius: 16,
 		padding: 20,
 		width: "48%",
-		marginBottom: 15,
-		alignItems: "center",
+		marginBottom: 16,
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.1,
-		shadowRadius: 2,
-		elevation: 2,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 3,
 	},
-	cardTitle: {
-		fontSize: 16,
+	iconContainer: {
+		width: 60,
+		height: 60,
+		borderRadius: 12,
+		justifyContent: "center",
+		alignItems: "center",
+		marginBottom: 12,
+	},
+	menuCardTitle: {
+		fontSize: 18,
 		fontWeight: "bold",
-		marginTop: 10,
-		textAlign: "center",
+		color: "#333",
+		marginBottom: 6,
 	},
-	cardSubtitle: {
+	menuCardSubtitle: {
 		fontSize: 14,
 		color: "#666",
-		marginTop: 5,
+		lineHeight: 20,
 	},
-	eventList: {
+	activitySection: {
+		marginBottom: 30,
+	},
+	activityList: {
 		backgroundColor: "white",
-		borderRadius: 12,
+		borderRadius: 16,
 		overflow: "hidden",
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.1,
-		shadowRadius: 2,
-		elevation: 2,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 3,
 	},
-	eventItem: {
+	activityItem: {
 		flexDirection: "row",
 		padding: 15,
 		borderBottomWidth: 1,
-		borderBottomColor: "#eee",
+		borderBottomColor: "#f0f0f0",
 	},
-	eventDate: {
-		width: 50,
-		height: 50,
-		borderRadius: 10,
-		backgroundColor: "#E8F1FF",
+	activityIcon: {
+		width: 40,
+		height: 40,
+		borderRadius: 8,
 		alignItems: "center",
 		justifyContent: "center",
 		marginRight: 15,
 	},
-	eventDateDay: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#007AFF",
-	},
-	eventDateMonth: {
-		fontSize: 12,
-		color: "#007AFF",
-	},
-	eventDetails: {
+	activityContent: {
 		flex: 1,
-		justifyContent: "center",
 	},
-	eventTitle: {
+	activityTitle: {
 		fontSize: 16,
 		fontWeight: "bold",
+		color: "#333",
 	},
-	eventTime: {
+	activityDetails: {
 		fontSize: 14,
 		color: "#666",
+		marginTop: 2,
+	},
+	activityTime: {
+		fontSize: 12,
+		color: "#999",
 		marginTop: 5,
 	},
 });
