@@ -9,12 +9,13 @@ import {
 	ActivityIndicator,
 } from "react-native";
 import { Stack, Link } from "expo-router";
-import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ForgotPasswordScreen() {
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [resetSent, setResetSent] = useState(false);
+	const { resetPassword } = useAuth();
 
 	const handleResetPassword = async () => {
 		// Input validation
@@ -32,8 +33,7 @@ export default function ForgotPasswordScreen() {
 
 		setLoading(true);
 		try {
-			// For Supabase v1, the method is different
-			const { error } = await supabase.auth.api.resetPasswordForEmail(email);
+			const { error } = await resetPassword(email);
 
 			if (error) {
 				Alert.alert(
