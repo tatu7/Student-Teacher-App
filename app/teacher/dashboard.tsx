@@ -21,22 +21,10 @@ export default function TeacherDashboard() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "Teacher Dashboard",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-				}}
-			/>
-
 			<ScrollView style={styles.content}>
 				<View style={styles.header}>
 					<Text style={styles.welcomeText}>Welcome, Teacher</Text>
 					<Text style={styles.emailText}>{user?.email}</Text>
-					<TouchableOpacity onPress={signOut}>
-						<Ionicons name='log-out-outline' size={24} color='#3f51b5' />
-					</TouchableOpacity>
 				</View>
 
 				{/* Main Menu Cards */}

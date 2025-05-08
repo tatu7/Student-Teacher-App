@@ -339,7 +339,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	// Reset password function (v1 syntax)
 	const resetPassword = async (email: string) => {
 		try {
-			const { error } = await supabase.auth.api.resetPasswordForEmail(email);
+			// Clean and validate email
+			const trimmedEmail = email.trim();
+
+			// Check if email has valid format
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(trimmedEmail)) {
+				return { error: { message: "Invalid email format" } };
+			}
+
+			// Use v1 API correctly
+			const { error } = await supabase.auth.api.resetPasswordForEmail(
+				trimmedEmail
+			);
 			return { error };
 		} catch (error) {
 			return { error };

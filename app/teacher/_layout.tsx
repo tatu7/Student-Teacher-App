@@ -3,6 +3,8 @@ import { useAuth } from "../../context/AuthContext";
 import { UserRole } from "../../lib/supabase";
 import { useEffect } from "react";
 import { router } from "expo-router";
+import { TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function TeacherLayout() {
 	const { user, loading } = useAuth();
@@ -32,6 +34,13 @@ export default function TeacherLayout() {
 					fontWeight: "bold",
 				},
 				headerShadowVisible: false,
+				headerLeft: () => (
+					<TouchableOpacity
+						onPress={() => router.push("/teacher/profile" as any)}
+						style={{ marginLeft: 15 }}>
+						<Ionicons name='person-circle' size={28} color='#3f51b5' />
+					</TouchableOpacity>
+				),
 			}}
 		/>
 	);
