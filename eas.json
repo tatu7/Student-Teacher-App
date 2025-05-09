@@ -1,8 +1,24 @@
 {
+  "cli": {
+    "version": ">= 5.8.0",
+    "appVersionSource": "remote"
+  },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "development"
+      }
+    },
     "preview": {
+      "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "preview",
+        "NPM_FLAGS": "--legacy-peer-deps"
       }
     },
     "preview2": {
@@ -16,6 +32,11 @@
     "preview4": {
       "distribution": "internal"
     },
-    "production": {}
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production"
+      }
+    }
   }
 }
