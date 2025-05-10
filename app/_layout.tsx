@@ -12,6 +12,7 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { UserRole } from "../lib/supabase";
+import { NotificationsProvider } from "../context/NotificationsContext";
 
 // Auth navigation guard component
 function RootNavigationGuard({ children }: { children: React.ReactNode }) {
@@ -61,7 +62,7 @@ export default function RootLayout() {
 
 	return (
 		<AuthProvider>
-			<RootNavigationGuard>
+			<NotificationsProvider>
 				<ThemeProvider
 					value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 					<Stack>
@@ -72,7 +73,7 @@ export default function RootLayout() {
 					</Stack>
 					<StatusBar style='auto' />
 				</ThemeProvider>
-			</RootNavigationGuard>
+			</NotificationsProvider>
 		</AuthProvider>
 	);
 }
