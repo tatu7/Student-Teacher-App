@@ -8,11 +8,22 @@ import {
 	SafeAreaView,
 	FlatList,
 	ActivityIndicator,
+	Dimensions,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { useNotifications } from "../../context/NotificationsContext";
+import {
+	Ionicons,
+	MaterialIcons,
+	FontAwesome5,
+	AntDesign,
+} from "@expo/vector-icons";
+
+// Get screen width for responsive design
+const { width } = Dimensions.get("window");
+const cardWidth = (width - 56) / 2; // 2 cards per row with margins
 
 // Types
 type Group = {
@@ -31,10 +42,17 @@ type Task = {
 };
 
 export default function StudentDashboard() {
-	const { user, signOut } = useAuth();
+	const { user } = useAuth();
+	const { unreadCount } = useNotifications();
 	const [groups, setGroups] = useState<Group[]>([]);
 	const [recentTasks, setRecentTasks] = useState<Task[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [stats, setStats] = useState({
+		groups: 0,
+		pendingTasks: 0,
+		completedTasks: 0,
+		overdueTasks: 0,
+	});
 
 	useEffect(() => {
 		fetchDashboardData();
@@ -105,7 +123,12 @@ export default function StudentDashboard() {
 
 				setGroups(processedGroups);
 
-				// Process recent tasks
+				// Calculate stats
+				let pendingCount = 0;
+				let completedCount = 0;
+				let overdueCount = 0;
+
+				// Process recent tasks and count stats
 				if (tasks) {
 					const recentTasksList = tasks.slice(0, 5).map((task) => {
 						const isCompleted =
@@ -115,6 +138,15 @@ export default function StudentDashboard() {
 							);
 						const isOverdue =
 							new Date(task.due_date) < new Date() && !isCompleted;
+
+						// Update stats counters
+						if (isCompleted) {
+							completedCount++;
+						} else if (isOverdue) {
+							overdueCount++;
+						} else {
+							pendingCount++;
+						}
 
 						// Find group name
 						const group = studentGroups.find(
@@ -136,9 +168,23 @@ export default function StudentDashboard() {
 
 					setRecentTasks(recentTasksList as Task[]);
 				}
+
+				// Set overall stats
+				setStats({
+					groups: studentGroups.length,
+					pendingTasks: pendingCount,
+					completedTasks: completedCount,
+					overdueTasks: overdueCount,
+				});
 			} else {
 				setGroups([]);
 				setRecentTasks([] as Task[]);
+				setStats({
+					groups: 0,
+					pendingTasks: 0,
+					completedTasks: 0,
+					overdueTasks: 0,
+				});
 			}
 		} catch (error) {
 			console.error("Error fetching dashboard data:", error);
@@ -147,9 +193,10 @@ export default function StudentDashboard() {
 		}
 	};
 
-	const navigateToGroups = () => router.push("/student/groups");
-	const navigateToTasks = () => router.push("/student/tasks");
-	const navigateToCalendar = () => router.push("/student/calendar");
+	const navigateToGroups = () => router.push("/student/groups" as any);
+	const navigateToTasks = () => router.push("/student/tasks" as any);
+	const navigateToNotifications = () =>
+		router.push("/student/notifications" as any);
 
 	const renderGroupItem = ({ item }: { item: Group }) => (
 		<TouchableOpacity
@@ -227,7 +274,6 @@ export default function StudentDashboard() {
 	if (loading) {
 		return (
 			<SafeAreaView style={styles.container}>
-				<Stack.Screen />
 				<View style={styles.loadingContainer}>
 					<ActivityIndicator size='large' color='#3f51b5' />
 				</View>
@@ -237,14 +283,68 @@ export default function StudentDashboard() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<ScrollView style={styles.content}>
-				<View style={styles.header}>
-					<Text style={styles.welcomeText}>Welcome, Student</Text>
-					<Text style={styles.emailText}>{user?.email}</Text>
+			<ScrollView
+				style={styles.scrollView}
+				showsVerticalScrollIndicator={false}>
+				{/* Hero Section */}
+				<View style={styles.heroSection}>
+					<View style={styles.heroContent}>
+						<Text style={styles.welcomeText}>Welcome back,</Text>
+						<Text style={styles.nameText}>{user?.email?.split("@")[0]}</Text>
+						<Text style={styles.subtitleText}>
+							Track your tasks and assignments
+						</Text>
+					</View>
+					<View style={styles.heroImageContainer}>
+						<Ionicons name='school-outline' size={80} color='#3f51b5' />
+					</View>
 				</View>
 
-				{/* Main Menu Cards */}
-				<View style={styles.menuSection}>
+				{/* Stats Overview */}
+				<View style={styles.statsContainer}>
+					<View style={styles.statsRow}>
+						<View style={styles.statCard}>
+							<View
+								style={[styles.statIconBox, { backgroundColor: "#E3F2FD" }]}>
+								<Ionicons name='people' size={20} color='#2196F3' />
+							</View>
+							<Text style={styles.statValue}>{stats.groups}</Text>
+							<Text style={styles.statLabel}>Groups</Text>
+						</View>
+
+						<View style={styles.statCard}>
+							<View
+								style={[styles.statIconBox, { backgroundColor: "#FFF8E1" }]}>
+								<Ionicons name='time' size={20} color='#FF9800' />
+							</View>
+							<Text style={styles.statValue}>{stats.pendingTasks}</Text>
+							<Text style={styles.statLabel}>Pending</Text>
+						</View>
+					</View>
+
+					<View style={styles.statsRow}>
+						<View style={styles.statCard}>
+							<View
+								style={[styles.statIconBox, { backgroundColor: "#E8F5E9" }]}>
+								<Ionicons name='checkmark-circle' size={20} color='#4CAF50' />
+							</View>
+							<Text style={styles.statValue}>{stats.completedTasks}</Text>
+							<Text style={styles.statLabel}>Completed</Text>
+						</View>
+
+						<View style={styles.statCard}>
+							<View
+								style={[styles.statIconBox, { backgroundColor: "#FFEBEE" }]}>
+								<Ionicons name='alert-circle' size={20} color='#F44336' />
+							</View>
+							<Text style={styles.statValue}>{stats.overdueTasks}</Text>
+							<Text style={styles.statLabel}>Overdue</Text>
+						</View>
+					</View>
+				</View>
+
+				{/* Quick Access Section */}
+				<View style={styles.quickAccessSection}>
 					<Text style={styles.sectionTitle}>Quick Access</Text>
 
 					<View style={styles.menuGrid}>
@@ -254,41 +354,66 @@ export default function StudentDashboard() {
 							onPress={navigateToGroups}>
 							<View
 								style={[styles.iconContainer, { backgroundColor: "#e3f2fd" }]}>
-								<Ionicons name='people' size={32} color='#2196f3' />
+								<Ionicons name='people' size={28} color='#2196f3' />
 							</View>
-							<Text style={styles.menuCardTitle}>Groups</Text>
-							<Text style={styles.menuCardSubtitle}>
-								View your joined groups
-							</Text>
+							<View style={styles.menuCardTextContainer}>
+								<Text style={styles.menuCardTitle}>Groups</Text>
+								<Text style={styles.menuCardSubtitle}>
+									View your joined groups
+								</Text>
+							</View>
+							<View style={styles.arrowContainer}>
+								<AntDesign name='arrowright' size={20} color='#2196f3' />
+							</View>
 						</TouchableOpacity>
 
 						{/* Tasks Card */}
 						<TouchableOpacity style={styles.menuCard} onPress={navigateToTasks}>
 							<View
 								style={[styles.iconContainer, { backgroundColor: "#e8f5e9" }]}>
-								<MaterialIcons name='assignment' size={32} color='#4caf50' />
+								<MaterialIcons name='assignment' size={28} color='#4caf50' />
 							</View>
-							<Text style={styles.menuCardTitle}>Tasks</Text>
-							<Text style={styles.menuCardSubtitle}>
-								Manage your assignments
-							</Text>
+							<View style={styles.menuCardTextContainer}>
+								<Text style={styles.menuCardTitle}>Tasks</Text>
+								<Text style={styles.menuCardSubtitle}>
+									Manage your assignments
+								</Text>
+							</View>
+							<View style={styles.arrowContainer}>
+								<AntDesign name='arrowright' size={20} color='#4caf50' />
+							</View>
 						</TouchableOpacity>
 
-						{/* Calendar Card */}
+						{/* Notifications Card */}
 						<TouchableOpacity
 							style={styles.menuCard}
-							onPress={navigateToCalendar}>
-							<View style={styles.menuIconContainer}>
-								<Ionicons name='calendar' size={32} color='#3f51b5' />
+							onPress={navigateToNotifications}>
+							<View
+								style={[styles.iconContainer, { backgroundColor: "#f3e5f5" }]}>
+								<Ionicons name='notifications' size={28} color='#9c27b0' />
+								{unreadCount > 0 && (
+									<View style={styles.notificationBadge}>
+										<Text style={styles.notificationBadgeText}>
+											{unreadCount > 9 ? "9+" : unreadCount}
+										</Text>
+									</View>
+								)}
 							</View>
-							<Text style={styles.menuCardTitle}>Calendar</Text>
-							<Text style={styles.menuCardSubtitle}>Track your deadlines</Text>
+							<View style={styles.menuCardTextContainer}>
+								<Text style={styles.menuCardTitle}>Notifications</Text>
+								<Text style={styles.menuCardSubtitle}>
+									Check messages & alerts
+								</Text>
+							</View>
+							<View style={styles.arrowContainer}>
+								<AntDesign name='arrowright' size={20} color='#9c27b0' />
+							</View>
 						</TouchableOpacity>
 					</View>
 				</View>
 
 				{/* Groups Section */}
-				<View style={styles.section}>
+				<View style={styles.groupsSection}>
 					<View style={styles.sectionHeader}>
 						<Text style={styles.sectionTitle}>Your Groups</Text>
 						<TouchableOpacity onPress={navigateToGroups}>
@@ -297,12 +422,9 @@ export default function StudentDashboard() {
 					</View>
 
 					{groups.length > 0 ? (
-						<FlatList
-							data={groups}
-							renderItem={renderGroupItem}
-							keyExtractor={(item) => item.id}
-							scrollEnabled={false}
-						/>
+						<View style={styles.groupsList}>
+							{groups.slice(0, 3).map((item) => renderGroupItem({ item }))}
+						</View>
 					) : (
 						<View style={styles.emptyState}>
 							<Ionicons name='people-outline' size={48} color='#ccc' />
@@ -322,61 +444,133 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#f5f5f7",
 	},
+	scrollView: {
+		flex: 1,
+	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
 	},
-
-	content: {
-		flex: 1,
-		padding: 16,
+	heroSection: {
+		flexDirection: "row",
+		padding: 20,
+		paddingBottom: 30,
+		backgroundColor: "white",
+		borderBottomLeftRadius: 30,
+		borderBottomRightRadius: 30,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.08,
+		shadowRadius: 15,
+		elevation: 5,
+		marginBottom: 20,
 	},
-	header: {
-		marginBottom: 24,
+	heroContent: {
+		flex: 1,
+		justifyContent: "center",
 	},
 	welcomeText: {
+		fontSize: 20,
+		color: "#666",
+	},
+	nameText: {
 		fontSize: 28,
 		fontWeight: "bold",
 		color: "#333",
+		marginBottom: 8,
+		textTransform: "capitalize",
 	},
-	emailText: {
+	subtitleText: {
 		fontSize: 16,
-		color: "#666",
-		marginTop: 4,
+		color: "#777",
+		lineHeight: 22,
 	},
-	menuSection: {
-		marginBottom: 24,
+	heroImageContainer: {
+		width: 120,
+		height: 120,
+		justifyContent: "center",
+		alignItems: "center",
 	},
-	section: {
-		marginBottom: 24,
+	statsContainer: {
+		padding: 15,
+		marginHorizontal: 20,
+		marginBottom: 25,
+	},
+	statsRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		marginBottom: 15,
+	},
+	statCard: {
+		backgroundColor: "white",
+		borderRadius: 16,
+		padding: 15,
+		width: cardWidth,
+		alignItems: "center",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
+	},
+	statIconBox: {
+		width: 40,
+		height: 40,
+		borderRadius: 12,
+		justifyContent: "center",
+		alignItems: "center",
+		marginBottom: 10,
+	},
+	statValue: {
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "#333",
+	},
+	statLabel: {
+		fontSize: 14,
+		color: "#777",
+		marginTop: 5,
+	},
+	quickAccessSection: {
+		padding: 20,
+		paddingBottom: 5,
+	},
+	recentTasksSection: {
+		padding: 20,
+		paddingTop: 0,
+	},
+	groupsSection: {
+		padding: 20,
+		paddingTop: 0,
+		marginBottom: 20,
+	},
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: "bold",
+		color: "#333",
+		marginBottom: 15,
 	},
 	sectionHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 16,
-	},
-	sectionTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#333",
+		marginBottom: 15,
 	},
 	seeAllText: {
 		color: "#3f51b5",
 		fontWeight: "600",
 	},
 	menuGrid: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		justifyContent: "space-between",
+		marginBottom: 15,
 	},
 	menuCard: {
+		flexDirection: "row",
+		alignItems: "center",
 		backgroundColor: "white",
 		borderRadius: 16,
-		padding: 20,
-		width: "48%",
-		marginBottom: 16,
+		padding: 16,
+		marginBottom: 15,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.05,
@@ -384,26 +578,57 @@ const styles = StyleSheet.create({
 		elevation: 2,
 	},
 	iconContainer: {
-		width: 60,
-		height: 60,
+		width: 50,
+		height: 50,
 		borderRadius: 12,
 		justifyContent: "center",
 		alignItems: "center",
-		marginBottom: 12,
+		marginRight: 15,
+		position: "relative",
+	},
+	menuCardTextContainer: {
+		flex: 1,
 	},
 	menuCardTitle: {
 		fontSize: 18,
 		fontWeight: "bold",
 		color: "#333",
-		marginBottom: 6,
+		marginBottom: 4,
 	},
 	menuCardSubtitle: {
 		fontSize: 14,
-		color: "#666",
+		color: "#777",
+	},
+	arrowContainer: {
+		width: 30,
+		height: 30,
+		borderRadius: 15,
+		backgroundColor: "#f5f5f7",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	notificationBadge: {
+		position: "absolute",
+		top: -5,
+		right: -5,
+		backgroundColor: "#f44336",
+		borderRadius: 10,
+		minWidth: 20,
+		height: 20,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 4,
+		borderWidth: 2,
+		borderColor: "white",
+	},
+	notificationBadgeText: {
+		color: "white",
+		fontSize: 10,
+		fontWeight: "bold",
 	},
 	groupCard: {
 		backgroundColor: "white",
-		borderRadius: 12,
+		borderRadius: 16,
 		padding: 16,
 		marginBottom: 12,
 		flexDirection: "row",
@@ -444,9 +669,15 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: "#4caf50",
 	},
+	tasksList: {
+		marginBottom: 5,
+	},
+	groupsList: {
+		marginBottom: 5,
+	},
 	taskItem: {
 		backgroundColor: "white",
-		borderRadius: 12,
+		borderRadius: 16,
 		padding: 16,
 		marginBottom: 12,
 		flexDirection: "row",
@@ -485,7 +716,7 @@ const styles = StyleSheet.create({
 	},
 	emptyState: {
 		backgroundColor: "white",
-		borderRadius: 12,
+		borderRadius: 16,
 		padding: 24,
 		alignItems: "center",
 		justifyContent: "center",
@@ -500,19 +731,5 @@ const styles = StyleSheet.create({
 		color: "#666",
 		marginTop: 12,
 		textAlign: "center",
-	},
-	menuIconContainer: {
-		width: 60,
-		height: 60,
-		borderRadius: 12,
-		justifyContent: "center",
-		alignItems: "center",
-		marginBottom: 12,
-	},
-	menuSectionTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#333",
-		marginBottom: 16,
 	},
 });
