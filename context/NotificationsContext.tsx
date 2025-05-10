@@ -12,11 +12,7 @@ import { AppState, AppStateStatus } from "react-native";
 type Notification = {
 	id: string;
 	user_id: string;
-	type:
-		| "task_assigned"
-		| "task_submitted"
-		| "rating_updated"
-		| "group_invitation";
+	type: string;
 	data: any;
 	is_read: boolean;
 	created_at: string;
@@ -25,8 +21,8 @@ type Notification = {
 type NotificationsContextType = {
 	notifications: Notification[];
 	unreadCount: number;
-	markAsRead: (notificationId: string) => Promise<void>;
-	markAllAsRead: () => Promise<void>;
+	markAsRead: (id: string) => Promise<void>;
+	refresh: () => Promise<void>;
 };
 
 const NotificationsContext = createContext<
@@ -117,14 +113,14 @@ export function NotificationsProvider({
 		};
 	}, [user, fetchNotifications]);
 
-	const markAsRead = async (notificationId: string) => {
+	const markAsRead = async (id: string) => {
 		if (!user) return;
 
 		try {
 			const { error } = await supabase
 				.from("notifications")
 				.update({ is_read: true })
-				.eq("id", notificationId)
+				.eq("id", id)
 				.eq("user_id", user.id);
 
 			if (error) {
@@ -133,7 +129,7 @@ export function NotificationsProvider({
 			}
 
 			setNotifications((prev) =>
-				prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+				prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
 			);
 			setUnreadCount((prev) => Math.max(0, prev - 1));
 		} catch (error) {
@@ -169,7 +165,7 @@ export function NotificationsProvider({
 				notifications,
 				unreadCount,
 				markAsRead,
-				markAllAsRead,
+				refresh: fetchNotifications,
 			}}>
 			{children}
 		</NotificationsContext.Provider>
@@ -177,11 +173,10 @@ export function NotificationsProvider({
 }
 
 export function useNotifications() {
-	const context = useContext(NotificationsContext);
-	if (context === undefined) {
+	const ctx = useContext(NotificationsContext);
+	if (!ctx)
 		throw new Error(
-			"useNotifications must be used within a NotificationsProvider"
+			"useNotifications must be used within NotificationsProvider"
 		);
-	}
-	return context;
+	return ctx;
 }

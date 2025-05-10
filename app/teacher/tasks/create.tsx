@@ -18,6 +18,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
+import { notifyTaskAssigned } from "../../../lib/notifications";
 
 // Types
 type Group = {
@@ -93,6 +94,8 @@ export default function CreateTaskScreen() {
 		try {
 			setLoading(true);
 
+			const session = supabase.auth.session();
+
 			// Create the task
 			const { data, error } = await supabase
 				.from("tasks")
@@ -105,6 +108,21 @@ export default function CreateTaskScreen() {
 				.select();
 
 			if (error) throw error;
+
+			// **Guruhdagi studentlarni olish**
+			const { data: groupStudents, error: groupStudentsError } = await supabase
+				.from("group_students")
+				.select("student_id")
+				.eq("group_id", selectedGroup.id);
+
+			if (groupStudentsError) throw groupStudentsError;
+
+			// **Notification yuborish**
+			await Promise.all(
+				groupStudents.map((student) =>
+					notifyTaskAssigned(student.student_id, title.trim(), data[0].id)
+				)
+			);
 
 			Alert.alert("Success", "Task created successfully", [
 				{
