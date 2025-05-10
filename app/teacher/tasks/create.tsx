@@ -20,62 +20,65 @@ import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import { notifyTaskAssigned } from "../../../lib/notifications";
 
-// Types
-type Group = {
+// Define types
+type SelectedStudent = {
 	id: string;
-	name: string;
+	email: string;
+	selected: boolean;
 };
 
 export default function CreateTaskScreen() {
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
-	const preselectedGroupId = params.groupId as string;
-	const preselectedGroupName = params.groupName as string;
+	const groupId = params.groupId as string;
+	const groupName = params.groupName as string;
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
-	const [dueDate, setDueDate] = useState(
-		new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-	); // Default to 1 week from now
+	const [dueDate, setDueDate] = useState(new Date());
 	const [showDatePicker, setShowDatePicker] = useState(false);
-
-	const [groups, setGroups] = useState<Group[]>([]);
-	const [selectedGroup, setSelectedGroup] = useState<Group | null>(
-		preselectedGroupId && preselectedGroupName
-			? { id: preselectedGroupId, name: preselectedGroupName }
-			: null
-	);
-	const [showGroupSelector, setShowGroupSelector] = useState(false);
-
 	const [loading, setLoading] = useState(false);
-	const [fetchingGroups, setFetchingGroups] = useState(!preselectedGroupId);
+	const [students, setStudents] = useState<SelectedStudent[]>([]);
+	const [studentsLoading, setStudentsLoading] = useState(true);
 
 	useEffect(() => {
-		if (!preselectedGroupId) {
-			fetchGroups();
-		}
+		fetchGroupStudents();
 	}, []);
 
-	const fetchGroups = async () => {
+	const fetchGroupStudents = async () => {
 		try {
-			setFetchingGroups(true);
+			setStudentsLoading(true);
 
-			if (!user) return;
-
+			// Get students from this group with their profiles
 			const { data, error } = await supabase
-				.from("groups")
-				.select("id, name")
-				.eq("teacher_id", user.id)
-				.order("name");
+				.from("group_students")
+				.select(
+					`
+					id, 
+					student_id,
+					student_email,
+					status
+				`
+				)
+				.eq("group_id", groupId)
+				.eq("status", "active"); // Only get active students
 
 			if (error) throw error;
 
-			setGroups(data || []);
+			// Transform data for UI
+			const formattedStudents = data.map((student) => ({
+				id: student.student_id,
+				email: student.student_email,
+				selected: true, // All students selected by default
+			}));
+
+			setStudents(formattedStudents);
+			console.log("Group students:", data);
 		} catch (error) {
-			console.error("Error fetching groups:", error);
-			Alert.alert("Error", "Failed to load groups");
+			console.error("Error fetching group students:", error);
+			Alert.alert("Error", "Failed to load students");
 		} finally {
-			setFetchingGroups(false);
+			setStudentsLoading(false);
 		}
 	};
 
@@ -86,82 +89,62 @@ export default function CreateTaskScreen() {
 			return;
 		}
 
-		if (!selectedGroup) {
-			Alert.alert("Error", "Please select a group");
+		if (!description.trim()) {
+			Alert.alert("Error", "Please enter a task description");
+			return;
+		}
+
+		// Check if any students are selected
+		const selectedStudents = students.filter((s) => s.selected);
+		if (selectedStudents.length === 0) {
+			Alert.alert("Error", "Please select at least one student");
 			return;
 		}
 
 		try {
 			setLoading(true);
 
-			const session = supabase.auth.session();
-
-			// Create the task
-			const { data, error } = await supabase
+			// Create task in the database
+			const { data: taskData, error: taskError } = await supabase
 				.from("tasks")
 				.insert({
-					title: title.trim(),
-					description: description.trim(),
+					title,
+					description,
 					due_date: dueDate.toISOString(),
-					group_id: selectedGroup.id,
+					group_id: groupId,
+					teacher_id: user?.id,
 				})
-				.select();
+				.select()
+				.single();
 
-			if (error) throw error;
+			if (taskError) throw taskError;
 
-			// **Guruhdagi studentlarni olish**
-			const { data: groupStudents, error: groupStudentsError } = await supabase
-				.from("group_students")
-				.select("student_id, student_email")
-				.eq("group_id", selectedGroup.id);
-
-			if (groupStudentsError) throw groupStudentsError;
-
-			// Log qilish orqali tekshiramiz
-			console.log("Group students:", groupStudents);
-
-			// **Notification yuborish**
-			await Promise.all(
-				groupStudents.map(async (student) => {
-					// Agar student_id o'rniga email saqlangan bo'lsa:
-					if (!student.student_id && student.student_email) {
-						// Email orqali student ID olish
-						const { data: userProfile } = await supabase
-							.from("user_profiles")
-							.select("id")
-							.eq("email", student.student_email)
-							.single();
-
-						if (userProfile) {
-							return notifyTaskAssigned(
-								userProfile.id,
-								title.trim(),
-								data[0].id
-							);
-						}
+			// Send notifications to selected students
+			for (const student of selectedStudents) {
+				if (student.id) {
+					try {
+						await notifyTaskAssigned({
+							studentId: student.id,
+							taskTitle: title,
+							taskId: taskData.id,
+						});
+						console.log(`Notification sent to student: ${student.email}`);
+					} catch (notificationError) {
+						console.error(
+							`Failed to notify student ${student.email}:`,
+							notificationError
+						);
+						// Continue with other students even if one notification fails
 					}
-
-					return notifyTaskAssigned(
-						student.student_id,
-						title.trim(),
-						data[0].id
+				} else {
+					console.warn(
+						`Student ${student.email} has no ID, skipping notification`
 					);
-				})
-			);
+				}
+			}
 
 			Alert.alert("Success", "Task created successfully", [
-				{
-					text: "OK",
-					onPress: () => {
-						// Navigate back to the group details if we came from there
-						if (preselectedGroupId) {
-							router.back();
-						} else {
-							// Otherwise, navigate to the tasks list
-							router.push("/teacher/tasks");
-						}
-					},
-				},
+				{ text: "OK", onPress: () => router.back() },
 			]);
 		} catch (error) {
 			console.error("Error creating task:", error);
@@ -171,26 +154,11 @@ export default function CreateTaskScreen() {
 		}
 	};
 
-	const onChangeDueDate = (event: any, selectedDate?: Date) => {
-		setShowDatePicker(false);
-		if (selectedDate) {
-			setDueDate(selectedDate);
-		}
+	const toggleStudent = (id: string) => {
+		setStudents(
+			students.map((s) => (s.id === id ? { ...s, selected: !s.selected } : s))
+		);
 	};
-
-	const renderGroupItem = ({ item }: { item: Group }) => (
-		<TouchableOpacity
-			style={styles.groupItem}
-			onPress={() => {
-				setSelectedGroup(item);
-				setShowGroupSelector(false);
-			}}>
-			<Text style={styles.groupItemText}>{item.name}</Text>
-			{selectedGroup?.id === item.id && (
-				<Ionicons name='checkmark' size={24} color='#3f51b5' />
-			)}
-		</TouchableOpacity>
-	);
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -205,97 +173,101 @@ export default function CreateTaskScreen() {
 
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : "height"}
-				style={styles.keyboardAvoidView}>
-				<ScrollView
-					contentContainerStyle={styles.scrollContent}
-					keyboardShouldPersistTaps='handled'>
+				style={{ flex: 1 }}>
+				<ScrollView style={styles.scrollView}>
 					<View style={styles.formContainer}>
-						{/* Group Selector */}
-						<View style={styles.inputGroup}>
-							<Text style={styles.inputLabel}>Group</Text>
-							{preselectedGroupId ? (
-								<View style={styles.selectedGroupContainer}>
-									<Text style={styles.selectedGroupText}>
-										{preselectedGroupName}
-									</Text>
-								</View>
-							) : fetchingGroups ? (
-								<ActivityIndicator size='small' color='#3f51b5' />
-							) : (
-								<TouchableOpacity
-									style={styles.groupSelector}
-									onPress={() => setShowGroupSelector(true)}>
-									<Text
-										style={
-											selectedGroup
-												? styles.selectedGroupText
-												: styles.placeholderText
-										}>
-										{selectedGroup ? selectedGroup.name : "Select a group"}
-									</Text>
-									<MaterialIcons
-										name='arrow-drop-down'
-										size={24}
-										color='#666'
-									/>
-								</TouchableOpacity>
-							)}
-						</View>
+						<Text style={styles.groupName}>Group: {groupName}</Text>
 
-						{/* Task Title */}
-						<View style={styles.inputGroup}>
-							<Text style={styles.inputLabel}>Task Title</Text>
-							<TextInput
-								style={styles.input}
-								placeholder='Enter task title'
-								value={title}
-								onChangeText={setTitle}
-							/>
-						</View>
+						<Text style={styles.label}>Title</Text>
+						<TextInput
+							style={styles.input}
+							value={title}
+							onChangeText={setTitle}
+							placeholder='Enter task title'
+							placeholderTextColor='#aaa'
+						/>
 
-						{/* Task Description */}
-						<View style={styles.inputGroup}>
-							<Text style={styles.inputLabel}>Description</Text>
-							<TextInput
-								style={[styles.input, styles.multilineInput]}
-								placeholder='Enter task description'
-								value={description}
-								onChangeText={setDescription}
-								multiline
-								numberOfLines={4}
-							/>
-						</View>
+						<Text style={styles.label}>Description</Text>
+						<TextInput
+							style={[styles.input, styles.textArea]}
+							value={description}
+							onChangeText={setDescription}
+							placeholder='Enter task description'
+							placeholderTextColor='#aaa'
+							multiline
+							numberOfLines={4}
+							textAlignVertical='top'
+						/>
 
-						{/* Due Date */}
-						<View style={styles.inputGroup}>
-							<Text style={styles.inputLabel}>Due Date</Text>
-							<TouchableOpacity
-								style={styles.dateSelector}
-								onPress={() => setShowDatePicker(true)}>
-								<Ionicons name='calendar-outline' size={20} color='#3f51b5' />
-								<Text style={styles.dateText}>
-									{dueDate.toLocaleDateString()}
-								</Text>
-							</TouchableOpacity>
-
-							{showDatePicker && (
-								<DateTimePicker
-									value={dueDate}
-									mode='date'
-									display='default'
-									onChange={onChangeDueDate}
-									minimumDate={new Date()}
-								/>
-							)}
-						</View>
-
-						{/* Create Button */}
+						<Text style={styles.label}>Due Date</Text>
 						<TouchableOpacity
-							style={styles.createButton}
+							style={styles.datePickerButton}
+							onPress={() => setShowDatePicker(true)}>
+							<Text style={styles.dateText}>
+								{dueDate.toLocaleDateString()}
+							</Text>
+							<Ionicons name='calendar' size={20} color='#3f51b5' />
+						</TouchableOpacity>
+
+						{showDatePicker && (
+							<DateTimePicker
+								value={dueDate}
+								mode='date'
+								display='default'
+								onChange={(_, selectedDate) => {
+									setShowDatePicker(false);
+									if (selectedDate) {
+										setDueDate(selectedDate);
+									}
+								}}
+								minimumDate={new Date()}
+							/>
+						)}
+
+						<Text style={styles.label}>Assign to Students</Text>
+						{studentsLoading ? (
+							<ActivityIndicator size='small' color='#3f51b5' />
+						) : (
+							<View style={styles.studentsContainer}>
+								{students.length === 0 ? (
+									<Text style={styles.noStudentsText}>
+										No students in this group
+									</Text>
+								) : (
+									students.map((student) => (
+										<TouchableOpacity
+											key={student.id || student.email}
+											style={[
+												styles.studentItem,
+												student.selected && styles.studentItemSelected,
+											]}
+											onPress={() => toggleStudent(student.id)}>
+											<Text
+												style={[
+													styles.studentEmail,
+													student.selected && styles.studentEmailSelected,
+												]}>
+												{student.email}
+											</Text>
+											{student.selected && (
+												<Ionicons
+													name='checkmark-circle'
+													size={20}
+													color='white'
+												/>
+											)}
+										</TouchableOpacity>
+									))
+								)}
+							</View>
+						)}
+
+						<TouchableOpacity
+							style={[styles.createButton, loading && styles.disabledButton]}
 							onPress={handleCreateTask}
 							disabled={loading}>
 							{loading ? (
-								<ActivityIndicator color='#fff' size='small' />
+								<ActivityIndicator size='small' color='white' />
 							) : (
 								<Text style={styles.createButtonText}>Create Task</Text>
 							)}
@@ -303,57 +275,6 @@ export default function CreateTaskScreen() {
 					</View>
 				</ScrollView>
 			</KeyboardAvoidingView>
-
-			{/* Group Selector Modal */}
-			<Modal
-				animationType='slide'
-				transparent={true}
-				visible={showGroupSelector}
-				onRequestClose={() => setShowGroupSelector(false)}>
-				<View style={styles.modalContainer}>
-					<View style={styles.modalContent}>
-						<View style={styles.modalHeader}>
-							<Text style={styles.modalTitle}>Select Group</Text>
-							<TouchableOpacity onPress={() => setShowGroupSelector(false)}>
-								<Ionicons name='close' size={24} color='#333' />
-							</TouchableOpacity>
-						</View>
-
-						{groups.length === 0 ? (
-							<View style={styles.emptyGroups}>
-								<Text style={styles.emptyGroupsText}>
-									No groups found. Please create a group first.
-								</Text>
-								<TouchableOpacity
-									style={styles.createGroupButton}
-									onPress={() => {
-										setShowGroupSelector(false);
-										router.push("/teacher/groups/create");
-									}}>
-									<Text style={styles.createGroupButtonText}>Create Group</Text>
-								</TouchableOpacity>
-							</View>
-						) : (
-							<ScrollView style={styles.groupList}>
-								{groups.map((group) => (
-									<TouchableOpacity
-										key={group.id}
-										style={styles.groupItem}
-										onPress={() => {
-											setSelectedGroup(group);
-											setShowGroupSelector(false);
-										}}>
-										<Text style={styles.groupItemText}>{group.name}</Text>
-										{selectedGroup?.id === group.id && (
-											<Ionicons name='checkmark' size={24} color='#3f51b5' />
-										)}
-									</TouchableOpacity>
-								))}
-							</ScrollView>
-						)}
-					</View>
-				</View>
-			</Modal>
 		</SafeAreaView>
 	);
 }
@@ -363,160 +284,96 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#f5f5f7",
 	},
-	keyboardAvoidView: {
+	scrollView: {
 		flex: 1,
 	},
-	scrollContent: {
-		padding: 16,
-	},
 	formContainer: {
-		backgroundColor: "white",
-		borderRadius: 12,
 		padding: 16,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
 	},
-	inputGroup: {
+	groupName: {
+		fontSize: 18,
+		fontWeight: "600",
+		color: "#3f51b5",
 		marginBottom: 20,
 	},
-	inputLabel: {
+	label: {
 		fontSize: 16,
 		fontWeight: "600",
 		marginBottom: 8,
 		color: "#333",
 	},
 	input: {
-		backgroundColor: "#f5f7fa",
-		padding: 12,
+		backgroundColor: "white",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: "#e0e6ed",
+		borderColor: "#e0e0e0",
 		fontSize: 16,
+		marginBottom: 16,
 	},
-	multilineInput: {
+	textArea: {
 		minHeight: 100,
-		textAlignVertical: "top",
 	},
-	groupSelector: {
+	datePickerButton: {
 		flexDirection: "row",
+		alignItems: "center",
 		justifyContent: "space-between",
-		alignItems: "center",
-		backgroundColor: "#f5f7fa",
-		padding: 12,
+		backgroundColor: "white",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: "#e0e6ed",
-	},
-	selectedGroupContainer: {
-		backgroundColor: "#f5f7fa",
-		padding: 12,
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: "#e0e6ed",
-	},
-	selectedGroupText: {
-		fontSize: 16,
-		color: "#333",
-	},
-	placeholderText: {
-		fontSize: 16,
-		color: "#999",
-	},
-	dateSelector: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#f5f7fa",
-		padding: 12,
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: "#e0e6ed",
+		borderColor: "#e0e0e0",
+		marginBottom: 16,
 	},
 	dateText: {
 		fontSize: 16,
 		color: "#333",
-		marginLeft: 8,
+	},
+	studentsContainer: {
+		marginBottom: 20,
+	},
+	studentItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		padding: 12,
+		backgroundColor: "white",
+		borderRadius: 8,
+		marginBottom: 8,
+		borderWidth: 1,
+		borderColor: "#e0e0e0",
+	},
+	studentItemSelected: {
+		backgroundColor: "#3f51b5",
+		borderColor: "#3f51b5",
+	},
+	studentEmail: {
+		fontSize: 15,
+		color: "#333",
+	},
+	studentEmailSelected: {
+		color: "white",
+	},
+	noStudentsText: {
+		textAlign: "center",
+		marginTop: 10,
+		color: "#666",
 	},
 	createButton: {
 		backgroundColor: "#3f51b5",
 		paddingVertical: 14,
 		borderRadius: 8,
 		alignItems: "center",
-		shadowColor: "#3f51b5",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 4,
+		justifyContent: "center",
 	},
 	createButtonText: {
 		color: "white",
-		fontWeight: "bold",
-		fontSize: 16,
+		fontSize: 17,
+		fontWeight: "600",
 	},
-	modalContainer: {
-		flex: 1,
-		justifyContent: "center",
-		backgroundColor: "rgba(0, 0, 0, 0.5)",
-	},
-	modalContent: {
-		backgroundColor: "white",
-		margin: 20,
-		borderRadius: 12,
-		padding: 20,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.25,
-		shadowRadius: 4,
-		elevation: 5,
-		maxHeight: "80%",
-	},
-	modalHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 16,
-	},
-	modalTitle: {
-		fontSize: 20,
-		fontWeight: "bold",
-		color: "#333",
-	},
-	groupList: {
-		marginBottom: 16,
-	},
-	groupItem: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingVertical: 12,
-		paddingHorizontal: 16,
-		borderBottomWidth: 1,
-		borderBottomColor: "#f0f0f0",
-	},
-	groupItemText: {
-		fontSize: 16,
-		color: "#333",
-	},
-	emptyGroups: {
-		alignItems: "center",
-		padding: 20,
-	},
-	emptyGroupsText: {
-		fontSize: 16,
-		color: "#666",
-		textAlign: "center",
-		marginBottom: 16,
-	},
-	createGroupButton: {
-		backgroundColor: "#3f51b5",
-		paddingVertical: 10,
-		paddingHorizontal: 20,
-		borderRadius: 8,
-	},
-	createGroupButtonText: {
-		color: "white",
-		fontWeight: "bold",
+	disabledButton: {
+		opacity: 0.7,
 	},
 });

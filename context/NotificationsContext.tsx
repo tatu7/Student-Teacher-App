@@ -20,16 +20,16 @@ type Notification = {
 
 type NotificationsContextType = {
 	notifications: Notification[];
+	loading: boolean;
 	unreadCount: number;
 	markAsRead: (id: string) => Promise<void>;
+	markAllAsRead: () => Promise<void>;
 	refresh: () => Promise<void>;
 };
 
 const NotificationsContext = createContext<
 	NotificationsContextType | undefined
 >(undefined);
-
-const POLLING_INTERVAL = 30000; // Poll every 30 seconds
 
 export function NotificationsProvider({
 	children,
@@ -39,133 +39,142 @@ export function NotificationsProvider({
 	const { user } = useAuth();
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [unreadCount, setUnreadCount] = useState(0);
-	const [lastFetchedId, setLastFetchedId] = useState<string | null>(null);
-	const [isPolling, setIsPolling] = useState(true);
+	const [loading, setLoading] = useState(true);
+	const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
+	const [appState, setAppState] = useState<AppStateStatus>(
+		AppState.currentState
+	);
 
+	// Fetch notifications with better error handling
 	const fetchNotifications = useCallback(async () => {
-		if (!user || !isPolling) return;
+		if (!user) return;
 
 		try {
-			const query = supabase
+			setLoading(true);
+
+			const { data, error } = await supabase
 				.from("notifications")
 				.select("*")
 				.eq("user_id", user.id)
 				.order("created_at", { ascending: false });
-
-			// If we have a last fetched ID, only get newer notifications
-			if (lastFetchedId) {
-				query.gt("id", lastFetchedId);
-			}
-
-			const { data, error } = await query;
 
 			if (error) {
 				console.error("Error fetching notifications:", error);
 				return;
 			}
 
-			if (data && data.length > 0) {
-				// Update last fetched ID
-				setLastFetchedId(data[0].id);
-
-				// If this is the initial fetch, replace all notifications
-				if (!lastFetchedId) {
-					setNotifications(data);
-				} else {
-					// Otherwise, add new notifications to the beginning
-					setNotifications((prev) => [...data, ...prev]);
-				}
-
-				// Update unread count
-				const newUnreadCount = data.filter((n) => !n.is_read).length;
-				if (newUnreadCount > 0) {
-					setUnreadCount((prev) => prev + newUnreadCount);
-				}
+			if (data) {
+				setNotifications(data);
+				setUnreadCount(data.filter((note) => !note.is_read).length);
+				setLastCheckTime(new Date());
 			}
 		} catch (error) {
-			console.error("Error in fetchNotifications:", error);
+			console.error("Exception in fetchNotifications:", error);
+		} finally {
+			setLoading(false);
 		}
-	}, [user, lastFetchedId, isPolling]);
+	}, [user]);
 
-	useEffect(() => {
-		if (!user) return;
+	// Public refresh function
+	const refresh = async () => {
+		await fetchNotifications();
+	};
 
-		// Initial fetch
-		fetchNotifications();
-
-		// Set up polling
-		const intervalId = setInterval(fetchNotifications, POLLING_INTERVAL);
-
-		// Handle app state changes
-		const subscription = AppState.addEventListener(
-			"change",
-			(nextAppState: AppStateStatus) => {
-				setIsPolling(nextAppState === "active");
-				if (nextAppState === "active") {
-					fetchNotifications(); // Fetch immediately when app becomes active
-				}
-			}
-		);
-
-		return () => {
-			clearInterval(intervalId);
-			subscription.remove();
-		};
-	}, [user, fetchNotifications]);
-
+	// Mark notification as read
 	const markAsRead = async (id: string) => {
-		if (!user) return;
-
 		try {
 			const { error } = await supabase
 				.from("notifications")
 				.update({ is_read: true })
-				.eq("id", id)
-				.eq("user_id", user.id);
+				.eq("id", id);
 
 			if (error) {
 				console.error("Error marking notification as read:", error);
 				return;
 			}
 
-			setNotifications((prev) =>
-				prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+			// Update local state
+			setNotifications(
+				notifications.map((note) =>
+					note.id === id ? { ...note, is_read: true } : note
+				)
 			);
+
+			// Update unread count
 			setUnreadCount((prev) => Math.max(0, prev - 1));
 		} catch (error) {
-			console.error("Error in markAsRead:", error);
+			console.error("Exception in markAsRead:", error);
 		}
 	};
 
+	// Mark all notifications as read
 	const markAllAsRead = async () => {
-		if (!user) return;
+		if (notifications.length === 0) return;
 
 		try {
 			const { error } = await supabase
 				.from("notifications")
 				.update({ is_read: true })
-				.eq("user_id", user.id)
-				.eq("is_read", false);
+				.eq("user_id", user?.id);
 
 			if (error) {
 				console.error("Error marking all notifications as read:", error);
 				return;
 			}
 
-			setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+			// Update local state
+			setNotifications(
+				notifications.map((note) => ({ ...note, is_read: true }))
+			);
+
+			// Update unread count
 			setUnreadCount(0);
 		} catch (error) {
-			console.error("Error in markAllAsRead:", error);
+			console.error("Exception in markAllAsRead:", error);
 		}
 	};
+
+	// Effect for app state changes
+	useEffect(() => {
+		const subscription = AppState.addEventListener("change", (nextAppState) => {
+			if (appState !== "active" && nextAppState === "active") {
+				// App became active, fetch notifications immediately
+				fetchNotifications();
+			}
+			setAppState(nextAppState);
+		});
+
+		return () => {
+			subscription.remove();
+		};
+	}, [appState, fetchNotifications]);
+
+	// Initial fetch and polling
+	useEffect(() => {
+		if (!user) return;
+
+		// Fetch immediately on mount or user change
+		fetchNotifications();
+
+		// Set up polling (only when app is active)
+		const interval = setInterval(() => {
+			if (appState === "active") {
+				fetchNotifications();
+			}
+		}, 30000); // Check every 30 seconds
+
+		return () => clearInterval(interval);
+	}, [user, fetchNotifications, appState]);
 
 	return (
 		<NotificationsContext.Provider
 			value={{
 				notifications,
+				loading,
 				unreadCount,
 				markAsRead,
-				refresh: fetchNotifications,
+				markAllAsRead,
+				refresh,
 			}}>
 			{children}
 		</NotificationsContext.Provider>
@@ -173,10 +182,13 @@ export function NotificationsProvider({
 }
 
 export function useNotifications() {
-	const ctx = useContext(NotificationsContext);
-	if (!ctx)
+	const context = useContext(NotificationsContext);
+
+	if (context === undefined) {
 		throw new Error(
-			"useNotifications must be used within NotificationsProvider"
+			"useNotifications must be used within a NotificationsProvider"
 		);
-	return ctx;
+	}
+
+	return context;
 }

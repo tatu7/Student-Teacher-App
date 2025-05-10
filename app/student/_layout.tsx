@@ -1,9 +1,17 @@
 import { Stack, useSegments } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { UserRole } from "../../lib/supabase";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import { TouchableOpacity, Text, View } from "react-native";
+import {
+	TouchableOpacity,
+	Text,
+	View,
+	StyleSheet,
+	SafeAreaView,
+	StatusBar,
+	Platform,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNotifications } from "../../context/NotificationsContext";
 
@@ -11,6 +19,30 @@ export default function StudentLayout() {
 	const { user, loading } = useAuth();
 	const segments = useSegments();
 	const { unreadCount } = useNotifications();
+	const [currentTitle, setCurrentTitle] = useState("Dashboard");
+
+	// Set the title based on the current route
+	useEffect(() => {
+		if (segments.length > 1) {
+			const route = segments[1];
+			switch (route) {
+				case "dashboard":
+					setCurrentTitle("Dashboard");
+					break;
+				case "groups":
+					setCurrentTitle("My Groups");
+					break;
+				case "notifications":
+					setCurrentTitle("Notifications");
+					break;
+				case "profile":
+					setCurrentTitle("Profile");
+					break;
+				default:
+					setCurrentTitle("Dashboard");
+			}
+		}
+	}, [segments]);
 
 	// Role-based navigation guard
 	useEffect(() => {
@@ -26,57 +58,107 @@ export default function StudentLayout() {
 	// Show nothing while checking authentication
 	if (loading || !user) return null;
 
+	// Custom header component
+	const CustomHeader = () => (
+		<SafeAreaView style={styles.headerContainer}>
+			<StatusBar barStyle='dark-content' />
+			<View style={styles.header}>
+				<TouchableOpacity
+					onPress={() => router.push("/student/profile" as any)}
+					style={styles.profileButton}>
+					<Ionicons name='person-circle' size={30} color='#3f51b5' />
+				</TouchableOpacity>
+
+				<Text style={styles.headerTitle}>{currentTitle}</Text>
+
+				<TouchableOpacity
+					onPress={() => router.push("/student/notifications")}
+					style={styles.notificationButton}>
+					<Ionicons name='notifications' size={26} color='#3f51b5' />
+					{unreadCount > 0 && (
+						<View style={styles.badge}>
+							<Text style={styles.badgeText}>
+								{unreadCount > 9 ? "9+" : unreadCount}
+							</Text>
+						</View>
+					)}
+				</TouchableOpacity>
+			</View>
+		</SafeAreaView>
+	);
+
 	return (
-		<Stack
-			screenOptions={{
-				headerStyle: {
-					backgroundColor: "white",
-				},
-				headerTitleStyle: {
-					fontWeight: "bold",
-				},
-				headerShadowVisible: false,
-				headerLeft: () => (
-					<TouchableOpacity
-						onPress={() => router.push("/student/profile" as any)}
-						style={{ marginLeft: 15 }}>
-						<Ionicons name='person-circle' size={28} color='#3f51b5' />
-					</TouchableOpacity>
-				),
-				headerRight: () => (
-					<TouchableOpacity
-						onPress={() => router.push("/student/notifications")}
-						style={{
-							flexDirection: "row",
-							alignItems: "center",
-							marginRight: 15,
-						}}>
-						<Ionicons name='notifications' size={24} color='#3f51b5' />
-						{unreadCount > 0 && (
-							<View
-								style={{
-									position: "absolute",
-									right: -6,
-									top: -6,
-									backgroundColor: "red",
-									borderRadius: 10,
-									width: 18,
-									height: 18,
-									justifyContent: "center",
-									alignItems: "center",
-								}}>
-								<Text style={{ color: "white", fontSize: 12 }}>
-									{unreadCount > 9 ? "9+" : unreadCount}
-								</Text>
-							</View>
-						)}
-					</TouchableOpacity>
-				),
-			}}>
-			<Stack.Screen name='dashboard' options={{ title: "Dashboard" }} />
-			<Stack.Screen name='groups' options={{ title: "My Groups" }} />
-			<Stack.Screen name='notifications' options={{ title: "Notifications" }} />
-			{/* Other student screens */}
-		</Stack>
+		<View style={styles.container}>
+			<CustomHeader />
+			<Stack screenOptions={{ headerShown: false }}>
+				<Stack.Screen name='dashboard' />
+				<Stack.Screen name='groups' />
+				<Stack.Screen name='notifications' />
+				<Stack.Screen name='profile' />
+				{/* Other student screens */}
+			</Stack>
+		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: "#f5f5f7",
+	},
+	headerContainer: {
+		backgroundColor: "white",
+		paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 3,
+		elevation: 3,
+		zIndex: 1000,
+	},
+	header: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
+	},
+	profileButton: {
+		width: 44,
+		height: 44,
+		justifyContent: "center",
+		alignItems: "center",
+		borderRadius: 22,
+	},
+	notificationButton: {
+		width: 44,
+		height: 44,
+		justifyContent: "center",
+		alignItems: "center",
+		borderRadius: 22,
+	},
+	badge: {
+		position: "absolute",
+		right: 0,
+		top: 0,
+		backgroundColor: "#f44336",
+		borderRadius: 10,
+		minWidth: 20,
+		height: 20,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 4,
+		borderWidth: 2,
+		borderColor: "white",
+	},
+	badgeText: {
+		color: "white",
+		fontSize: 11,
+		fontWeight: "bold",
+	},
+});

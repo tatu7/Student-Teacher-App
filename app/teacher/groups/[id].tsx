@@ -113,22 +113,15 @@ export default function GroupDetailsScreen() {
 
 	const handleAddStudent = async () => {
 		if (!newStudentEmail.trim()) {
-			Alert.alert("Error", "Please enter a valid email");
+			Alert.alert("Error", "Please enter a student email");
 			return;
 		}
-
-		// Basic email validation
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!emailRegex.test(newStudentEmail)) {
-			Alert.alert("Error", "Please enter a valid email address");
-			return;
-		}
-
-		setAddingStudent(true);
 
 		try {
-			// Email orqali user_profiles jadvalidan student ID olish
-			const { data: userProfile, error: profileError } = await supabase
+			setAddingStudent(true);
+
+			// First, get the student's user profile
+			const { data: studentProfile, error: profileError } = await supabase
 				.from("user_profiles")
 				.select("id")
 				.eq("email", newStudentEmail.trim())
@@ -146,16 +139,56 @@ export default function GroupDetailsScreen() {
 				return;
 			}
 
-			// Add student to group with proper student_id
-			const { error: addError } = await supabase.from("group_students").insert({
-				group_id: groupId,
-				student_id: userProfile.id, // Use the actual user ID
-				student_email: newStudentEmail.trim(),
-			});
+			// Add the student to the group
+			const { data: studentData, error: addError } = await supabase
+				.from("group_students")
+				.insert({
+					group_id: groupId,
+					student_id: studentProfile.id,
+					student_email: newStudentEmail.trim(),
+					status: "active",
+				})
+				.select()
+				.single();
 
 			if (addError) throw addError;
 
-			// Notification...
+			// Notify the student about being added to the group
+			try {
+				// Import the notification function at the top of the file
+				const { notifyGroupInvitation } = await import(
+					"../../../lib/notifications"
+				);
+
+				await notifyGroupInvitation({
+					studentId: studentProfile.id,
+					groupName: groupName,
+					groupId: groupId,
+				});
+				console.log(`Notification sent to student: ${newStudentEmail.trim()}`);
+			} catch (notificationError) {
+				console.error(
+					"Failed to send group invitation notification:",
+					notificationError
+				);
+				// Continue with the flow even if notification fails
+			}
+
+			// Update UI
+			setStudents([
+				...students,
+				{
+					id: studentData.id,
+					email: newStudentEmail.trim(),
+					status: "active",
+				},
+			]);
+
+			// Reset form
+			setNewStudentEmail("");
+			setAddModalVisible(false);
+
+			Alert.alert("Success", "Student added to group");
 		} catch (error) {
 			console.error("Error adding student:", error);
 			Alert.alert("Error", "Failed to add student");
