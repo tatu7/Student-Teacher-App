@@ -8,8 +8,21 @@ import React, {
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 import { AppState, AppStateStatus, Platform } from "react-native";
-import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
+import Constants from "expo-constants";
+
+// Check if running in Expo Go
+const isExpoGo = Constants.appOwnership === "expo";
+
+// Import notifications conditionally
+let Notifications: any = null;
+if (!isExpoGo) {
+	try {
+		Notifications = require("expo-notifications");
+	} catch (error) {
+		console.log("Push notifications not available");
+	}
+}
 
 type Notification = {
 	id: string;
@@ -33,16 +46,18 @@ const NotificationsContext = createContext<
 	NotificationsContextType | undefined
 >(undefined);
 
-// Configure Expo Notifications
-Notifications.setNotificationHandler({
-	handleNotification: async () => ({
-		shouldShowAlert: true,
-		shouldPlaySound: false,
-		shouldSetBadge: true,
-		shouldShowBanner: true,
-		shouldShowList: true,
-	}),
-});
+// Configure Expo Notifications only if not in Expo Go and notifications are available
+if (Notifications && !isExpoGo) {
+	Notifications.setNotificationHandler({
+		handleNotification: async () => ({
+			shouldShowAlert: true,
+			shouldPlaySound: false,
+			shouldSetBadge: true,
+			shouldShowBanner: true,
+			shouldShowList: true,
+		}),
+	});
+}
 
 export function NotificationsProvider({
 	children,
@@ -58,10 +73,10 @@ export function NotificationsProvider({
 		AppState.currentState
 	);
 
-	// Register for push notifications (optional for app badge to work on some devices)
+	// Register for push notifications (only if not in Expo Go)
 	const registerForPushNotificationsAsync = async () => {
-		// We only need this for actual devices, not for simulators
-		if (!Device.isDevice) return;
+		// Skip if in Expo Go or notifications aren't available
+		if (isExpoGo || !Notifications || !Device.isDevice) return;
 
 		try {
 			const { status: existingStatus } =
@@ -86,8 +101,10 @@ export function NotificationsProvider({
 		}
 	};
 
-	// Update app badge count
+	// Update app badge count - skip in Expo Go
 	const updateAppBadge = useCallback((count: number) => {
+		if (isExpoGo || !Notifications) return;
+
 		try {
 			// This works on both iOS and Android
 			Notifications.setBadgeCountAsync(count);
@@ -206,7 +223,9 @@ export function NotificationsProvider({
 				fetchNotifications();
 			} else if (
 				appState === "active" &&
-				nextAppState.match(/inactive|background/)
+				nextAppState.match(/inactive|background/) &&
+				!isExpoGo && // Don't update badge in Expo Go
+				Notifications
 			) {
 				// App is going to background - ensure badge is updated
 				updateAppBadge(unreadCount);

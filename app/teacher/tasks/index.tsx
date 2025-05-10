@@ -24,10 +24,16 @@ type Task = {
 	submission_count: number;
 };
 
+type Group = {
+	id: string;
+	name: string;
+};
+
 export default function TasksScreen() {
 	const { user } = useAuth();
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [groupsData, setGroupsData] = useState<Group[]>([]);
 
 	useEffect(() => {
 		fetchTasks();
@@ -86,6 +92,7 @@ export default function TasksScreen() {
 			});
 
 			setTasks(processedTasks);
+			setGroupsData(groupsData);
 		} catch (error) {
 			console.error("Error fetching tasks:", error);
 			Alert.alert("Error", "Failed to load tasks");
@@ -95,7 +102,33 @@ export default function TasksScreen() {
 	};
 
 	const navigateToGroupSelection = () => {
-		router.push("/teacher/tasks/create");
+		if (groupsData && groupsData.length > 0) {
+			if (groupsData.length === 1) {
+				const group = groupsData[0];
+				router.push({
+					pathname: "/teacher/tasks/create",
+					params: { groupId: group.id, groupName: group.name },
+				});
+			} else {
+				Alert.alert(
+					"Select Group",
+					"Please select a group from your Groups tab to create a task."
+				);
+				router.push("/teacher/groups");
+			}
+		} else {
+			Alert.alert(
+				"No Groups",
+				"You need to create a group before you can create tasks.",
+				[
+					{ text: "Cancel", style: "cancel" },
+					{
+						text: "Create Group",
+						onPress: () => router.push("/teacher/groups/create"),
+					},
+				]
+			);
+		}
 	};
 
 	const navigateToTaskDetails = (

@@ -14,6 +14,7 @@ import { Stack, useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
+import FileViewer from "../../../components/FileViewer";
 
 // Types
 type TaskDetails = {
@@ -34,6 +35,16 @@ type Submission = {
 	rating: number | null;
 };
 
+// Define types for task files
+type TaskFile = {
+	id: string;
+	file_name: string;
+	file_type: string;
+	file_size: number;
+	file_path: string;
+	created_at: string;
+};
+
 export default function TaskDetailsScreen() {
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
@@ -46,6 +57,8 @@ export default function TaskDetailsScreen() {
 	const [submissions, setSubmissions] = useState<Submission[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [submissionsLoading, setSubmissionsLoading] = useState(true);
+	const [taskFiles, setTaskFiles] = useState<TaskFile[]>([]);
+	const [filesLoading, setFilesLoading] = useState(true);
 
 	useEffect(() => {
 		fetchTaskDetails();
@@ -74,6 +87,9 @@ export default function TaskDetailsScreen() {
 				group_name: groupName || "Unknown Group",
 				created_at: data.created_at,
 			});
+
+			// Fetch files after task details
+			await fetchTaskFiles();
 		} catch (error) {
 			console.error("Error fetching task details:", error);
 			Alert.alert("Error", "Failed to load task details");
@@ -139,6 +155,26 @@ export default function TaskDetailsScreen() {
 			// Don't show alert, just log error
 		} finally {
 			setSubmissionsLoading(false);
+		}
+	};
+
+	const fetchTaskFiles = async () => {
+		try {
+			setFilesLoading(true);
+
+			const { data, error } = await supabase
+				.from("task_files")
+				.select("*")
+				.eq("task_id", taskId)
+				.order("created_at", { ascending: false });
+
+			if (error) throw error;
+
+			setTaskFiles(data || []);
+		} catch (error) {
+			console.error("Error fetching task files:", error);
+		} finally {
+			setFilesLoading(false);
 		}
 	};
 
@@ -245,6 +281,26 @@ export default function TaskDetailsScreen() {
 							<Text style={styles.descriptionText}>{task.description}</Text>
 						</View>
 					) : null}
+				</View>
+
+				{/* Task Files Section */}
+				<View style={styles.section}>
+					<Text style={styles.sectionTitle}>Task Materials</Text>
+					{filesLoading ? (
+						<ActivityIndicator size='small' color='#3f51b5' />
+					) : taskFiles.length > 0 ? (
+						taskFiles.map((file) => (
+							<FileViewer
+								key={file.id}
+								fileName={file.file_name}
+								fileType={file.file_type}
+								fileSize={file.file_size}
+								filePath={file.file_path}
+							/>
+						))
+					) : (
+						<Text style={styles.noItemsText}>No materials attached</Text>
+					)}
 				</View>
 
 				{/* Submissions Section */}
@@ -420,5 +476,14 @@ const styles = StyleSheet.create({
 		color: "#666",
 		textAlign: "center",
 		marginTop: 8,
+	},
+	section: {
+		marginBottom: 24,
+	},
+	noItemsText: {
+		fontSize: 16,
+		color: "#666",
+		textAlign: "center",
+		marginTop: 12,
 	},
 });

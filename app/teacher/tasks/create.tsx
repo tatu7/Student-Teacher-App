@@ -19,6 +19,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import { notifyTaskAssigned } from "../../../lib/notifications";
+import { pickDocument, uploadTaskFile, FileInfo } from "../../../lib/files";
+import FilePicker from "../../../components/FilePicker";
 
 // Define types
 type SelectedStudent = {
@@ -40,6 +42,8 @@ export default function CreateTaskScreen() {
 	const [loading, setLoading] = useState(false);
 	const [students, setStudents] = useState<SelectedStudent[]>([]);
 	const [studentsLoading, setStudentsLoading] = useState(true);
+	const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
+	const [fileUploading, setFileUploading] = useState(false);
 
 	useEffect(() => {
 		fetchGroupStudents();
@@ -48,6 +52,19 @@ export default function CreateTaskScreen() {
 	const fetchGroupStudents = async () => {
 		try {
 			setStudentsLoading(true);
+
+			// Add validation check for groupId
+			if (!groupId || groupId === "undefined") {
+				console.log("Missing groupId, received:", groupId);
+				setStudents([]);
+				Alert.alert(
+					"Error",
+					"No group selected. Please go back and select a group."
+				);
+				return;
+			}
+
+			console.log("Fetching students for group ID:", groupId);
 
 			// Get students from this group with their profiles
 			const { data, error } = await supabase
@@ -94,12 +111,8 @@ export default function CreateTaskScreen() {
 			return;
 		}
 
-		// Check if any students are selected
+		// Get selected students (if any)
 		const selectedStudents = students.filter((s) => s.selected);
-		if (selectedStudents.length === 0) {
-			Alert.alert("Error", "Please select at least one student");
-			return;
-		}
 
 		try {
 			setLoading(true);
@@ -113,33 +126,71 @@ export default function CreateTaskScreen() {
 					due_date: dueDate.toISOString(),
 					group_id: groupId,
 					teacher_id: user?.id,
+					has_files: !!selectedFile, // Set has_files flag
 				})
 				.select()
 				.single();
 
 			if (taskError) throw taskError;
 
-			// Send notifications to selected students
-			for (const student of selectedStudents) {
-				if (student.id) {
-					try {
-						await notifyTaskAssigned({
-							studentId: student.id,
-							taskTitle: title,
-							taskId: taskData.id,
-						});
-						console.log(`Notification sent to student: ${student.email}`);
-					} catch (notificationError) {
-						console.error(
-							`Failed to notify student ${student.email}:`,
-							notificationError
-						);
-						// Continue with other students even if one notification fails
+			// Upload file if one was selected
+			let filePath = null;
+			if (selectedFile) {
+				setFileUploading(true);
+				try {
+					filePath = await uploadTaskFile(taskData.id, selectedFile);
+
+					// Record file in task_files table
+					if (filePath) {
+						const { error: fileError } = await supabase
+							.from("task_files")
+							.insert({
+								task_id: taskData.id,
+								file_path: filePath,
+								file_name: selectedFile.name,
+								file_type: selectedFile.type,
+								file_size: selectedFile.size,
+							});
+
+						if (fileError) {
+							console.error("Error recording file:", fileError);
+							// Continue even if there was an error recording the file
+						}
 					}
-				} else {
-					console.warn(
-						`Student ${student.email} has no ID, skipping notification`
+				} catch (uploadError) {
+					console.error("Error uploading file:", uploadError);
+					Alert.alert(
+						"Warning",
+						"Task was created but there was an issue uploading the file."
 					);
+				} finally {
+					setFileUploading(false);
+				}
+			}
+
+			// Send notifications to selected students (if any)
+			if (selectedStudents.length > 0) {
+				for (const student of selectedStudents) {
+					if (student.id) {
+						try {
+							await notifyTaskAssigned({
+								studentId: student.id,
+								taskTitle: title,
+								taskId: taskData.id,
+							});
+							console.log(`Notification sent to student: ${student.email}`);
+						} catch (notificationError) {
+							console.error(
+								`Failed to notify student ${student.email}:`,
+								notificationError
+							);
+							// Continue with other students even if one notification fails
+						}
+					} else {
+						console.warn(
+							`Student ${student.email} has no ID, skipping notification`
+						);
+					}
 				}
 			}
 
@@ -224,7 +275,15 @@ export default function CreateTaskScreen() {
 							/>
 						)}
 
-						<Text style={styles.label}>Assign to Students</Text>
+						<Text style={styles.label}>Task Materials (Optional)</Text>
+						<FilePicker
+							onFilePicked={setSelectedFile}
+							selectedFile={selectedFile}
+							buttonText='Attach Document'
+							loading={fileUploading}
+						/>
+
+						<Text style={styles.label}>Assign to Students (Optional)</Text>
 						{studentsLoading ? (
 							<ActivityIndicator size='small' color='#3f51b5' />
 						) : (
@@ -234,30 +293,36 @@ export default function CreateTaskScreen() {
 										No students in this group
 									</Text>
 								) : (
-									students.map((student) => (
-										<TouchableOpacity
-											key={student.id || student.email}
-											style={[
-												styles.studentItem,
-												student.selected && styles.studentItemSelected,
-											]}
-											onPress={() => toggleStudent(student.id)}>
-											<Text
+									<>
+										<Text style={styles.helperText}>
+											Students are optional. You can create a task without
+											assigning it to any students.
+										</Text>
+										{students.map((student) => (
+											<TouchableOpacity
+												key={student.id || student.email}
 												style={[
-													styles.studentEmail,
-													student.selected && styles.studentEmailSelected,
-												]}>
-												{student.email}
-											</Text>
-											{student.selected && (
-												<Ionicons
-													name='checkmark-circle'
-													size={20}
-													color='white'
-												/>
-											)}
-										</TouchableOpacity>
-									))
+													styles.studentItem,
+													student.selected && styles.studentItemSelected,
+												]}
+												onPress={() => toggleStudent(student.id)}>
+												<Text
+													style={[
+														styles.studentEmail,
+														student.selected && styles.studentEmailSelected,
+													]}>
+													{student.email}
+												</Text>
+												{student.selected && (
+													<Ionicons
+														name='checkmark-circle'
+														size={20}
+														color='white'
+													/>
+												)}
+											</TouchableOpacity>
+										))}
+									</>
 								)}
 							</View>
 						)}
@@ -265,7 +330,7 @@ export default function CreateTaskScreen() {
 						<TouchableOpacity
 							style={[styles.createButton, loading && styles.disabledButton]}
 							onPress={handleCreateTask}
-							disabled={loading}>
+							disabled={loading || fileUploading}>
 							{loading ? (
 								<ActivityIndicator size='small' color='white' />
 							) : (
@@ -360,6 +425,12 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		marginTop: 10,
 		color: "#666",
+	},
+	helperText: {
+		fontSize: 14,
+		color: "#666",
+		marginBottom: 10,
+		fontStyle: "italic",
 	},
 	createButton: {
 		backgroundColor: "#3f51b5",
