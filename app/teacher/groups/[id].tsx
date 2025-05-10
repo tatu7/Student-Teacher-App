@@ -127,40 +127,35 @@ export default function GroupDetailsScreen() {
 		setAddingStudent(true);
 
 		try {
-			// Check if student already in group
-			const existingStudent = students.find(
-				(s) => s.email.toLowerCase() === newStudentEmail.toLowerCase()
-			);
+			// Email orqali user_profiles jadvalidan student ID olish
+			const { data: userProfile, error: profileError } = await supabase
+				.from("user_profiles")
+				.select("id")
+				.eq("email", newStudentEmail.trim())
+				.single();
 
-			if (existingStudent) {
-				Alert.alert("Error", "This student is already in the group");
+			if (profileError) {
+				if (profileError.code === "PGRST116") {
+					Alert.alert(
+						"Error",
+						"No student found with this email. Please make sure the student has registered with this email."
+					);
+				} else {
+					throw profileError;
+				}
 				return;
 			}
 
-			// Add student to group_students table
-			const { data, error } = await supabase
-				.from("group_students")
-				.insert({
-					group_id: groupId,
-					student_email: newStudentEmail.trim(),
-					status: "pending",
-				})
-				.select();
+			// Add student to group with proper student_id
+			const { error: addError } = await supabase.from("group_students").insert({
+				group_id: groupId,
+				student_id: userProfile.id, // Use the actual user ID
+				student_email: newStudentEmail.trim(),
+			});
 
-			if (error) throw error;
+			if (addError) throw addError;
 
-			// Add to local state
-			setStudents([
-				...students,
-				{
-					id: data[0].id,
-					email: newStudentEmail.trim(),
-					status: "pending",
-				},
-			]);
-
-			setNewStudentEmail("");
-			setAddModalVisible(false);
+			// Notification...
 		} catch (error) {
 			console.error("Error adding student:", error);
 			Alert.alert("Error", "Failed to add student");

@@ -39,88 +39,24 @@ export default function StudentGroupsScreen() {
 
 	const fetchGroups = async () => {
 		try {
-			setLoading(true);
-
 			if (!user) return;
 
-			// Fetch groups that the student is a member of
-			const { data: studentGroups, error: groupsError } = await supabase
+			// Get groups where student is a member using student_id
+			const { data, error } = await supabase
 				.from("group_students")
 				.select(
 					`
-          id,
-          status,
-          groups:group_id(
-            id, 
-            name,
-            teacher_id
-          )
-        `
+					group_id,
+					groups:group_id(id, name, teacher_id, created_at)
+				`
 				)
-				.eq("student_id", user.id)
-				.eq("status", "active");
+				.eq("student_id", user.id); // Use user.id from Auth
 
-			if (groupsError) throw groupsError;
+			if (error) throw error;
 
-			if (studentGroups && studentGroups.length > 0) {
-				// Get group IDs for further queries
-				const groupIds = studentGroups.map((g) => g.groups.id);
-
-				// Get teacher info separately
-				const teacherIds = studentGroups.map((g) => g.groups.teacher_id);
-				const { data: teachersData, error: teachersError } = await supabase
-					.from("user_profiles")
-					.select("id, email")
-					.in("id", teacherIds);
-
-				if (teachersError) throw teachersError;
-
-				// Get all tasks for these groups
-				const { data: tasks, error: tasksError } = await supabase
-					.from("tasks")
-					.select(
-						`
-            id,
-            title,
-            due_date,
-            group_id,
-            submissions(id, student_id)
-          `
-					)
-					.in("group_id", groupIds)
-					.order("due_date", { ascending: false });
-
-				if (tasksError) throw tasksError;
-
-				// Process groups with task counts
-				const processedGroups = studentGroups.map((group) => {
-					const groupTasks =
-						tasks?.filter((t) => t.group_id === group.groups.id) || [];
-					const completedTasks = groupTasks.filter(
-						(t) =>
-							t.submissions &&
-							t.submissions.some((s: Submission) => s.student_id === user.id)
-					).length;
-
-					// Find teacher for this group
-					const teacher = teachersData?.find(
-						(t) => t.id === group.groups.teacher_id
-					);
-					const teacherName = teacher ? teacher.email.split("@")[0] : "Teacher";
-
-					return {
-						id: group.groups.id,
-						name: group.groups.name,
-						teacher_name: teacherName,
-						pending_tasks: groupTasks.length - completedTasks,
-						completed_tasks: completedTasks,
-					};
-				});
-
-				setGroups(processedGroups);
-			} else {
-				setGroups([]);
-			}
+			// Transform data structure
+			const groups = data.map((item) => item.groups);
+			setGroups(groups);
 		} catch (error) {
 			console.error("Error fetching groups:", error);
 			Alert.alert("Error", "Failed to load groups");

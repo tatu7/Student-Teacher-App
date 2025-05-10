@@ -112,16 +112,41 @@ export default function CreateTaskScreen() {
 			// **Guruhdagi studentlarni olish**
 			const { data: groupStudents, error: groupStudentsError } = await supabase
 				.from("group_students")
-				.select("student_id")
+				.select("student_id, student_email")
 				.eq("group_id", selectedGroup.id);
 
 			if (groupStudentsError) throw groupStudentsError;
 
+			// Log qilish orqali tekshiramiz
+			console.log("Group students:", groupStudents);
+
 			// **Notification yuborish**
 			await Promise.all(
-				groupStudents.map((student) =>
-					notifyTaskAssigned(student.student_id, title.trim(), data[0].id)
-				)
+				groupStudents.map(async (student) => {
+					// Agar student_id o'rniga email saqlangan bo'lsa:
+					if (!student.student_id && student.student_email) {
+						// Email orqali student ID olish
+						const { data: userProfile } = await supabase
+							.from("user_profiles")
+							.select("id")
+							.eq("email", student.student_email)
+							.single();
+
+						if (userProfile) {
+							return notifyTaskAssigned(
+								userProfile.id,
+								title.trim(),
+								data[0].id
+							);
+						}
+					}
+
+					return notifyTaskAssigned(
+						student.student_id,
+						title.trim(),
+						data[0].id
+					);
+				})
 			);
 
 			Alert.alert("Success", "Task created successfully", [
