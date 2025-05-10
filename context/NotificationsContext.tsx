@@ -7,7 +7,9 @@ import React, {
 } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
 
 type Notification = {
 	id: string;
@@ -31,6 +33,17 @@ const NotificationsContext = createContext<
 	NotificationsContextType | undefined
 >(undefined);
 
+// Configure Expo Notifications
+Notifications.setNotificationHandler({
+	handleNotification: async () => ({
+		shouldShowAlert: true,
+		shouldPlaySound: false,
+		shouldSetBadge: true,
+		shouldShowBanner: true,
+		shouldShowList: true,
+	}),
+});
+
 export function NotificationsProvider({
 	children,
 }: {
@@ -44,6 +57,44 @@ export function NotificationsProvider({
 	const [appState, setAppState] = useState<AppStateStatus>(
 		AppState.currentState
 	);
+
+	// Register for push notifications (optional for app badge to work on some devices)
+	const registerForPushNotificationsAsync = async () => {
+		// We only need this for actual devices, not for simulators
+		if (!Device.isDevice) return;
+
+		try {
+			const { status: existingStatus } =
+				await Notifications.getPermissionsAsync();
+			let finalStatus = existingStatus;
+
+			// Only ask for permission if not already granted
+			if (existingStatus !== "granted") {
+				const { status } = await Notifications.requestPermissionsAsync();
+				finalStatus = status;
+			}
+
+			if (finalStatus !== "granted") {
+				console.log("Failed to get push token for push notification!");
+				return;
+			}
+
+			// Success - just get permissions, we don't need the token
+			console.log("Push notifications permission granted");
+		} catch (error) {
+			console.error("Error registering for push notifications:", error);
+		}
+	};
+
+	// Update app badge count
+	const updateAppBadge = useCallback((count: number) => {
+		try {
+			// This works on both iOS and Android
+			Notifications.setBadgeCountAsync(count);
+		} catch (error) {
+			console.error("Error setting badge count:", error);
+		}
+	}, []);
 
 	// Fetch notifications with better error handling
 	const fetchNotifications = useCallback(async () => {
@@ -65,7 +116,12 @@ export function NotificationsProvider({
 
 			if (data) {
 				setNotifications(data);
-				setUnreadCount(data.filter((note) => !note.is_read).length);
+				const newUnreadCount = data.filter((note) => !note.is_read).length;
+				setUnreadCount(newUnreadCount);
+
+				// Update app badge with the unread count
+				updateAppBadge(newUnreadCount);
+
 				setLastCheckTime(new Date());
 			}
 		} catch (error) {
@@ -73,7 +129,7 @@ export function NotificationsProvider({
 		} finally {
 			setLoading(false);
 		}
-	}, [user]);
+	}, [user, updateAppBadge]);
 
 	// Public refresh function
 	const refresh = async () => {
@@ -100,8 +156,10 @@ export function NotificationsProvider({
 				)
 			);
 
-			// Update unread count
-			setUnreadCount((prev) => Math.max(0, prev - 1));
+			// Update unread count and badge
+			const newUnreadCount = Math.max(0, unreadCount - 1);
+			setUnreadCount(newUnreadCount);
+			updateAppBadge(newUnreadCount);
 		} catch (error) {
 			console.error("Exception in markAsRead:", error);
 		}
@@ -127,12 +185,18 @@ export function NotificationsProvider({
 				notifications.map((note) => ({ ...note, is_read: true }))
 			);
 
-			// Update unread count
+			// Update unread count and badge
 			setUnreadCount(0);
+			updateAppBadge(0);
 		} catch (error) {
 			console.error("Exception in markAllAsRead:", error);
 		}
 	};
+
+	// Register for push notifications when component mounts
+	useEffect(() => {
+		registerForPushNotificationsAsync();
+	}, []);
 
 	// Effect for app state changes
 	useEffect(() => {
@@ -140,6 +204,12 @@ export function NotificationsProvider({
 			if (appState !== "active" && nextAppState === "active") {
 				// App became active, fetch notifications immediately
 				fetchNotifications();
+			} else if (
+				appState === "active" &&
+				nextAppState.match(/inactive|background/)
+			) {
+				// App is going to background - ensure badge is updated
+				updateAppBadge(unreadCount);
 			}
 			setAppState(nextAppState);
 		});
@@ -147,7 +217,7 @@ export function NotificationsProvider({
 		return () => {
 			subscription.remove();
 		};
-	}, [appState, fetchNotifications]);
+	}, [appState, fetchNotifications, unreadCount, updateAppBadge]);
 
 	// Initial fetch and polling
 	useEffect(() => {
