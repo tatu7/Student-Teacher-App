@@ -256,7 +256,7 @@ export default function StudentCalendarScreen() {
 
 		return (
 			<TouchableOpacity
-				key={day.toString()}
+				key={day.toISOString()}
 				style={[
 					styles.dayCell,
 					isToday(day) && styles.todayCell,
@@ -364,12 +364,9 @@ export default function StudentCalendarScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "My Calendar",
-					headerTitleAlign: "center",
-				}}
-			/>
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Kalendar</Text>
+			</View>
 
 			<View style={styles.calendarContainer}>
 				{/* Month navigation */}
@@ -392,7 +389,11 @@ export default function StudentCalendarScreen() {
 
 				{/* Calendar grid */}
 				<View style={styles.calendarGrid}>
-					{calendarDays.map((day) => renderDay(day))}
+					{calendarDays.map((day) => (
+						<React.Fragment key={day.toISOString()}>
+							{renderDay(day)}
+						</React.Fragment>
+					))}
 				</View>
 			</View>
 
@@ -632,5 +633,20 @@ const styles = StyleSheet.create({
 	legendText: {
 		fontSize: 12,
 		color: "#666",
+	},
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
 	},
 });

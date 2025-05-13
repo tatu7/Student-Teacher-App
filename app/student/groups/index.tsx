@@ -105,14 +105,9 @@ export default function StudentGroupsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "My Groups",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-				}}
-			/>
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Guruhlar</Text>
+			</View>
 
 			{loading ? (
 				<View style={styles.loaderContainer}>
@@ -213,5 +208,20 @@ const styles = StyleSheet.create({
 		color: "#666",
 		textAlign: "center",
 		marginTop: 8,
+	},
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
 	},
 });

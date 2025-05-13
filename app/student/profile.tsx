@@ -319,17 +319,21 @@ export default function StudentProfileScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "Profile",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-					headerTitleAlign: "center",
-				}}
-			/>
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Profil</Text>
+				{!editMode && (
+					<TouchableOpacity
+						style={styles.headerButton}
+						onPress={() => setEditMode(true)}>
+						<Ionicons name='pencil' size={24} color='#3f51b5' />
+					</TouchableOpacity>
+				)}
+			</View>
 
-			<ScrollView contentContainerStyle={styles.scrollContent}>
+			<ScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
+				showsVerticalScrollIndicator={false}>
 				{renderProfileImage()}
 
 				<View style={styles.profileInfo}>
@@ -561,5 +565,30 @@ const styles = StyleSheet.create({
 	logoutButton: {
 		backgroundColor: "#f44336",
 		borderWidth: 0,
+	},
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
+	},
+	headerButton: {
+		width: 40,
+		height: 40,
+		justifyContent: "center",
+		alignItems: "center",
+		borderRadius: 20,
+	},
+	scrollView: {
+		flex: 1,
 	},
 });

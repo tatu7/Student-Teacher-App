@@ -8,6 +8,7 @@ import {
 	ActivityIndicator,
 	RefreshControl,
 	Image,
+	SafeAreaView,
 } from "react-native";
 import { useNotifications } from "../../context/NotificationsContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -103,7 +104,11 @@ export default function NotificationsScreen() {
 	);
 
 	return (
-		<View style={styles.container}>
+		<SafeAreaView style={styles.container}>
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Xabarlar</Text>
+			</View>
+
 			{unreadCount > 0 && (
 				<TouchableOpacity
 					style={styles.markAllReadButton}
@@ -132,7 +137,7 @@ export default function NotificationsScreen() {
 					<ActivityIndicator size='large' color='#3f51b5' />
 				</View>
 			)}
-		</View>
+		</SafeAreaView>
 	);
 }
 
@@ -140,6 +145,21 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f5f5f7",
+	},
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
 	},
 	markAllReadButton: {
 		alignSelf: "flex-end",

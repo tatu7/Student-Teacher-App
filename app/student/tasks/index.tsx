@@ -9,7 +9,7 @@ import {
 	SafeAreaView,
 	Alert,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
@@ -240,76 +240,71 @@ export default function StudentTasksScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "My Tasks",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-				}}
-			/>
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Vazifalar</Text>
+			</View>
+
+			<View style={styles.filterContainer}>
+				<TouchableOpacity
+					style={[
+						styles.filterButton,
+						filter === "all" && styles.activeFilterButton,
+					]}
+					onPress={() => setFilter("all")}>
+					<Text
+						style={[
+							styles.filterText,
+							filter === "all" && styles.activeFilterText,
+						]}>
+						All
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.filterButton,
+						filter === "pending" && styles.activeFilterButton,
+					]}
+					onPress={() => setFilter("pending")}>
+					<Text
+						style={[
+							styles.filterText,
+							filter === "pending" && styles.activeFilterText,
+						]}>
+						Pending
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.filterButton,
+						filter === "completed" && styles.activeFilterButton,
+					]}
+					onPress={() => setFilter("completed")}>
+					<Text
+						style={[
+							styles.filterText,
+							filter === "completed" && styles.activeFilterText,
+						]}>
+						Completed
+					</Text>
+				</TouchableOpacity>
+			</View>
 
 			{loading ? (
 				<View style={styles.loaderContainer}>
 					<ActivityIndicator size='large' color='#3f51b5' />
 				</View>
 			) : (
-				<>
-					<View style={styles.filterContainer}>
-						<TouchableOpacity
-							style={[
-								styles.filterButton,
-								filter === "all" && styles.activeFilter,
-							]}
-							onPress={() => setFilter("all")}>
-							<Text
-								style={[
-									styles.filterText,
-									filter === "all" && styles.activeFilterText,
-								]}>
-								All
-							</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							style={[
-								styles.filterButton,
-								filter === "pending" && styles.activeFilter,
-							]}
-							onPress={() => setFilter("pending")}>
-							<Text
-								style={[
-									styles.filterText,
-									filter === "pending" && styles.activeFilterText,
-								]}>
-								Pending
-							</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							style={[
-								styles.filterButton,
-								filter === "completed" && styles.activeFilter,
-							]}
-							onPress={() => setFilter("completed")}>
-							<Text
-								style={[
-									styles.filterText,
-									filter === "completed" && styles.activeFilterText,
-								]}>
-								Completed
-							</Text>
-						</TouchableOpacity>
-					</View>
-
-					<FlatList
-						data={getFilteredTasks()}
-						renderItem={renderTaskItem}
-						keyExtractor={(item) => item.id}
-						contentContainerStyle={styles.listContent}
-						ListEmptyComponent={renderEmptyList}
-						refreshing={loading}
-						onRefresh={fetchTasks}
-					/>
-				</>
+				<FlatList
+					data={getFilteredTasks()}
+					renderItem={renderTaskItem}
+					keyExtractor={(item) => item.id}
+					contentContainerStyle={styles.listContent}
+					ListEmptyComponent={renderEmptyList}
+					refreshing={loading}
+					onRefresh={fetchTasks}
+				/>
 			)}
 		</SafeAreaView>
 	);
@@ -337,7 +332,7 @@ const styles = StyleSheet.create({
 		marginRight: 8,
 		backgroundColor: "#f0f0f0",
 	},
-	activeFilter: {
+	activeFilterButton: {
 		backgroundColor: "#3f51b5",
 	},
 	filterText: {
@@ -443,5 +438,20 @@ const styles = StyleSheet.create({
 		color: "#666",
 		textAlign: "center",
 		marginTop: 8,
+	},
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
 	},
 });

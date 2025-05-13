@@ -195,6 +195,7 @@ export default function StudentDashboard() {
 
 	const navigateToGroups = () => router.push("/student/groups" as any);
 	const navigateToTasks = () => router.push("/student/tasks" as any);
+	const navigateToCalendar = () => router.push("/student/calendar" as any);
 	const navigateToNotifications = () =>
 		router.push("/student/notifications" as any);
 
@@ -423,7 +424,11 @@ export default function StudentDashboard() {
 
 					{groups.length > 0 ? (
 						<View style={styles.groupsList}>
-							{groups.slice(0, 3).map((item) => renderGroupItem({ item }))}
+							{groups.slice(0, 3).map((item) => (
+								<React.Fragment key={item.id}>
+									{renderGroupItem({ item })}
+								</React.Fragment>
+							))}
 						</View>
 					) : (
 						<View style={styles.emptyState}>
