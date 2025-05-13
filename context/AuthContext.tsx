@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { router } from "expo-router";
-import { supabase, AuthUser, UserRole } from "../lib/supabase";
+import { supabase, AuthUser, UserRole, validateEmail } from "../lib/supabase";
+import * as Linking from "expo-linking";
+import * as SecureStore from "expo-secure-store";
 
 type AuthContextType = {
 	user: AuthUser | null;
@@ -9,7 +11,7 @@ type AuthContextType = {
 		email: string,
 		password: string,
 		role: UserRole
-	) => Promise<{ error: any }>;
+	) => Promise<{ error: any; userCreated?: boolean }>;
 	signIn: (email: string, password: string) => Promise<{ error: any }>;
 	signOut: () => Promise<void>;
 	setUserRole: (role: UserRole) => Promise<{ error: any }>;
@@ -22,6 +24,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [user, setUser] = useState<AuthUser | null>(null);
 	const [loading, setLoading] = useState(true);
+	// Add a flag to prevent navigation during confirmation flow
+	const [preventAutoNavigation, setPreventAutoNavigation] = useState(false);
+
+	// Function to check if we're on an auth screen (safe for React Native)
+	const checkIfOnAuthScreen = async (): Promise<boolean> => {
+		try {
+			// Check if we have the flag set in SecureStore
+			const flag = await SecureStore.getItemAsync("preventAutoNavigation");
+			if (flag === "true") {
+				console.log("Found preventAutoNavigation flag in SecureStore");
+				setPreventAutoNavigation(true);
+				return true;
+			}
+
+			// For now, just use our local state
+			return preventAutoNavigation;
+		} catch (e) {
+			console.error("Error checking navigation prevention flag:", e);
+			return false;
+		}
+	};
 
 	// Check for user session on mount
 	useEffect(() => {
@@ -32,58 +55,123 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				// Get current session (v1 syntax)
 				const session = supabase.auth.session();
 
+				// Check if we're on an auth page
+				const isAuthPage = await checkIfOnAuthScreen();
+				console.log("isAuthPage:", isAuthPage);
+
 				if (session && session.user) {
+					// Check if this is a new signup (email not confirmed yet)
+					const newSignup =
+						session.user.user_metadata &&
+						session.user.user_metadata.confirmation_sent_at &&
+						!session.user.email_confirmed_at;
+
+					if (newSignup) {
+						// Don't navigate for new signups
+						console.log(
+							"New signup detected in initial check, skipping navigation"
+						);
+						setLoading(false);
+						return;
+					}
+
 					try {
 						// Get user's role from profiles table
 						const { data, error } = await supabase
 							.from("user_profiles")
 							.select("role")
-							.eq("id", session.user.id);
+							.eq("id", session.user.id)
+							.maybeSingle();
 
-						if (error) throw error;
-
-						// Check if profile exists
-						if (data && data.length > 0) {
-							setUser({
-								id: session.user.id,
-								email: session.user.email!,
-								role: data[0].role as UserRole,
-							});
-
-							// Redirect based on role
-							if (data[0].role === UserRole.TEACHER) {
-								router.replace("/teacher/dashboard");
-							} else if (data[0].role === UserRole.STUDENT) {
-								router.replace("/student/dashboard");
-							}
-						} else {
-							// Profile doesn't exist, create it
+						// If no profile, use the role from user metadata and create one
+						if (!data) {
 							console.log("No profile found, creating new profile");
-							const { error: insertError } = await supabase
-								.from("user_profiles")
-								.insert({
-									id: session.user.id,
-									email: session.user.email,
-									role: UserRole.STUDENT, // Default role
-								});
 
-							if (insertError) {
-								console.error("Error creating profile:", insertError);
-							} else {
+							// Get the role from metadata
+							const userRole =
+								session.user.user_metadata?.role || UserRole.STUDENT;
+
+							try {
+								// Use upsert to safely create profile, even if it already exists (handles race conditions)
+								const { error: profileError } = await supabase
+									.from("user_profiles")
+									.upsert(
+										{
+											id: session.user.id,
+											email: session.user.email,
+											role: userRole,
+										},
+										{ onConflict: "id" }
+									);
+
+								if (profileError) {
+									console.error("Error upserting profile:", profileError);
+								}
+
+								// Set user in state
 								setUser({
 									id: session.user.id,
-									email: session.user.email!,
-									role: UserRole.STUDENT,
+									email: session.user.email || "",
+									role: userRole as UserRole,
 								});
-								router.replace("/student/dashboard");
+
+								// Only navigate if not on auth page and not preventing navigation
+								if (!preventAutoNavigation && !isAuthPage) {
+									// Navigate based on role
+									if (userRole === UserRole.TEACHER) {
+										router.replace("/teacher/dashboard");
+									} else {
+										router.replace("/student/dashboard");
+									}
+								} else {
+									console.log(
+										"Skipping navigation due to preventAutoNavigation flag or auth page"
+									);
+								}
+							} catch (profileError) {
+								console.error("Error creating profile:", profileError);
+
+								// Still set user state, but don't navigate if on auth page
+								setUser({
+									id: session.user.id,
+									email: session.user.email || "",
+									role: userRole as UserRole,
+								});
+
+								if (!preventAutoNavigation && !isAuthPage) {
+									if (userRole === UserRole.TEACHER) {
+										router.replace("/teacher/dashboard");
+									} else {
+										router.replace("/student/dashboard");
+									}
+								}
+							}
+						} else {
+							// Profile exists, set user role from profile
+							setUser({
+								id: session.user.id,
+								email: session.user.email || "",
+								role: data.role as UserRole,
+							});
+
+							// Only navigate if not on auth page and not preventing navigation
+							if (!preventAutoNavigation && !isAuthPage) {
+								// Navigate based on role
+								if (data.role === UserRole.TEACHER) {
+									router.replace("/teacher/dashboard");
+								} else {
+									router.replace("/student/dashboard");
+								}
+							} else {
+								console.log("Skipping navigation on auth page");
 							}
 						}
-					} catch (profileError) {
-						console.error("Error fetching user profile:", profileError);
+					} catch (e) {
+						console.error("Error checking user profile:", e);
 					}
 				}
 			} catch (error) {
-				console.error("Error checking authentication state:", error);
+				console.error("Error checking user:", error);
 			} finally {
 				setLoading(false);
 			}
@@ -94,6 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		// Listen for auth state changes (v1 syntax)
 		const { data: authListener } = supabase.auth.onAuthStateChange(
 			async (event, session) => {
+				console.log("Auth state change:", event);
+
 				if (event === "SIGNED_OUT") {
 					setUser(null);
 					router.replace("/auth/login");
@@ -102,6 +192,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					(event === "SIGNED_IN" || event === "USER_UPDATED")
 				) {
 					try {
+						// Check if this is a new signup (email not confirmed yet)
+						// In v1, metadata includes confirmation_sent_at but not email_confirmed_at for unconfirmed users
+						const isNewSignup =
+							session.user.user_metadata?.confirmation_sent_at &&
+							!session.user.email_confirmed_at;
+
+						// Check if we're on an auth screen
+						const isOnAuthScreen = await checkIfOnAuthScreen();
+
+						console.log("Auth state change:", {
+							event,
+							isNewSignup,
+							isOnAuthScreen,
+							preventAutoNavigation,
+						});
+
+						if (isNewSignup || isOnAuthScreen || preventAutoNavigation) {
+							// Don't navigate for new signups or if already on auth screens
+							console.log(
+								"On auth screen or new signup, skipping auto-navigation"
+							);
+							return;
+						}
+
 						// Fetch user role
 						const { data, error } = await supabase
 							.from("user_profiles")
@@ -117,31 +231,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 								role: data[0].role as UserRole,
 							});
 
-							// Navigate based on role
-							if (data[0].role === UserRole.TEACHER) {
-								router.replace("/teacher/dashboard");
-							} else if (data[0].role === UserRole.STUDENT) {
-								router.replace("/student/dashboard");
+							// Only navigate if we're not on auth pages
+							if (!isOnAuthScreen && !preventAutoNavigation) {
+								// Navigate based on role
+								if (data[0].role === UserRole.TEACHER) {
+									router.replace("/teacher/dashboard");
+								} else if (data[0].role === UserRole.STUDENT) {
+									router.replace("/student/dashboard");
+								}
 							}
 						} else {
 							// Create profile if it doesn't exist
-							const { error: insertError } = await supabase
-								.from("user_profiles")
-								.insert({
-									id: session.user.id,
-									email: session.user.email,
-									role: UserRole.STUDENT, // Default role
-								});
+							try {
+								// First check if a profile might exist with the same email
+								const { data: existingProfileByEmail } = await supabase
+									.from("user_profiles")
+									.select("id")
+									.ilike("email", session.user.email || "")
+									.maybeSingle();
 
-							if (insertError) {
-								console.error("Error creating profile:", insertError);
-							} else {
+								if (existingProfileByEmail) {
+									// Update the existing profile
+									const { error: updateError } = await supabase
+										.from("user_profiles")
+										.update({
+											id: session.user.id,
+											email: session.user.email,
+											role: UserRole.STUDENT,
+										})
+										.eq("id", existingProfileByEmail.id);
+
+									if (updateError) {
+										console.error("Error updating profile:", updateError);
+									}
+								} else {
+									// Insert a new profile
+									const { error: insertError } = await supabase
+										.from("user_profiles")
+										.insert({
+											id: session.user.id,
+											email: session.user.email,
+											role: UserRole.STUDENT, // Default role
+										});
+
+									if (insertError) {
+										console.error("Error creating profile:", insertError);
+									}
+								}
+
+								// Set user state
 								setUser({
 									id: session.user.id,
 									email: session.user.email!,
 									role: UserRole.STUDENT,
 								});
-								router.replace("/student/dashboard");
+
+								// Only navigate if not on auth pages
+								if (!isOnAuthScreen && !preventAutoNavigation) {
+									router.replace("/student/dashboard");
+								} else {
+									console.log("On auth screen, not navigating automatically");
+								}
+							} catch (error) {
+								console.error("Error handling profile creation:", error);
 							}
 						}
 					} catch (profileError) {
@@ -154,11 +306,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		return () => {
 			authListener?.unsubscribe();
 		};
-	}, []);
+	}, [preventAutoNavigation]);
 
 	// Sign up function
 	const signUp = async (email: string, password: string, role: UserRole) => {
 		try {
+			// Set the prevention flag to prevent auto-navigation
+			await SecureStore.setItemAsync("preventAutoNavigation", "true");
+
+			// Store the email for confirmation page
+			await SecureStore.setItemAsync("pendingConfirmationEmail", email);
+
+			// Email validation for common patterns
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!validateEmail(email)) {
+				return {
+					error: {
+						message: "Email address is invalid or domain is not supported",
+					},
+				};
+			}
+
 			// First check if user already exists in auth system by trying to log in
 			const { error: signInError } = await supabase.auth.signIn({
 				email,
@@ -209,10 +377,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 							role: userRole,
 						});
 
-						if (userRole === UserRole.TEACHER) {
-							router.replace("/teacher/dashboard");
+						// Only redirect if prevention flag is not set
+						const preventNav = await SecureStore.getItemAsync(
+							"preventAutoNavigation"
+						);
+						if (preventNav !== "true") {
+							if (userRole === UserRole.TEACHER) {
+								router.replace("/teacher/dashboard");
+							} else {
+								router.replace("/student/dashboard");
+							}
 						} else {
-							router.replace("/student/dashboard");
+							console.log("Navigation prevented by flag");
 						}
 					} catch (e) {
 						// Ignore any errors in profile flow
@@ -225,10 +401,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 							role,
 						});
 
-						if (role === UserRole.TEACHER) {
-							router.replace("/teacher/dashboard");
-						} else {
-							router.replace("/student/dashboard");
+						// Only redirect if prevention flag is not set
+						const preventNav = await SecureStore.getItemAsync(
+							"preventAutoNavigation"
+						);
+						if (preventNav !== "true") {
+							if (role === UserRole.TEACHER) {
+								router.replace("/teacher/dashboard");
+							} else {
+								router.replace("/student/dashboard");
+							}
 						}
 					}
 
@@ -236,49 +418,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				}
 			}
 
-			// User doesn't exist, create new
-			const { user: newUser, error } = await supabase.auth.signUp({
-				email,
-				password,
+			// Get the deep link redirect URL for email confirmations
+			const redirectUrl = Linking.createURL("auth/confirm", {
+				scheme: "studentteacher",
 			});
+			console.log("Using redirect URL for auth:", redirectUrl);
 
-			if (error) return { error };
+			// User doesn't exist, create new with email confirmation and redirect URL
+			// Force email confirmation with redirectTo
+			let signUpError = null;
 
-			if (newUser) {
-				// Set user regardless of profile creation success
-				setUser({
-					id: newUser.id,
-					email,
-					role,
-				});
-
-				// Try to create profile but don't fail if it errors
-				try {
-					await supabase.from("user_profiles").upsert(
-						{
-							id: newUser.id,
-							email,
-							role,
+			try {
+				const { user: newUser, error } = await supabase.auth.signUp(
+					{
+						email,
+						password,
+					},
+					{
+						data: {
+							role: role,
 						},
-						{ onConflict: "id" }
+						redirectTo: redirectUrl,
+					}
+				);
+
+				if (error) {
+					// Don't log errors to console, instead return as a structured response
+					// console.error("Signup error:", error);
+					return { error };
+				}
+
+				if (!newUser) {
+					return { error: { message: "Failed to create user" } };
+				}
+
+				// Check if account needs confirmation
+				const emailConfirmationSent =
+					newUser.confirmation_sent_at ||
+					(newUser.user_metadata && newUser.user_metadata.confirmation_sent_at);
+
+				// Don't log potentially sensitive user info to console
+				// console.log("User created, email confirmation status:", {
+				// 	user: newUser.id,
+				// 	emailConfirmationSent,
+				// 	metadata: newUser.user_metadata
+				// });
+
+				// If the user was automatically confirmed (development-only behavior or email confirmation disabled)
+				// we shouldn't let them proceed to the dashboard without creating a profile
+				if (!emailConfirmationSent) {
+					// No confirmation sent, email confirmation might be disabled in Supabase
+					console.warn(
+						"Email confirmation appears to be disabled in Supabase, still showing verification screen"
 					);
-				} catch (e) {
-					// Completely ignore profile errors
-					console.log("Ignoring profile creation error for new user:", e);
 				}
 
-				// Always redirect regardless of profile creation
-				if (role === UserRole.TEACHER) {
-					router.replace("/teacher/dashboard");
-				} else {
-					router.replace("/student/dashboard");
+				// Explicitly prevent automatic navigation
+				await SecureStore.setItemAsync("preventAutoNavigation", "true");
+
+				// In either case, we'll show the verification screen
+				return { error: null, userCreated: true };
+			} catch (error) {
+				// Don't log errors to console
+				// console.error("Error during supabase.auth.signUp:", error);
+
+				// Try to parse the error message
+				let errorMessage = "Error creating account";
+				if (error instanceof Error) {
+					errorMessage = error.message;
+				} else if (typeof error === "object" && error !== null) {
+					// Use any type to access unknown properties
+					const errorObj = error as any;
+					if (errorObj.message) {
+						errorMessage = errorObj.message;
+					} else if (errorObj.error_description) {
+						errorMessage = errorObj.error_description;
+					}
 				}
+
+				return { error: { message: errorMessage } };
 			}
-
-			return { error: null };
 		} catch (error) {
 			console.error("Signup process error:", error);
-			return { error };
+
+			let errorMessage = "Signup process failed";
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			}
+
+			return { error: { message: errorMessage } };
 		}
 	};
 

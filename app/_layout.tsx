@@ -27,6 +27,11 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 
 		// If user isn't signed in and isn't on an auth screen, redirect to login
 		if (!user && !inAuthGroup) {
+			// Allow access to the email confirmation page without authentication
+			if (inAuthGroup && segments[1] === "confirm") {
+				return;
+			}
+
 			// Only redirect if we're not already on the login page
 			if (segments.join("/") !== "auth/login") {
 				router.replace("/auth/login");
@@ -34,6 +39,11 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 		}
 		// If user is signed in and is on an auth screen, redirect based on role
 		else if (user && inAuthGroup) {
+			// Skip redirecting if on the email confirmation page
+			if (segments[1] === "confirm") {
+				return;
+			}
+
 			const targetPath =
 				user.role === UserRole.TEACHER
 					? "/teacher/dashboard"
@@ -65,13 +75,15 @@ export default function RootLayout() {
 			<NotificationsProvider>
 				<ThemeProvider
 					value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-					<Stack>
-						<Stack.Screen name='auth' options={{ headerShown: false }} />
-						<Stack.Screen name='teacher' options={{ headerShown: false }} />
-						<Stack.Screen name='student' options={{ headerShown: false }} />
-						<Stack.Screen name='+not-found' />
-					</Stack>
-					<StatusBar style='auto' />
+					<RootNavigationGuard>
+						<Stack>
+							<Stack.Screen name='auth' options={{ headerShown: false }} />
+							<Stack.Screen name='teacher' options={{ headerShown: false }} />
+							<Stack.Screen name='student' options={{ headerShown: false }} />
+							<Stack.Screen name='+not-found' />
+						</Stack>
+						<StatusBar style='auto' />
+					</RootNavigationGuard>
 				</ThemeProvider>
 			</NotificationsProvider>
 		</AuthProvider>
