@@ -9,7 +9,7 @@ import {
 	Alert,
 	SafeAreaView,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
@@ -118,21 +118,14 @@ export default function GroupsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "Groups",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-					headerRight: () => (
-						<TouchableOpacity
-							onPress={navigateToCreateGroup}
-							style={styles.headerButton}>
-							<Ionicons name='add' size={24} color='#3f51b5' />
-						</TouchableOpacity>
-					),
-				}}
-			/>
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Guruhlar</Text>
+				<TouchableOpacity
+					onPress={navigateToCreateGroup}
+					style={styles.headerButton}>
+					<Ionicons name='add' size={24} color='#3f51b5' />
+				</TouchableOpacity>
+			</View>
 
 			{loading ? (
 				<View style={styles.loaderContainer}>
@@ -158,8 +151,27 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#f5f5f7",
 	},
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: "white",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	headerTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#333",
+	},
 	headerButton: {
-		marginRight: 15,
+		width: 40,
+		height: 40,
+		justifyContent: "center",
+		alignItems: "center",
+		borderRadius: 20,
 	},
 	loaderContainer: {
 		flex: 1,

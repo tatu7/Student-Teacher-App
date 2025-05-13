@@ -11,7 +11,7 @@ import {
 	Modal,
 	ScrollView,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
@@ -279,22 +279,6 @@ export default function SubmissionsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					title: "Submissions",
-					headerTitleStyle: {
-						fontWeight: "bold",
-					},
-					headerRight: () => (
-						<TouchableOpacity
-							onPress={() => setShowFilterModal(true)}
-							style={styles.headerButton}>
-							<Ionicons name='filter' size={24} color='#3f51b5' />
-						</TouchableOpacity>
-					),
-				}}
-			/>
-
 			{/* Active filters display */}
 			{(filters.groupId || filters.taskId) && (
 				<View style={styles.activeFiltersContainer}>
@@ -434,9 +418,6 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f5f5f7",
-	},
-	headerButton: {
-		marginRight: 15,
 	},
 	loaderContainer: {
 		flex: 1,

@@ -1,4 +1,4 @@
-import { Stack, useSegments } from "expo-router";
+import { Tabs, Stack, useSegments } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { UserRole } from "../../lib/supabase";
 import { useEffect, useState } from "react";
@@ -35,6 +35,9 @@ export default function TeacherLayout() {
 				case "tasks":
 					setCurrentTitle("Tasks");
 					break;
+				case "submissions":
+					setCurrentTitle("Submissions");
+					break;
 				case "notifications":
 					setCurrentTitle("Notifications");
 					break;
@@ -61,84 +64,104 @@ export default function TeacherLayout() {
 	// Show nothing while checking authentication
 	if (loading || !user) return null;
 
-	// Custom header component
-	const CustomHeader = () => (
-		<SafeAreaView style={styles.headerContainer}>
-			<StatusBar barStyle='dark-content' />
-			<View style={styles.header}>
-				<TouchableOpacity
-					onPress={() => router.push("/teacher/profile" as any)}
-					style={styles.profileButton}>
-					<Ionicons name='person-circle' size={30} color='#3f51b5' />
-				</TouchableOpacity>
-
-				<Text style={styles.headerTitle}>{currentTitle}</Text>
-			</View>
-		</SafeAreaView>
-	);
-
 	return (
-		<View style={styles.container}>
-			<CustomHeader />
-			<Stack screenOptions={{ headerShown: false }}>
-				<Stack.Screen name='dashboard' />
-				<Stack.Screen name='groups' />
-				<Stack.Screen name='tasks' />
-				<Stack.Screen name='submissions' />
-				<Stack.Screen name='notifications' />
-				<Stack.Screen name='profile' />
-				{/* Other teacher screens */}
-			</Stack>
-		</View>
+		<Tabs
+			screenOptions={{
+				headerShown: false,
+				tabBarActiveTintColor: "#3f51b5",
+				tabBarInactiveTintColor: "#687076",
+				tabBarStyle: {
+					backgroundColor: "white",
+					borderTopColor: "#e0e0e0",
+					shadowColor: "#000",
+					shadowOffset: { width: 0, height: -2 },
+					shadowOpacity: 0.1,
+					shadowRadius: 3,
+					elevation: 3,
+					height: 60,
+					paddingBottom: 8,
+					paddingTop: 6,
+				},
+				tabBarLabelStyle: {
+					fontSize: 12,
+					fontWeight: "500",
+				},
+			}}>
+			<Tabs.Screen
+				name='dashboard'
+				options={{
+					title: "Bosh sahifa",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='home-outline' size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='groups'
+				options={{
+					title: "Guruhlar",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='people-outline' size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='submissions'
+				options={{
+					title: "Javoblar",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='document-text-outline' size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='notifications'
+				options={{
+					title: "Notifications",
+					tabBarIcon: ({ color, size }) => (
+						<View>
+							<Ionicons
+								name='notifications-outline'
+								size={size}
+								color={color}
+							/>
+							{unreadCount > 0 && (
+								<View style={styles.badge}>
+									<Text style={styles.badgeText}>
+										{unreadCount > 99 ? "99+" : unreadCount}
+									</Text>
+								</View>
+							)}
+						</View>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='profile'
+				options={{
+					title: "Profil",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='person-outline' size={size} color={color} />
+					),
+				}}
+			/>
+
+			{/* Hide tasks from tab bar */}
+			<Tabs.Screen
+				name='tasks'
+				options={{
+					href: null,
+				}}
+			/>
+		</Tabs>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#f5f5f7",
-	},
-	headerContainer: {
-		backgroundColor: "white",
-		paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 3,
-		elevation: 3,
-		zIndex: 1000,
-	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	headerTitle: {
-		fontSize: 20,
-		fontWeight: "700",
-		color: "#333",
-	},
-	profileButton: {
-		width: 44,
-		height: 44,
-		justifyContent: "center",
-		alignItems: "center",
-		borderRadius: 22,
-	},
-	notificationButton: {
-		width: 44,
-		height: 44,
-		justifyContent: "center",
-		alignItems: "center",
-		borderRadius: 22,
-		position: "relative",
-	},
 	badge: {
 		position: "absolute",
-		right: 0,
-		top: 0,
+		right: -6,
+		top: -6,
 		backgroundColor: "#f44336",
 		borderRadius: 10,
 		minWidth: 20,

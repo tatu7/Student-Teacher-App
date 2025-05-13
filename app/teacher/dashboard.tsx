@@ -10,7 +10,7 @@ import {
 	Dimensions,
 	ActivityIndicator,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationsContext";
 import {
