@@ -110,7 +110,7 @@ export default function TeacherLayout() {
 				options={{
 					title: "Javoblar",
 					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='document-text-outline' size={size} color={color} />
+						<Ionicons name='checkmark-done-outline' size={size} color={color} />
 					),
 				}}
 			/>
@@ -142,6 +142,15 @@ export default function TeacherLayout() {
 					title: "Profil",
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name='person-outline' size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='calendar'
+				options={{
+					title: "Calendar",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='calendar-outline' size={size} color={color} />
 					),
 				}}
 			/>
