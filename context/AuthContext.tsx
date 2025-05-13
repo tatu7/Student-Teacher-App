@@ -10,7 +10,8 @@ type AuthContextType = {
 	signUp: (
 		email: string,
 		password: string,
-		role: UserRole
+		role: UserRole,
+		name?: string
 	) => Promise<{ error: any; userCreated?: boolean }>;
 	signIn: (email: string, password: string) => Promise<{ error: any }>;
 	signOut: () => Promise<void>;
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 											id: session.user.id,
 											email: session.user.email,
 											role: userRole,
+											display_name: session.user.user_metadata?.name || null,
 										},
 										{ onConflict: "id" }
 									);
@@ -258,6 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 											id: session.user.id,
 											email: session.user.email,
 											role: UserRole.STUDENT,
+											display_name: session.user.user_metadata?.name || null,
 										})
 										.eq("id", existingProfileByEmail.id);
 
@@ -272,6 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 											id: session.user.id,
 											email: session.user.email,
 											role: UserRole.STUDENT, // Default role
+											display_name: session.user.user_metadata?.name || null,
 										});
 
 									if (insertError) {
@@ -309,7 +313,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	}, [preventAutoNavigation]);
 
 	// Sign up function
-	const signUp = async (email: string, password: string, role: UserRole) => {
+	const signUp = async (
+		email: string,
+		password: string,
+		role: UserRole,
+		name?: string
+	) => {
 		try {
 			// Set the prevention flag to prevent auto-navigation
 			await SecureStore.setItemAsync("preventAutoNavigation", "true");
@@ -361,6 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 										id: session.user.id,
 										email,
 										role,
+										display_name: name || null,
 									},
 									{ onConflict: "id" }
 								);
@@ -437,6 +447,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					{
 						data: {
 							role: role,
+							name: name, // Store name in user metadata
 						},
 						redirectTo: redirectUrl,
 					}

@@ -8,18 +8,19 @@ import {
 	Alert,
 	ActivityIndicator,
 	SafeAreaView,
-	Image,
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function LoginScreen() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 
 	const { signIn } = useAuth();
 
@@ -57,7 +58,18 @@ export default function LoginScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen options={{ headerShown: false }} />
+			<Stack.Screen
+				options={{
+					headerTitle: "",
+					headerLeft: () => (
+						<TouchableOpacity
+							style={styles.backButton}
+							onPress={() => router.push("/onboarding")}>
+							<Ionicons name='arrow-back' size={24} color='#333' />
+						</TouchableOpacity>
+					),
+				}}
+			/>
 
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -65,68 +77,85 @@ export default function LoginScreen() {
 				<ScrollView
 					contentContainerStyle={styles.scrollContent}
 					showsVerticalScrollIndicator={false}>
-					<View style={styles.logoContainer}>
-						<Image
-							source={require("../../assets/images/logo.png")}
-							style={styles.logo}
-							resizeMode='contain'
-						/>
-						<Text style={styles.appName}>EduConnect</Text>
-						<Text style={styles.appTagline}>
-							Student-Teacher Learning Platform
-						</Text>
-					</View>
-
-					<View style={styles.formContainer}>
-						<Text style={styles.title}>Welcome Back</Text>
-						<Text style={styles.subtitle}>Log in to your account</Text>
-
-						<View style={styles.inputContainer}>
-							<Text style={styles.inputLabel}>Email</Text>
-							<TextInput
-								style={styles.input}
-								placeholder='Enter your email'
-								value={email}
-								onChangeText={setEmail}
-								autoCapitalize='none'
-								keyboardType='email-address'
-							/>
-
-							<Text style={styles.inputLabel}>Password</Text>
-							<TextInput
-								style={styles.input}
-								placeholder='Enter your password'
-								value={password}
-								onChangeText={setPassword}
-								secureTextEntry
-							/>
-
-							<View style={styles.forgotPassword}>
-								<TouchableOpacity
-									onPress={() => router.push("/auth/forgot-password")}>
-									<Text style={styles.forgotPasswordText}>
-										Forgot Password?
-									</Text>
-								</TouchableOpacity>
-							</View>
+					<View style={styles.contentContainer}>
+						<View style={styles.welcomeTextContainer}>
+							<Text style={styles.title}>Xush kelibsiz!</Text>
+							<Text style={styles.subtitle}>Hisobingizga kiring</Text>
 						</View>
 
-						<TouchableOpacity
-							style={styles.button}
-							onPress={handleLogin}
-							disabled={loading}>
-							{loading ? (
-								<ActivityIndicator color='#fff' size='small' />
-							) : (
-								<Text style={styles.buttonText}>Log In</Text>
-							)}
-						</TouchableOpacity>
+						<View style={styles.formContainer}>
+							<View style={styles.inputContainer}>
+								<Text style={styles.inputLabel}>Email</Text>
+								<View style={styles.inputWrapper}>
+									<Ionicons
+										name='mail-outline'
+										size={22}
+										color='#888'
+										style={styles.inputIcon}
+									/>
+									<TextInput
+										style={styles.input}
+										placeholder='Email kiriting'
+										value={email}
+										onChangeText={setEmail}
+										autoCapitalize='none'
+										keyboardType='email-address'
+									/>
+								</View>
 
-						<View style={styles.footer}>
-							<Text style={styles.footerText}>Don't have an account? </Text>
-							<TouchableOpacity onPress={() => router.push("/auth/signup")}>
-								<Text style={styles.link}>Sign Up</Text>
+								<Text style={styles.inputLabel}>Password</Text>
+								<View style={styles.inputWrapper}>
+									<Ionicons
+										name='lock-closed-outline'
+										size={22}
+										color='#888'
+										style={styles.inputIcon}
+									/>
+									<TextInput
+										style={styles.input}
+										placeholder='Parolni kiriting'
+										value={password}
+										onChangeText={setPassword}
+										secureTextEntry={!showPassword}
+									/>
+									<TouchableOpacity
+										style={styles.eyeIcon}
+										onPress={() => setShowPassword(!showPassword)}>
+										<Ionicons
+											name={showPassword ? "eye-off-outline" : "eye-outline"}
+											size={22}
+											color='#888'
+										/>
+									</TouchableOpacity>
+								</View>
+
+								<View style={styles.forgotPassword}>
+									<TouchableOpacity
+										onPress={() => router.push("/auth/forgot-password")}>
+										<Text style={styles.forgotPasswordText}>
+											Parolni unutdingizmi?
+										</Text>
+									</TouchableOpacity>
+								</View>
+							</View>
+
+							<TouchableOpacity
+								style={styles.button}
+								onPress={handleLogin}
+								disabled={loading}>
+								{loading ? (
+									<ActivityIndicator color='#fff' size='small' />
+								) : (
+									<Text style={styles.buttonText}>Kirish</Text>
+								)}
 							</TouchableOpacity>
+
+							<View style={styles.footer}>
+								<Text style={styles.footerText}>Hisobingiz yo'qmi? </Text>
+								<TouchableOpacity onPress={() => router.push("/auth/signup")}>
+									<Text style={styles.link}>Ro'yxatdan o'ting</Text>
+								</TouchableOpacity>
+							</View>
 						</View>
 					</View>
 				</ScrollView>
@@ -138,57 +167,46 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f9f9f9",
+		backgroundColor: "#fff",
+	},
+	backButton: {
+		padding: 8,
+		marginLeft: 4,
 	},
 	keyboardAvoidView: {
 		flex: 1,
+		justifyContent: "center",
 	},
 	scrollContent: {
 		flexGrow: 1,
+		padding: 20,
 		justifyContent: "center",
-		padding: 24,
 	},
-	logoContainer: {
+	contentContainer: {
+		width: "100%",
+		maxWidth: 400,
+		alignSelf: "center",
+	},
+	welcomeTextContainer: {
+		marginBottom: 30,
+		marginTop: 20,
 		alignItems: "center",
-		marginBottom: 40,
-	},
-	logo: {
-		width: 80,
-		height: 80,
-		marginBottom: 16,
-	},
-	appName: {
-		fontSize: 28,
-		fontWeight: "bold",
-		color: "#3f51b5",
-		marginBottom: 8,
-	},
-	appTagline: {
-		fontSize: 16,
-		color: "#666",
-		textAlign: "center",
 	},
 	formContainer: {
-		backgroundColor: "white",
-		borderRadius: 16,
-		padding: 24,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 10,
-		elevation: 5,
+		width: "100%",
+		alignItems: "center",
 	},
 	title: {
-		fontSize: 24,
+		fontSize: 28,
 		fontWeight: "bold",
-		marginBottom: 8,
 		color: "#333",
+		marginBottom: 8,
 		textAlign: "center",
 	},
 	subtitle: {
-		fontSize: 16,
+		fontSize: 18,
 		color: "#666",
-		marginBottom: 24,
+		marginBottom: 20,
 		textAlign: "center",
 	},
 	inputContainer: {
@@ -196,39 +214,49 @@ const styles = StyleSheet.create({
 		marginBottom: 24,
 	},
 	inputLabel: {
-		fontSize: 14,
-		fontWeight: "600",
+		fontSize: 16,
+		fontWeight: "500",
 		color: "#333",
 		marginBottom: 8,
 	},
-	input: {
-		backgroundColor: "#f5f7fa",
-		padding: 16,
-		borderRadius: 12,
-		marginBottom: 20,
+	inputWrapper: {
+		flexDirection: "row",
+		alignItems: "center",
 		borderWidth: 1,
-		borderColor: "#e0e6ed",
+		borderColor: "#ddd",
+		borderRadius: 8,
+		marginBottom: 16,
+		paddingHorizontal: 12,
+	},
+	inputIcon: {
+		marginRight: 10,
+	},
+	eyeIcon: {
+		padding: 10,
+	},
+	input: {
+		flex: 1,
+		height: 50,
 		fontSize: 16,
 	},
 	forgotPassword: {
 		alignSelf: "flex-end",
+		marginTop: 4,
 		marginBottom: 16,
 	},
 	forgotPasswordText: {
 		color: "#3f51b5",
-		fontWeight: "600",
+		fontWeight: "500",
 		fontSize: 14,
 	},
 	button: {
 		backgroundColor: "#3f51b5",
-		padding: 16,
-		borderRadius: 12,
+		height: 50,
+		borderRadius: 8,
+		justifyContent: "center",
 		alignItems: "center",
-		shadowColor: "#3f51b5",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 4,
+		marginBottom: 16,
+		width: "100%",
 	},
 	buttonText: {
 		color: "white",
@@ -236,9 +264,10 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	footer: {
-		marginTop: 24,
 		flexDirection: "row",
 		justifyContent: "center",
+		marginTop: 16,
+		width: "100%",
 	},
 	footerText: {
 		color: "#666",

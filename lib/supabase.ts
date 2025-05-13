@@ -174,6 +174,7 @@ export type AuthUser = {
   id: string;
   email: string;
   role: UserRole;
+  display_name?: string | null;
 }
 
 // Validate email function with more strict rules

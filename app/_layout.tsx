@@ -24,34 +24,52 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 		if (loading) return; // Wait for auth state to be checked
 
 		const inAuthGroup = segments[0] === "auth";
+		const isOnboarding = segments[0] === "onboarding";
+		const isRootPath = segments.join("/") === "";
 
-		// If user isn't signed in and isn't on an auth screen, redirect to login
-		if (!user && !inAuthGroup) {
-			// Allow access to the email confirmation page without authentication
+		// For debugging
+		console.log("Navigation guard checking paths:", {
+			segments,
+			inAuthGroup,
+			isOnboarding,
+			isRootPath,
+			hasUser: !!user,
+		});
+
+		// Handle unauthenticated users
+		if (!user) {
+			// Allow access to auth screens, onboarding, and confirm page without auth
+			if (inAuthGroup || isOnboarding || isRootPath) {
+				// Special case for confirmation page
+				if (inAuthGroup && segments[1] === "confirm") {
+					return;
+				}
+				return; // Allow staying on these screens
+			}
+
+			// For all other paths, redirect to onboarding
+			console.log("Redirecting unauthenticated user to onboarding");
+			router.replace("/onboarding");
+			return;
+		}
+
+		// Handle authenticated users
+		if (user) {
+			// Don't redirect if on the confirmation page
 			if (inAuthGroup && segments[1] === "confirm") {
 				return;
 			}
 
-			// Only redirect if we're not already on the login page
-			if (segments.join("/") !== "auth/login") {
-				router.replace("/auth/login");
-			}
-		}
-		// If user is signed in and is on an auth screen, redirect based on role
-		else if (user && inAuthGroup) {
-			// Skip redirecting if on the email confirmation page
-			if (segments[1] === "confirm") {
-				return;
-			}
+			// If authenticated and on auth or onboarding, redirect to dashboard
+			if (inAuthGroup || isOnboarding || isRootPath) {
+				const targetPath =
+					user.role === UserRole.TEACHER
+						? "/teacher/dashboard"
+						: "/student/dashboard";
 
-			const targetPath =
-				user.role === UserRole.TEACHER
-					? "/teacher/dashboard"
-					: "/student/dashboard";
-
-			// Only redirect if we're not already at the target path
-			if (segments.join("/") !== targetPath.substring(1)) {
+				console.log(`Redirecting authenticated user to ${targetPath}`);
 				router.replace(targetPath);
+				return;
 			}
 		}
 	}, [user, loading, segments]);
@@ -77,6 +95,10 @@ export default function RootLayout() {
 					value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 					<RootNavigationGuard>
 						<Stack>
+							<Stack.Screen
+								name='onboarding'
+								options={{ headerShown: false }}
+							/>
 							<Stack.Screen name='auth' options={{ headerShown: false }} />
 							<Stack.Screen name='teacher' options={{ headerShown: false }} />
 							<Stack.Screen name='student' options={{ headerShown: false }} />
