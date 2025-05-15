@@ -6,33 +6,17 @@ import {
 	TouchableOpacity,
 	ScrollView,
 	SafeAreaView,
-	FlatList,
 	ActivityIndicator,
 	Dimensions,
+	ImageBackground,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { useNotifications } from "../../context/NotificationsContext";
-import {
-	Ionicons,
-	MaterialIcons,
-	FontAwesome5,
-	AntDesign,
-} from "@expo/vector-icons";
-
-// Get screen width for responsive design
-const { width } = Dimensions.get("window");
-const cardWidth = (width - 56) / 2; // 2 cards per row with margins
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { format, isBefore } from "date-fns";
 
 // Types
-type Group = {
-	id: string;
-	name: string;
-	pending_tasks: number;
-	completed_tasks: number;
-};
-
 type Task = {
 	id: string;
 	title: string;
@@ -41,18 +25,27 @@ type Task = {
 	status: "pending" | "completed" | "overdue";
 };
 
+type SubmittedTask = {
+	id: string;
+	task_id: string;
+	task_title: string;
+	group_name: string;
+	submitted_at: string;
+	feedback?: string;
+	rating?: number | null;
+};
+
 export default function StudentDashboard() {
 	const { user } = useAuth();
-	const { unreadCount } = useNotifications();
-	const [groups, setGroups] = useState<Group[]>([]);
-	const [recentTasks, setRecentTasks] = useState<Task[]>([]);
+	const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
+	const [submittedTasks, setSubmittedTasks] = useState<SubmittedTask[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [stats, setStats] = useState({
-		groups: 0,
+		groupCount: 0,
 		pendingTasks: 0,
 		completedTasks: 0,
-		overdueTasks: 0,
 	});
+	const [userName, setUserName] = useState("");
 
 	useEffect(() => {
 		fetchDashboardData();
@@ -63,6 +56,19 @@ export default function StudentDashboard() {
 			setLoading(true);
 
 			if (!user) return;
+
+			// Fetch user profile to get name
+			const { data: profileData, error: profileError } = await supabase
+				.from("user_profiles")
+				.select("name")
+				.eq("id", user.id)
+				.single();
+
+			if (profileError) throw profileError;
+
+			if (profileData) {
+				setUserName(profileData.name || user.email?.split("@")[0] || "");
+			}
 
 			// Fetch groups that the student is a member of
 			const { data: studentGroups, error: groupsError } = await supabase
@@ -96,54 +102,26 @@ export default function StudentDashboard() {
 					`
 					)
 					.in("group_id", groupIds)
-					.order("due_date", { ascending: false });
+					.order("due_date", { ascending: true });
 
 				if (tasksError) throw tasksError;
 
-				// Process groups with task counts
-				const processedGroups = studentGroups.map((group) => {
-					const groupTasks =
-						tasks?.filter((t) => t.group_id === group.groups.id) || [];
-					const completedTasks = groupTasks.filter(
-						(t) =>
-							t.submissions &&
-							t.submissions.some(
-								(s: { student_id: string }) =>
-									s.student_id === user.id.toString()
-							)
-					).length;
-
-					return {
-						id: group.groups.id,
-						name: group.groups.name,
-						pending_tasks: groupTasks.length - completedTasks,
-						completed_tasks: completedTasks,
-					};
-				});
-
-				setGroups(processedGroups);
-
-				// Calculate stats
+				// Process tasks and count stats
 				let pendingCount = 0;
 				let completedCount = 0;
-				let overdueCount = 0;
+				let upcomingTasksList: Task[] = [];
 
-				// Process recent tasks and count stats
 				if (tasks) {
-					const recentTasksList = tasks.slice(0, 5).map((task) => {
+					// Process all tasks for statistics
+					tasks.forEach((task) => {
 						const isCompleted =
 							task.submissions &&
 							task.submissions.some(
 								(s: { student_id: string }) => s.student_id === user.id
 							);
-						const isOverdue =
-							new Date(task.due_date) < new Date() && !isCompleted;
 
-						// Update stats counters
 						if (isCompleted) {
 							completedCount++;
-						} else if (isOverdue) {
-							overdueCount++;
 						} else {
 							pendingCount++;
 						}
@@ -153,37 +131,84 @@ export default function StudentDashboard() {
 							(g) => g.groups.id === task.group_id
 						);
 
-						return {
-							id: task.id,
-							title: task.title,
-							group_name: group ? group.groups.name : "Unknown Group",
-							due_date: task.due_date,
-							status: isCompleted
-								? "completed"
-								: isOverdue
-								? "overdue"
-								: "pending",
-						};
+						// For upcoming tasks list, only include pending/overdue tasks
+						if (!isCompleted) {
+							const isOverdue = isBefore(new Date(task.due_date), new Date());
+
+							upcomingTasksList.push({
+								id: task.id,
+								title: task.title,
+								group_name: group ? group.groups.name : "Guruh nomi",
+								due_date: task.due_date,
+								status: isOverdue ? "overdue" : "pending",
+							});
+						}
 					});
 
-					setRecentTasks(recentTasksList as Task[]);
+					// Sort by due date (closest first) and limit to 5 tasks
+					upcomingTasksList.sort(
+						(a, b) =>
+							new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+					);
+
+					setUpcomingTasks(upcomingTasksList.slice(0, 5));
 				}
 
 				// Set overall stats
 				setStats({
-					groups: studentGroups.length,
+					groupCount: studentGroups.length,
 					pendingTasks: pendingCount,
 					completedTasks: completedCount,
-					overdueTasks: overdueCount,
 				});
+
+				// Fetch student's submitted tasks with grades
+				const { data: submissions, error: submissionsError } = await supabase
+					.from("submissions")
+					.select(
+						`
+						id,
+						task_id,
+						updated_at,
+						feedback,
+						rating,
+						tasks(title, group_id)
+					`
+					)
+					.eq("student_id", user.id)
+					.order("updated_at", { ascending: false })
+					.limit(5);
+
+				if (submissionsError) throw submissionsError;
+
+				if (submissions && submissions.length > 0) {
+					const processedSubmissions = submissions.map((submission) => {
+						// Find group name
+						const group = studentGroups.find(
+							(g) => g.groups.id === submission.tasks.group_id
+						);
+
+						return {
+							id: submission.id,
+							task_id: submission.task_id,
+							task_title: submission.tasks.title,
+							group_name: group ? group.groups.name : "Guruh nomi",
+							submitted_at: submission.updated_at,
+							feedback: submission.feedback,
+							rating: submission.rating,
+						};
+					});
+
+					setSubmittedTasks(processedSubmissions);
+				} else {
+					setSubmittedTasks([]);
+				}
 			} else {
-				setGroups([]);
-				setRecentTasks([] as Task[]);
+				setUpcomingTasks([]);
+				setSubmittedTasks([]);
 				setStats({
-					groups: 0,
+					groupCount: 0,
 					pendingTasks: 0,
 					completedTasks: 0,
-					overdueTasks: 0,
 				});
 			}
 		} catch (error) {
@@ -193,90 +218,23 @@ export default function StudentDashboard() {
 		}
 	};
 
-	const navigateToGroups = () => router.push("/student/groups" as any);
-	const navigateToTasks = () => router.push("/student/tasks" as any);
-	const navigateToCalendar = () => router.push("/student/calendar" as any);
-	const navigateToNotifications = () =>
-		router.push("/student/notifications" as any);
+	const navigateToTask = (taskId: string) => {
+		router.push({
+			pathname: "/student/groups/task/[id]",
+			params: { id: taskId },
+		});
+	};
 
-	const renderGroupItem = ({ item }: { item: Group }) => (
-		<TouchableOpacity
-			style={styles.groupCard}
-			onPress={() =>
-				router.push({
-					pathname: "/student/groups/[id]",
-					params: { id: item.id, name: item.name },
-				})
-			}>
-			<View style={styles.groupIconContainer}>
-				<Ionicons name='people' size={24} color='#3f51b5' />
-			</View>
-			<View style={styles.groupDetails}>
-				<Text style={styles.groupName}>{item.name}</Text>
-				<View style={styles.taskStats}>
-					<Text style={styles.pendingTasks}>{item.pending_tasks} pending</Text>
-					<Text style={styles.completedTasks}>
-						{item.completed_tasks} completed
-					</Text>
-				</View>
-			</View>
-			<MaterialIcons name='chevron-right' size={24} color='#999' />
-		</TouchableOpacity>
-	);
-
-	const renderTaskItem = ({ item }: { item: Task }) => (
-		<TouchableOpacity
-			style={styles.taskItem}
-			onPress={() =>
-				router.push({
-					pathname: "/student/tasks/[id]",
-					params: { id: item.id, name: item.title },
-				})
-			}>
-			<View
-				style={[
-					styles.taskStatusIndicator,
-					{
-						backgroundColor:
-							item.status === "completed"
-								? "#4caf50"
-								: item.status === "overdue"
-								? "#f44336"
-								: "#ff9800",
-					},
-				]}
-			/>
-			<View style={styles.taskDetails}>
-				<Text style={styles.taskTitle}>{item.title}</Text>
-				<Text style={styles.taskMeta}>
-					{item.group_name} • Due:{" "}
-					{new Date(item.due_date).toLocaleDateString()}
-				</Text>
-			</View>
-			<View style={styles.taskStatus}>
-				<Text
-					style={[
-						styles.taskStatusText,
-						{
-							color:
-								item.status === "completed"
-									? "#4caf50"
-									: item.status === "overdue"
-									? "#f44336"
-									: "#ff9800",
-						},
-					]}>
-					{item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-				</Text>
-			</View>
-		</TouchableOpacity>
-	);
+	const formatDate = (dateString: string) => {
+		const date = new Date(dateString);
+		return format(date, "dd/MM/yyyy");
+	};
 
 	if (loading) {
 		return (
 			<SafeAreaView style={styles.container}>
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			</SafeAreaView>
 		);
@@ -287,154 +245,151 @@ export default function StudentDashboard() {
 			<ScrollView
 				style={styles.scrollView}
 				showsVerticalScrollIndicator={false}>
-				{/* Hero Section */}
-				<View style={styles.heroSection}>
-					<View style={styles.heroContent}>
-						<Text style={styles.welcomeText}>Welcome back,</Text>
-						<Text style={styles.nameText}>{user?.email?.split("@")[0]}</Text>
-						<Text style={styles.subtitleText}>
-							Track your tasks and assignments
-						</Text>
-					</View>
-					<View style={styles.heroImageContainer}>
-						<Ionicons name='school-outline' size={80} color='#3f51b5' />
-					</View>
+				{/* Header Section */}
+				<View style={styles.headerSection}>
+					<Text style={styles.welcomeText}>Salom, {userName}</Text>
+					<Text style={styles.roleText}>Student</Text>
 				</View>
 
-				{/* Stats Overview */}
+				{/* Stats Cards */}
 				<View style={styles.statsContainer}>
-					<View style={styles.statsRow}>
-						<View style={styles.statCard}>
-							<View
-								style={[styles.statIconBox, { backgroundColor: "#E3F2FD" }]}>
-								<Ionicons name='people' size={20} color='#2196F3' />
-							</View>
-							<Text style={styles.statValue}>{stats.groups}</Text>
-							<Text style={styles.statLabel}>Groups</Text>
+					<View style={styles.statCard}>
+						<View style={[styles.statIconContainer, styles.blueIcon]}>
+							<Ionicons name='book-outline' size={24} color='#4169E1' />
 						</View>
-
-						<View style={styles.statCard}>
-							<View
-								style={[styles.statIconBox, { backgroundColor: "#FFF8E1" }]}>
-								<Ionicons name='time' size={20} color='#FF9800' />
-							</View>
-							<Text style={styles.statValue}>{stats.pendingTasks}</Text>
-							<Text style={styles.statLabel}>Pending</Text>
-						</View>
+						<Text style={styles.statValue}>{stats.groupCount}</Text>
+						<Text style={styles.statLabel}>Darslar</Text>
 					</View>
 
-					<View style={styles.statsRow}>
-						<View style={styles.statCard}>
-							<View
-								style={[styles.statIconBox, { backgroundColor: "#E8F5E9" }]}>
-								<Ionicons name='checkmark-circle' size={20} color='#4CAF50' />
-							</View>
-							<Text style={styles.statValue}>{stats.completedTasks}</Text>
-							<Text style={styles.statLabel}>Completed</Text>
+					<View style={styles.statCard}>
+						<View style={[styles.statIconContainer, styles.purpleIcon]}>
+							<Ionicons name='time-outline' size={24} color='#9966CC' />
 						</View>
+						<Text style={styles.statValue}>{stats.pendingTasks}</Text>
+						<Text style={styles.statLabel}>Yaqin vazifalar</Text>
+					</View>
 
-						<View style={styles.statCard}>
-							<View
-								style={[styles.statIconBox, { backgroundColor: "#FFEBEE" }]}>
-								<Ionicons name='alert-circle' size={20} color='#F44336' />
-							</View>
-							<Text style={styles.statValue}>{stats.overdueTasks}</Text>
-							<Text style={styles.statLabel}>Overdue</Text>
+					<View style={styles.statCard}>
+						<View style={[styles.statIconContainer, styles.greenIcon]}>
+							<Ionicons
+								name='checkmark-circle-outline'
+								size={24}
+								color='#4CAF50'
+							/>
 						</View>
+						<Text style={styles.statValue}>{stats.completedTasks}</Text>
+						<Text style={styles.statLabel}>Bajarilgan</Text>
 					</View>
 				</View>
 
-				{/* Quick Access Section */}
-				<View style={styles.quickAccessSection}>
-					<Text style={styles.sectionTitle}>Quick Access</Text>
+				{/* Upcoming Tasks Section */}
+				<View style={styles.tasksSection}>
+					<Text style={styles.sectionTitle}>Yaqinlashgan Vazifalar</Text>
 
-					<View style={styles.menuGrid}>
-						{/* Groups Card */}
-						<TouchableOpacity
-							style={styles.menuCard}
-							onPress={navigateToGroups}>
-							<View
-								style={[styles.iconContainer, { backgroundColor: "#e3f2fd" }]}>
-								<Ionicons name='people' size={28} color='#2196f3' />
-							</View>
-							<View style={styles.menuCardTextContainer}>
-								<Text style={styles.menuCardTitle}>Groups</Text>
-								<Text style={styles.menuCardSubtitle}>
-									View your joined groups
-								</Text>
-							</View>
-							<View style={styles.arrowContainer}>
-								<AntDesign name='arrowright' size={20} color='#2196f3' />
-							</View>
-						</TouchableOpacity>
+					{upcomingTasks.length > 0 ? (
+						upcomingTasks.map((task) => (
+							<TouchableOpacity
+								key={task.id}
+								style={styles.taskCard}
+								onPress={() => navigateToTask(task.id)}>
+								<View style={styles.taskHeader}>
+									<Text style={styles.taskTitle}>{task.title}</Text>
+									<Text style={styles.taskGroup}>{task.group_name}</Text>
+									<Text style={styles.taskSubtitle}>
+										task{task.title.toLowerCase().includes("task") ? "" : "2"}
+									</Text>
+								</View>
 
-						{/* Tasks Card */}
-						<TouchableOpacity style={styles.menuCard} onPress={navigateToTasks}>
-							<View
-								style={[styles.iconContainer, { backgroundColor: "#e8f5e9" }]}>
-								<MaterialIcons name='assignment' size={28} color='#4caf50' />
-							</View>
-							<View style={styles.menuCardTextContainer}>
-								<Text style={styles.menuCardTitle}>Tasks</Text>
-								<Text style={styles.menuCardSubtitle}>
-									Manage your assignments
-								</Text>
-							</View>
-							<View style={styles.arrowContainer}>
-								<AntDesign name='arrowright' size={20} color='#4caf50' />
-							</View>
-						</TouchableOpacity>
+								<View style={styles.taskDate}>
+									<Ionicons name='calendar-outline' size={18} color='#666' />
+									<Text style={styles.dateText}>
+										Muddat: {formatDate(task.due_date)}
+									</Text>
+								</View>
 
-						{/* Notifications Card */}
-						<TouchableOpacity
-							style={styles.menuCard}
-							onPress={navigateToNotifications}>
-							<View
-								style={[styles.iconContainer, { backgroundColor: "#f3e5f5" }]}>
-								<Ionicons name='notifications' size={28} color='#9c27b0' />
-								{unreadCount > 0 && (
-									<View style={styles.notificationBadge}>
-										<Text style={styles.notificationBadgeText}>
-											{unreadCount > 9 ? "9+" : unreadCount}
+								{task.status === "overdue" ? (
+									<View style={styles.warningContainer}>
+										<Ionicons name='time-outline' size={16} color='#FF9800' />
+										<Text style={styles.warningText}>Muddat tugadi</Text>
+									</View>
+								) : (
+									<View style={styles.warningContainer}>
+										<Ionicons name='time-outline' size={16} color='#FF9800' />
+										<Text style={styles.warningText}>
+											Tez orada muddati tugaydi
 										</Text>
 									</View>
 								)}
-							</View>
-							<View style={styles.menuCardTextContainer}>
-								<Text style={styles.menuCardTitle}>Notifications</Text>
-								<Text style={styles.menuCardSubtitle}>
-									Check messages & alerts
-								</Text>
-							</View>
-							<View style={styles.arrowContainer}>
-								<AntDesign name='arrowright' size={20} color='#9c27b0' />
-							</View>
-						</TouchableOpacity>
-					</View>
+							</TouchableOpacity>
+						))
+					) : (
+						<View style={styles.emptyStateContainer}>
+							<Ionicons name='calendar-outline' size={48} color='#DDD' />
+							<Text style={styles.emptyStateText}>
+								Hech qanday vazifa topilmadi
+							</Text>
+						</View>
+					)}
 				</View>
 
-				{/* Groups Section */}
-				<View style={styles.groupsSection}>
-					<View style={styles.sectionHeader}>
-						<Text style={styles.sectionTitle}>Your Groups</Text>
-						<TouchableOpacity onPress={navigateToGroups}>
-							<Text style={styles.seeAllText}>See All</Text>
-						</TouchableOpacity>
-					</View>
+				{/* Recent Activity Section */}
+				<View style={styles.tasksSection}>
+					<Text style={styles.sectionTitle}>So'nggi faollik</Text>
 
-					{groups.length > 0 ? (
-						<View style={styles.groupsList}>
-							{groups.slice(0, 3).map((item) => (
-								<React.Fragment key={item.id}>
-									{renderGroupItem({ item })}
-								</React.Fragment>
-							))}
-						</View>
+					{submittedTasks.length > 0 ? (
+						submittedTasks.map((submission) => (
+							<TouchableOpacity
+								key={submission.id}
+								style={styles.activityCard}
+								onPress={() => navigateToTask(submission.task_id)}>
+								<View style={styles.taskHeader}>
+									<Text style={styles.taskTitle}>{submission.task_title}</Text>
+									<Text style={styles.taskGroup}>{submission.group_name}</Text>
+									<Text style={styles.taskSubtitle}>
+										{submission.task_title.toLowerCase().includes("task")
+											? submission.task_title
+											: " erne javob"}
+									</Text>
+								</View>
+
+								<View style={styles.taskDate}>
+									<Ionicons name='calendar-outline' size={18} color='#666' />
+									<Text style={styles.dateText}>
+										{formatDate(submission.submitted_at)}
+									</Text>
+								</View>
+
+								{submission.rating !== null &&
+								submission.rating !== undefined ? (
+									<View style={styles.fileDownloadContainer}>
+										<Ionicons
+											name='document-text-outline'
+											size={16}
+											color='#4169E1'
+										/>
+										<Text style={styles.fileDownloadText}>
+											Yuborilgan faylni ko'rish
+										</Text>
+									</View>
+								) : (
+									<View style={styles.fileDownloadContainer}>
+										<Ionicons
+											name='document-text-outline'
+											size={16}
+											color='#4169E1'
+										/>
+										<Text style={styles.fileDownloadText}>
+											Yuborilgan faylni ko'rish
+										</Text>
+									</View>
+								)}
+							</TouchableOpacity>
+						))
 					) : (
-						<View style={styles.emptyState}>
-							<Ionicons name='people-outline' size={48} color='#ccc' />
+						<View style={styles.emptyStateContainer}>
+							<Ionicons name='document-text-outline' size={48} color='#DDD' />
 							<Text style={styles.emptyStateText}>
-								You haven't joined any groups yet
+								Hech qanday yuborilgan vazifa topilmadi
 							</Text>
 						</View>
 					)}
@@ -447,7 +402,7 @@ export default function StudentDashboard() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
 	},
 	scrollView: {
 		flex: 1,
@@ -457,75 +412,58 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 	},
-	heroSection: {
-		flexDirection: "row",
-		padding: 20,
+	headerSection: {
+		backgroundColor: "#4169E1",
+		paddingTop: 60,
 		paddingBottom: 30,
-		backgroundColor: "white",
+		paddingHorizontal: 20,
 		borderBottomLeftRadius: 30,
 		borderBottomRightRadius: 30,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 15,
-		elevation: 5,
-		marginBottom: 20,
-	},
-	heroContent: {
-		flex: 1,
-		justifyContent: "center",
 	},
 	welcomeText: {
-		fontSize: 20,
-		color: "#666",
-	},
-	nameText: {
-		fontSize: 28,
+		fontSize: 24,
 		fontWeight: "bold",
-		color: "#333",
-		marginBottom: 8,
-		textTransform: "capitalize",
+		color: "white",
+		marginBottom: 4,
 	},
-	subtitleText: {
+	roleText: {
 		fontSize: 16,
-		color: "#777",
-		lineHeight: 22,
-	},
-	heroImageContainer: {
-		width: 120,
-		height: 120,
-		justifyContent: "center",
-		alignItems: "center",
+		color: "rgba(255, 255, 255, 0.8)",
 	},
 	statsContainer: {
-		padding: 15,
-		marginHorizontal: 20,
-		marginBottom: 25,
-	},
-	statsRow: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		marginBottom: 15,
+		paddingHorizontal: 16,
+		marginTop: -30,
 	},
 	statCard: {
 		backgroundColor: "white",
 		borderRadius: 16,
-		padding: 15,
-		width: cardWidth,
+		padding: 16,
+		width: "30%",
 		alignItems: "center",
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
 		elevation: 2,
 	},
-	statIconBox: {
-		width: 40,
-		height: 40,
-		borderRadius: 12,
+	statIconContainer: {
+		width: 48,
+		height: 48,
+		borderRadius: 24,
 		justifyContent: "center",
 		alignItems: "center",
-		marginBottom: 10,
+		marginBottom: 8,
+	},
+	blueIcon: {
+		backgroundColor: "rgba(65, 105, 225, 0.1)",
+	},
+	purpleIcon: {
+		backgroundColor: "rgba(153, 102, 204, 0.1)",
+	},
+	greenIcon: {
+		backgroundColor: "rgba(76, 175, 80, 0.1)",
 	},
 	statValue: {
 		fontSize: 24,
@@ -533,208 +471,102 @@ const styles = StyleSheet.create({
 		color: "#333",
 	},
 	statLabel: {
-		fontSize: 14,
-		color: "#777",
-		marginTop: 5,
+		fontSize: 12,
+		color: "#666",
+		textAlign: "center",
 	},
-	quickAccessSection: {
+	tasksSection: {
 		padding: 20,
-		paddingBottom: 5,
-	},
-	recentTasksSection: {
-		padding: 20,
-		paddingTop: 0,
-	},
-	groupsSection: {
-		padding: 20,
-		paddingTop: 0,
-		marginBottom: 20,
+		marginTop: 10,
 	},
 	sectionTitle: {
-		fontSize: 20,
-		fontWeight: "bold",
-		color: "#333",
-		marginBottom: 15,
-	},
-	sectionHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 15,
-	},
-	seeAllText: {
-		color: "#3f51b5",
-		fontWeight: "600",
-	},
-	menuGrid: {
-		marginBottom: 15,
-	},
-	menuCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "white",
-		borderRadius: 16,
-		padding: 16,
-		marginBottom: 15,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
-	},
-	iconContainer: {
-		width: 50,
-		height: 50,
-		borderRadius: 12,
-		justifyContent: "center",
-		alignItems: "center",
-		marginRight: 15,
-		position: "relative",
-	},
-	menuCardTextContainer: {
-		flex: 1,
-	},
-	menuCardTitle: {
 		fontSize: 18,
 		fontWeight: "bold",
 		color: "#333",
-		marginBottom: 4,
+		marginBottom: 16,
 	},
-	menuCardSubtitle: {
-		fontSize: 14,
-		color: "#777",
-	},
-	arrowContainer: {
-		width: 30,
-		height: 30,
-		borderRadius: 15,
-		backgroundColor: "#f5f5f7",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	notificationBadge: {
-		position: "absolute",
-		top: -5,
-		right: -5,
-		backgroundColor: "#f44336",
-		borderRadius: 10,
-		minWidth: 20,
-		height: 20,
-		justifyContent: "center",
-		alignItems: "center",
-		paddingHorizontal: 4,
-		borderWidth: 2,
-		borderColor: "white",
-	},
-	notificationBadgeText: {
-		color: "white",
-		fontSize: 10,
-		fontWeight: "bold",
-	},
-	groupCard: {
+	taskCard: {
 		backgroundColor: "white",
 		borderRadius: 16,
 		padding: 16,
-		marginBottom: 12,
-		flexDirection: "row",
-		alignItems: "center",
+		marginBottom: 16,
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 3,
 		elevation: 2,
 	},
-	groupIconContainer: {
-		width: 48,
-		height: 48,
-		borderRadius: 24,
-		backgroundColor: "#e8eaf6",
-		justifyContent: "center",
-		alignItems: "center",
-		marginRight: 16,
-	},
-	groupDetails: {
-		flex: 1,
-	},
-	groupName: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "#333",
-		marginBottom: 4,
-	},
-	taskStats: {
-		flexDirection: "row",
-	},
-	pendingTasks: {
-		fontSize: 14,
-		color: "#ff9800",
-		marginRight: 12,
-	},
-	completedTasks: {
-		fontSize: 14,
-		color: "#4caf50",
-	},
-	tasksList: {
-		marginBottom: 5,
-	},
-	groupsList: {
-		marginBottom: 5,
-	},
-	taskItem: {
+	activityCard: {
 		backgroundColor: "white",
 		borderRadius: 16,
 		padding: 16,
-		marginBottom: 12,
-		flexDirection: "row",
-		alignItems: "center",
+		marginBottom: 16,
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 3,
 		elevation: 2,
 	},
-	taskStatusIndicator: {
-		width: 12,
-		height: 12,
-		borderRadius: 6,
-		marginRight: 16,
-	},
-	taskDetails: {
-		flex: 1,
+	taskHeader: {
+		marginBottom: 12,
 	},
 	taskTitle: {
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: "600",
 		color: "#333",
 		marginBottom: 4,
 	},
-	taskMeta: {
+	taskGroup: {
 		fontSize: 14,
 		color: "#666",
+		marginBottom: 2,
 	},
-	taskStatus: {
-		marginLeft: 8,
-	},
-	taskStatusText: {
+	taskSubtitle: {
 		fontSize: 14,
-		fontWeight: "600",
+		color: "#999",
 	},
-	emptyState: {
-		backgroundColor: "white",
-		borderRadius: 16,
-		padding: 24,
+	taskDate: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 10,
+	},
+	dateText: {
+		fontSize: 14,
+		color: "#666",
+		marginLeft: 6,
+	},
+	warningContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	warningText: {
+		fontSize: 14,
+		color: "#FF9800",
+		marginLeft: 6,
+	},
+	fileDownloadContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#EBF1FF",
+		padding: 8,
+		borderRadius: 8,
+	},
+	fileDownloadText: {
+		fontSize: 14,
+		color: "#4169E1",
+		marginLeft: 6,
+	},
+	emptyStateContainer: {
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
+		padding: 30,
+		backgroundColor: "white",
+		borderRadius: 16,
 	},
 	emptyStateText: {
+		marginTop: 10,
 		fontSize: 16,
-		color: "#666",
-		marginTop: 12,
+		color: "#999",
 		textAlign: "center",
 	},
 });
