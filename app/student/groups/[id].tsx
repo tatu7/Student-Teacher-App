@@ -49,13 +49,6 @@ export default function GroupDetailsScreen() {
 
 			if (!user || !id) return;
 
-			console.log(
-				"Fetching group details for group ID:",
-				id,
-				"and user ID:",
-				user.id
-			);
-
 			// Fetch group details
 			const { data: groupData, error: groupError } = await supabase
 				.from("groups")
@@ -68,8 +61,6 @@ export default function GroupDetailsScreen() {
 				.eq("id", id)
 				.single();
 
-			console.log("Group data:", groupData, "Error:", groupError);
-
 			if (groupError) throw groupError;
 
 			if (groupData?.teacher_id) {
@@ -79,8 +70,6 @@ export default function GroupDetailsScreen() {
 					.select("email")
 					.eq("id", groupData.teacher_id)
 					.single();
-
-				console.log("Teacher data:", teacherData, "Error:", teacherError);
 
 				if (teacherError) throw teacherError;
 
@@ -95,24 +84,14 @@ export default function GroupDetailsScreen() {
 				.select("*", { count: "exact", head: true })
 				.eq("group_id", id); // Remove status filter to see all students
 
-			console.log("Student count:", count, "Error:", countError);
-
 			if (countError) throw countError;
 			setStudentCount(count || 0);
-
-			console.log("About to fetch tasks for group:", id);
 
 			// Fetch tasks for this group - simplified query
 			const { data: tasksData, error: tasksError } = await supabase
 				.from("tasks")
 				.select("*")
 				.eq("group_id", id);
-
-			console.log(id, "Tasks query result:", {
-				tasksData: tasksData ? JSON.stringify(tasksData) : "No tasks data",
-				tasksCount: tasksData ? tasksData.length : 0,
-				tasksError: tasksError ? JSON.stringify(tasksError) : "No error",
-			});
 
 			if (tasksError) throw tasksError;
 
@@ -123,11 +102,6 @@ export default function GroupDetailsScreen() {
 						.from("submissions")
 						.select("id, task_id")
 						.eq("student_id", user.id);
-
-				console.log("Submissions data:", {
-					submissionsData: submissionsData ? submissionsData.length : 0,
-					submissionsError,
-				});
 
 				// Process tasks with their completion status
 				const processedTasks = tasksData.map((task) => {
@@ -153,10 +127,8 @@ export default function GroupDetailsScreen() {
 					};
 				});
 
-				console.log("Processed tasks:", processedTasks.length);
 				setTasks(processedTasks);
 			} else {
-				console.log("No tasks found for this group");
 				setTasks([]);
 			}
 		} catch (error) {

@@ -18,7 +18,6 @@ export const redirectUrl = Linking.createURL('auth/confirm', {
   scheme: 'studentteacher'
 });
 
-console.log('Redirect URL for auth:', redirectUrl);
 
 // Configure the deep link handler
 Linking.addEventListener('url', handleDeepLink);
@@ -27,7 +26,6 @@ Linking.addEventListener('url', handleDeepLink);
 function handleDeepLink({ url }: { url: string }) {
   // Extract token from URL
   if (url.includes('auth/confirm')) {
-    console.log('Handling deep link:', url);
 
     let params;
     if (url.includes('#')) {
@@ -47,15 +45,9 @@ function handleDeepLink({ url }: { url: string }) {
         if (key === 'type') type = decodeURIComponent(value);
       });
 
-      console.log('Deep link params:', {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        email,
-        type
-      });
+
 
       if (accessToken && refreshToken) {
-        console.log('Setting session from deep link');
         supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
@@ -106,13 +98,6 @@ export const sendConfirmationEmail = async (email: string) => {
     const { data, error } = await supabase.auth.api.sendMagicLinkEmail(email, {
       redirectTo: redirectUrl
     });
-
-    if (error) {
-      console.error('Error sending confirmation email:', error);
-    } else {
-      console.log('Confirmation email sent successfully');
-    }
-
     return { data, error };
   } catch (error) {
     console.error('Error sending confirmation email:', error);
@@ -130,11 +115,9 @@ export const resendConfirmationEmail = async (email: string) => {
       });
 
       if (!error) {
-        console.log('Confirmation email sent via magic link');
         return { error: null };
       }
     } catch (e) {
-      console.log('Magic link method failed, trying password reset fallback');
     }
 
     // Fallback to password reset if magic link doesn't work
@@ -145,7 +128,6 @@ export const resendConfirmationEmail = async (email: string) => {
     if (error) {
       console.error('Failed to resend confirmation email:', error);
     } else {
-      console.log('Confirmation email resent successfully via password reset');
     }
 
     return { error };
@@ -157,9 +139,7 @@ export const resendConfirmationEmail = async (email: string) => {
 
 // Configure email confirmations
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state changed:', event);
   if (event === 'SIGNED_IN' && session?.user) {
-    console.log('User signed in:', session.user.email);
   }
 });
 

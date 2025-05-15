@@ -76,8 +76,6 @@ export default function StudentGroupsScreen() {
 			if (!user) return;
 			setLoading(true);
 
-			console.log("Fetching groups for student:", user.id);
-
 			// Get groups where student is a member
 			const { data, error } = await supabase
 				.from("group_students")
@@ -94,13 +92,6 @@ export default function StudentGroupsScreen() {
 				`
 				)
 				.eq("student_id", user.id);
-
-			console.log(
-				"Group students data:",
-				data ? data.length : 0,
-				"Error:",
-				error
-			);
 
 			if (error) throw error;
 

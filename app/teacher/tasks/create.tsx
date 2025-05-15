@@ -55,7 +55,6 @@ export default function CreateTaskScreen() {
 
 			// Add validation check for groupId
 			if (!groupId || groupId === "undefined") {
-				console.log("Missing groupId, received:", groupId);
 				setStudents([]);
 				Alert.alert(
 					"Error",
@@ -63,8 +62,6 @@ export default function CreateTaskScreen() {
 				);
 				return;
 			}
-
-			console.log("Fetching students for group ID:", groupId);
 
 			// Get students from this group with their profiles
 			const { data, error } = await supabase
@@ -90,7 +87,6 @@ export default function CreateTaskScreen() {
 			}));
 
 			setStudents(formattedStudents);
-			console.log("Group students:", data);
 		} catch (error) {
 			console.error("Error fetching group students:", error);
 			Alert.alert("Error", "Failed to load students");
@@ -178,7 +174,6 @@ export default function CreateTaskScreen() {
 								taskTitle: title,
 								taskId: taskData.id,
 							});
-							console.log(`Notification sent to student: ${student.email}`);
 						} catch (notificationError) {
 							console.error(
 								`Failed to notify student ${student.email}:`,

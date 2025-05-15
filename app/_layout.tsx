@@ -27,15 +27,6 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 		const isOnboarding = segments[0] === "onboarding";
 		const isRootPath = segments.join("/") === "";
 
-		// For debugging
-		console.log("Navigation guard checking paths:", {
-			segments,
-			inAuthGroup,
-			isOnboarding,
-			isRootPath,
-			hasUser: !!user,
-		});
-
 		// Handle unauthenticated users
 		if (!user) {
 			// Allow access to auth screens, onboarding, and confirm page without auth
@@ -48,7 +39,6 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 			}
 
 			// For all other paths, redirect to onboarding
-			console.log("Redirecting unauthenticated user to onboarding");
 			router.replace("/onboarding");
 			return;
 		}
@@ -67,7 +57,6 @@ function RootNavigationGuard({ children }: { children: React.ReactNode }) {
 						? "/teacher/dashboard"
 						: "/student/dashboard";
 
-				console.log(`Redirecting authenticated user to ${targetPath}`);
 				router.replace(targetPath);
 				return;
 			}

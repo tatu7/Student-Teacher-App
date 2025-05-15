@@ -165,7 +165,6 @@ export default function GroupDetailsScreen() {
 					groupName: groupName,
 					groupId: groupId,
 				});
-				console.log(`Notification sent to student: ${newStudentEmail.trim()}`);
 			} catch (notificationError) {
 				console.error(
 					"Failed to send group invitation notification:",

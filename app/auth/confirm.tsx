@@ -60,7 +60,6 @@ export default function ConfirmEmailScreen() {
 			SecureStore.getItemAsync("pendingConfirmationEmail")
 				.then((storedEmail) => {
 					if (storedEmail) {
-						console.log("Found stored email for confirmation:", storedEmail);
 					}
 				})
 				.catch((err) => console.error("Error retrieving stored email:", err));
@@ -77,12 +76,6 @@ export default function ConfirmEmailScreen() {
 				const refreshToken = params.refresh_token;
 				const email = params.email as string;
 				const type = params.type as string;
-
-				console.log("Confirm params:", {
-					type,
-					email,
-					hasAccessToken: !!accessToken,
-				});
 
 				if (!accessToken) {
 					setMessage("Invalid confirmation link. Please try signing up again.");
@@ -105,10 +98,6 @@ export default function ConfirmEmailScreen() {
 
 				// Get the current session to ensure we have the user data
 				const session = supabase.auth.session();
-				console.log("Session after confirmation:", {
-					user: session?.user?.id,
-					email: session?.user?.email,
-				});
 
 				// Add a delay to allow confirmation to process
 				await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -126,7 +115,6 @@ export default function ConfirmEmailScreen() {
 						if (!existingProfile) {
 							// Get role from metadata
 							const userRole = session.user.user_metadata?.role || "STUDENT";
-							console.log("Creating profile with role:", userRole);
 
 							// Use upsert with onConflict to handle duplicate key
 							const { error: profileError } = await supabase

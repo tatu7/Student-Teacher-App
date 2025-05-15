@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			// Check if we have the flag set in SecureStore
 			const flag = await SecureStore.getItemAsync("preventAutoNavigation");
 			if (flag === "true") {
-				console.log("Found preventAutoNavigation flag in SecureStore");
 				setPreventAutoNavigation(true);
 				return true;
 			}
@@ -58,7 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 				// Check if we're on an auth page
 				const isAuthPage = await checkIfOnAuthScreen();
-				console.log("isAuthPage:", isAuthPage);
 
 				if (session && session.user) {
 					// Check if this is a new signup (email not confirmed yet)
@@ -69,9 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 					if (newSignup) {
 						// Don't navigate for new signups
-						console.log(
-							"New signup detected in initial check, skipping navigation"
-						);
+
 						setLoading(false);
 						return;
 					}
@@ -86,8 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 						// If no profile, use the role from user metadata and create one
 						if (!data) {
-							console.log("No profile found, creating new profile");
-
 							// Get the role from metadata
 							const userRole =
 								session.user.user_metadata?.role || UserRole.STUDENT;
@@ -126,9 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 										router.replace("/student/dashboard");
 									}
 								} else {
-									console.log(
-										"Skipping navigation due to preventAutoNavigation flag or auth page"
-									);
 								}
 							} catch (profileError) {
 								console.error("Error creating profile:", profileError);
@@ -165,12 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 									router.replace("/student/dashboard");
 								}
 							} else {
-								console.log("Skipping navigation on auth page");
 							}
 						}
-					} catch (e) {
-						console.error("Error checking user profile:", e);
-					}
+					} catch (e) {}
 				}
 			} catch (error) {
 				console.error("Error checking user:", error);
@@ -184,8 +172,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		// Listen for auth state changes (v1 syntax)
 		const { data: authListener } = supabase.auth.onAuthStateChange(
 			async (event, session) => {
-				console.log("Auth state change:", event);
-
 				if (event === "SIGNED_OUT") {
 					setUser(null);
 					router.replace("/auth/login");
@@ -203,18 +189,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 						// Check if we're on an auth screen
 						const isOnAuthScreen = await checkIfOnAuthScreen();
 
-						console.log("Auth state change:", {
-							event,
-							isNewSignup,
-							isOnAuthScreen,
-							preventAutoNavigation,
-						});
-
 						if (isNewSignup || isOnAuthScreen || preventAutoNavigation) {
 							// Don't navigate for new signups or if already on auth screens
-							console.log(
-								"On auth screen or new signup, skipping auto-navigation"
-							);
+
 							return;
 						}
 
@@ -294,7 +271,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 								if (!isOnAuthScreen && !preventAutoNavigation) {
 									router.replace("/student/dashboard");
 								} else {
-									console.log("On auth screen, not navigating automatically");
 								}
 							} catch (error) {
 								console.error("Error handling profile creation:", error);

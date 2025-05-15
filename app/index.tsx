@@ -16,9 +16,6 @@ export default function Root() {
 			const initialUrl = await Linking.getInitialURL();
 			if (initialUrl) {
 				// Check if it's an auth confirmation link
-				if (initialUrl.includes("auth/confirm")) {
-					console.log("Initial URL is an auth confirmation link");
-				}
 			}
 
 			// Check if it's the first time launch

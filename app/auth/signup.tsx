@@ -57,11 +57,6 @@ export default function SignupScreen() {
 		};
 	}, [signupSuccess]);
 
-	// Debug useEffect to track state changes
-	useEffect(() => {
-		console.log("Signup success state:", signupSuccess);
-	}, [signupSuccess]);
-
 	const handleSignup = async () => {
 		// Input validation
 		if (!name || !email || !password || !confirmPassword) {
