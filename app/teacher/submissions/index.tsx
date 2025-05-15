@@ -8,8 +8,9 @@ import {
 	ActivityIndicator,
 	Alert,
 	SafeAreaView,
+	StatusBar,
 	Modal,
-	ScrollView,
+	TextInput,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -22,82 +23,31 @@ type Submission = {
 	task_title: string;
 	task_id: string;
 	student_name: string;
-	student_email: string;
-	group_name: string;
+	student_id: string;
+	content: string;
 	submitted_at: string;
 	rating: number | null;
-};
-
-type Filter = {
-	groupId: string | null;
-	taskId: string | null;
-};
-
-type Group = {
-	id: string;
-	name: string;
-};
-
-type Task = {
-	id: string;
-	title: string;
+	feedback: string | null;
+	group_name: string;
+	group_id: string;
 };
 
 export default function SubmissionsScreen() {
 	const { user } = useAuth();
 	const [submissions, setSubmissions] = useState<Submission[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [groups, setGroups] = useState<Group[]>([]);
-	const [tasks, setTasks] = useState<Task[]>([]);
 
-	const [filters, setFilters] = useState<Filter>({
-		groupId: null,
-		taskId: null,
-	});
-
-	const [showFilterModal, setShowFilterModal] = useState(false);
+	// Rating modal state
+	const [modalVisible, setModalVisible] = useState(false);
+	const [selectedSubmission, setSelectedSubmission] =
+		useState<Submission | null>(null);
+	const [currentRating, setCurrentRating] = useState<number | null>(null);
+	const [feedback, setFeedback] = useState("");
+	const [saving, setSaving] = useState(false);
 
 	useEffect(() => {
 		fetchSubmissions();
-		fetchFilterOptions();
 	}, []);
-
-	useEffect(() => {
-		// Refetch with filters when they change
-		fetchSubmissions();
-	}, [filters]);
-
-	const fetchFilterOptions = async () => {
-		try {
-			if (!user) return;
-
-			// Fetch groups for this teacher
-			const { data: groupsData, error: groupsError } = await supabase
-				.from("groups")
-				.select("id, name")
-				.eq("teacher_id", user.id)
-				.order("name");
-
-			if (groupsError) throw groupsError;
-			setGroups(groupsData || []);
-
-			// Fetch unique tasks
-			if (groupsData && groupsData.length > 0) {
-				const groupIds = groupsData.map((g) => g.id);
-
-				const { data: tasksData, error: tasksError } = await supabase
-					.from("tasks")
-					.select("id, title")
-					.in("group_id", groupIds)
-					.order("title");
-
-				if (tasksError) throw tasksError;
-				setTasks(tasksData || []);
-			}
-		} catch (error) {
-			console.error("Error fetching filter options:", error);
-		}
-	};
 
 	const fetchSubmissions = async () => {
 		try {
@@ -105,86 +55,102 @@ export default function SubmissionsScreen() {
 
 			if (!user) return;
 
-			// Start building the query
-			let query = supabase
+			// Fetch teacher's groups first
+			const { data: groupsData, error: groupsError } = await supabase
+				.from("groups")
+				.select("id, name")
+				.eq("teacher_id", user.id);
+
+			if (groupsError) throw groupsError;
+
+			if (!groupsData || groupsData.length === 0) {
+				setSubmissions([]);
+				setLoading(false);
+				return;
+			}
+
+			const groupIds = groupsData.map((group) => group.id);
+
+			// Now fetch tasks for these groups
+			const { data: tasksData, error: tasksError } = await supabase
+				.from("tasks")
+				.select("id, title, group_id")
+				.in("group_id", groupIds);
+
+			if (tasksError) throw tasksError;
+
+			if (!tasksData || tasksData.length === 0) {
+				setSubmissions([]);
+				setLoading(false);
+				return;
+			}
+
+			// Finally fetch submissions for these tasks
+			const taskIds = tasksData.map((task) => task.id);
+
+			const { data: submissionsData, error: submissionsError } = await supabase
 				.from("submissions")
 				.select(
 					`
-          id,
-          submitted_at,
-          rating,
-          tasks!inner(id, title, group_id),
-          student_id
-        `
+					id,
+					task_id,
+					student_id,
+					content,
+					rating,
+					feedback,
+					submitted_at
+				`
 				)
+				.in("task_id", taskIds)
 				.order("submitted_at", { ascending: false });
 
-			// Apply filters if set
-			if (filters.taskId) {
-				query = query.eq("tasks.id", filters.taskId);
+			if (submissionsError) throw submissionsError;
+
+			// Fetch student profiles
+			const studentIds = [
+				...new Set(submissionsData.map((sub) => sub.student_id)),
+			];
+
+			const { data: profilesData, error: profilesError } = await supabase
+				.from("user_profiles")
+				.select("id, name, display_name")
+				.in("id", studentIds);
+
+			if (profilesError) {
+				console.error("Error fetching student profiles:", profilesError);
 			}
 
-			if (filters.groupId) {
-				query = query.eq("tasks.group_id", filters.groupId);
-			}
+			// Map and combine the data
+			const formattedSubmissions = submissionsData.map((submission) => {
+				const task = tasksData.find((t) => t.id === submission.task_id);
+				const group = groupsData.find((g) => g.id === task?.group_id);
+				const profile = profilesData?.find(
+					(p) => p.id === submission.student_id
+				);
 
-			const { data, error } = await query;
+				const studentName = profile
+					? profile.display_name || profile.name || "O'quvchi"
+					: "O'quvchi";
 
-			if (error) throw error;
+				return {
+					id: submission.id,
+					task_id: submission.task_id,
+					task_title: task?.title || "Topshiriq",
+					student_id: submission.student_id,
+					student_name: studentName,
+					content: submission.content || "",
+					submitted_at: submission.submitted_at,
+					rating: submission.rating,
+					feedback: submission.feedback,
+					group_name: group?.name || "Guruh",
+					group_id: group?.id || "",
+				};
+			});
 
-			// To get group names, we need to fetch groups
-			const groupIds = [...new Set(data.map((item) => item.tasks.group_id))];
-
-			if (groupIds.length > 0) {
-				const { data: groupsData, error: groupsError } = await supabase
-					.from("groups")
-					.select("id, name")
-					.in("id", groupIds);
-
-				if (groupsError) throw groupsError;
-
-				// Fetch user profiles for all student IDs
-				const studentIds = [...new Set(data.map((item) => item.student_id))];
-
-				if (studentIds.length > 0) {
-					const { data: profilesData, error: profilesError } = await supabase
-						.from("auth.users")
-						.select("id, email")
-						.in("id", studentIds);
-
-					if (profilesError) {
-						console.error("Error fetching student profiles:", profilesError);
-						throw profilesError;
-					}
-
-					// Map the data
-					const processedSubmissions = data.map((item) => {
-						const group = groupsData.find((g) => g.id === item.tasks.group_id);
-						const profile = profilesData?.find((p) => p.id === item.student_id);
-						const email = profile?.email || "unknown@email.com";
-
-						return {
-							id: item.id,
-							task_title: item.tasks.title,
-							task_id: item.tasks.id,
-							student_name: email.split("@")[0], // Using email username as name
-							student_email: email,
-							group_name: group ? group.name : "Unknown Group",
-							submitted_at: item.submitted_at,
-							rating: item.rating,
-						};
-					});
-
-					setSubmissions(processedSubmissions);
-				} else {
-					setSubmissions([]);
-				}
-			} else {
-				setSubmissions([]);
-			}
+			setSubmissions(formattedSubmissions);
 		} catch (error) {
 			console.error("Error fetching submissions:", error);
-			Alert.alert("Error", "Failed to load submissions");
+			Alert.alert("Xatolik", "Javoblarni yuklashda muammo yuzaga keldi");
 		} finally {
 			setLoading(false);
 		}
@@ -201,59 +167,109 @@ export default function SubmissionsScreen() {
 		});
 	};
 
-	const clearFilters = () => {
-		setFilters({ groupId: null, taskId: null });
-		setShowFilterModal(false);
+	const openRatingModal = (submission: Submission) => {
+		setSelectedSubmission(submission);
+		setCurrentRating(submission.rating || null);
+		setFeedback(submission.feedback || "");
+		setModalVisible(true);
+	};
+
+	const closeModal = () => {
+		setModalVisible(false);
+		setSelectedSubmission(null);
+		setCurrentRating(null);
+		setFeedback("");
+	};
+
+	const handleRating = async () => {
+		if (!selectedSubmission) return;
+
+		try {
+			setSaving(true);
+
+			const { error } = await supabase
+				.from("submissions")
+				.update({
+					rating: currentRating,
+					feedback: feedback.trim(),
+				})
+				.eq("id", selectedSubmission.id);
+
+			if (error) throw error;
+
+			// Update local state
+			setSubmissions((prevSubmissions) =>
+				prevSubmissions.map((sub) =>
+					sub.id === selectedSubmission.id
+						? { ...sub, rating: currentRating, feedback: feedback.trim() }
+						: sub
+				)
+			);
+
+			closeModal();
+			Alert.alert("Muvaffaqiyatli", "Baho va fikr muvaffaqiyatli saqlandi");
+		} catch (error) {
+			console.error("Error saving rating:", error);
+			Alert.alert("Xatolik", "Baho va fikrni saqlashda muammo yuzaga keldi");
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleStarPress = (rating: number) => {
+		setCurrentRating(rating);
+	};
+
+	const renderStars = () => {
+		const stars = [];
+		for (let i = 1; i <= 5; i++) {
+			stars.push(
+				<TouchableOpacity
+					key={i}
+					style={styles.starContainer}
+					onPress={() => handleStarPress(i)}>
+					<Ionicons
+						name={i <= (currentRating || 0) ? "star" : "star-outline"}
+						size={36}
+						color='#FFD700'
+					/>
+				</TouchableOpacity>
+			);
+		}
+		return stars;
 	};
 
 	const renderSubmissionItem = ({ item }: { item: Submission }) => (
 		<TouchableOpacity
 			style={styles.submissionCard}
-			onPress={() =>
-				navigateToSubmissionDetails(item.id, item.task_title, item.student_name)
-			}>
-			<View style={styles.submissionHeader}>
-				<View style={styles.taskInfo}>
-					<MaterialIcons name='assignment' size={20} color='#3f51b5' />
-					<Text style={styles.taskTitle}>{item.task_title}</Text>
-				</View>
-				{item.rating !== null && (
-					<View style={styles.ratingBadge}>
-						<Text style={styles.ratingText}>{item.rating}/10</Text>
-					</View>
-				)}
-			</View>
-
-			<View style={styles.studentInfo}>
-				<Ionicons
-					name='person'
-					size={16}
-					color='#666'
-					style={styles.infoIcon}
-				/>
-				<Text style={styles.studentName}>{item.student_name}</Text>
-			</View>
-
-			<View style={styles.groupInfo}>
-				<Ionicons
-					name='people'
-					size={16}
-					color='#666'
-					style={styles.infoIcon}
-				/>
+			onPress={() => openRatingModal(item)}>
+			<View style={styles.cardHeader}>
+				<Text style={styles.taskTitle}>{item.task_title}</Text>
 				<Text style={styles.groupName}>{item.group_name}</Text>
 			</View>
 
-			<View style={styles.dateInfo}>
-				<Ionicons
-					name='time-outline'
-					size={16}
-					color='#666'
-					style={styles.infoIcon}
-				/>
-				<Text style={styles.submissionDate}>
-					{new Date(item.submitted_at).toLocaleString()}
+			<View style={styles.userInfo}>
+				<Text style={styles.studentName}>{item.student_name}</Text>
+				<Text style={styles.submittedDate}>
+					{new Date(item.submitted_at).toLocaleDateString()}
 				</Text>
+			</View>
+
+			<View style={styles.contentPreview}>
+				<Text numberOfLines={2} style={styles.previewText}>
+					{item.content}
+				</Text>
+			</View>
+
+			<View style={styles.rating}>
+				{item.rating !== null ? (
+					<View style={styles.stars}>
+						<Ionicons name='star' size={16} color='#FFD700' />
+						<Text style={styles.ratingText}>{item.rating}/5</Text>
+					</View>
+				) : (
+					<Text style={styles.noRating}>Baholanmagan</Text>
+				)}
 			</View>
 		</TouchableOpacity>
 	);
@@ -261,58 +277,24 @@ export default function SubmissionsScreen() {
 	const renderEmptyList = () => (
 		<View style={styles.emptyContainer}>
 			<MaterialIcons name='assignment-turned-in' size={60} color='#ccc' />
-			<Text style={styles.emptyText}>No submissions found</Text>
+			<Text style={styles.emptyText}>Javoblar topilmadi</Text>
 			<Text style={styles.emptySubtext}>
-				{filters.groupId || filters.taskId
-					? "Try changing or clearing your filters"
-					: "Students haven't submitted any work yet"}
+				Hali o'quvchilar topshiriqlarni yubormagan
 			</Text>
-			{(filters.groupId || filters.taskId) && (
-				<TouchableOpacity
-					style={styles.clearFiltersButton}
-					onPress={clearFilters}>
-					<Text style={styles.clearFiltersText}>Clear Filters</Text>
-				</TouchableOpacity>
-			)}
 		</View>
 	);
 
 	return (
 		<SafeAreaView style={styles.container}>
-			{/* Active filters display */}
-			{(filters.groupId || filters.taskId) && (
-				<View style={styles.activeFiltersContainer}>
-					<Text style={styles.activeFiltersTitle}>Active Filters:</Text>
-					<View style={styles.filterChipsContainer}>
-						{filters.groupId && (
-							<View style={styles.filterChip}>
-								<Text style={styles.filterChipText}>
-									Group: {groups.find((g) => g.id === filters.groupId)?.name}
-								</Text>
-								<TouchableOpacity
-									onPress={() => setFilters({ ...filters, groupId: null })}>
-									<Ionicons name='close-circle' size={18} color='#666' />
-								</TouchableOpacity>
-							</View>
-						)}
-						{filters.taskId && (
-							<View style={styles.filterChip}>
-								<Text style={styles.filterChipText}>
-									Task: {tasks.find((t) => t.id === filters.taskId)?.title}
-								</Text>
-								<TouchableOpacity
-									onPress={() => setFilters({ ...filters, taskId: null })}>
-									<Ionicons name='close-circle' size={18} color='#666' />
-								</TouchableOpacity>
-							</View>
-						)}
-					</View>
-				</View>
-			)}
+			<StatusBar barStyle='light-content' />
+
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Javoblar</Text>
+			</View>
 
 			{loading ? (
 				<View style={styles.loaderContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			) : (
 				<FlatList
@@ -326,85 +308,43 @@ export default function SubmissionsScreen() {
 				/>
 			)}
 
-			{/* Filter Modal */}
+			{/* Rating Modal */}
 			<Modal
-				animationType='slide'
+				animationType='fade'
 				transparent={true}
-				visible={showFilterModal}
-				onRequestClose={() => setShowFilterModal(false)}>
-				<View style={styles.modalContainer}>
-					<View style={styles.modalContent}>
-						<View style={styles.modalHeader}>
-							<Text style={styles.modalTitle}>Filter Submissions</Text>
-							<TouchableOpacity onPress={() => setShowFilterModal(false)}>
-								<Ionicons name='close' size={24} color='#333' />
-							</TouchableOpacity>
-						</View>
+				visible={modalVisible}
+				onRequestClose={closeModal}>
+				<View style={styles.modalOverlay}>
+					<View style={styles.modalContainer}>
+						<Text style={styles.modalTitle}>Javobni baholash</Text>
 
-						<ScrollView style={styles.modalScrollView}>
-							{/* Group Filter */}
-							<Text style={styles.filterLabel}>Filter by Group:</Text>
-							<View style={styles.filterOptions}>
-								{groups.map((group) => (
-									<TouchableOpacity
-										key={group.id}
-										style={[
-											styles.filterOption,
-											filters.groupId === group.id &&
-												styles.selectedFilterOption,
-										]}
-										onPress={() =>
-											setFilters({ ...filters, groupId: group.id })
-										}>
-										<Text
-											style={[
-												styles.filterOptionText,
-												filters.groupId === group.id &&
-													styles.selectedFilterOptionText,
-											]}>
-											{group.name}
-										</Text>
-									</TouchableOpacity>
-								))}
-							</View>
+						<View style={styles.starsContainer}>{renderStars()}</View>
 
-							{/* Task Filter */}
-							<Text style={[styles.filterLabel, { marginTop: 16 }]}>
-								Filter by Task:
-							</Text>
-							<View style={styles.filterOptions}>
-								{tasks.map((task) => (
-									<TouchableOpacity
-										key={task.id}
-										style={[
-											styles.filterOption,
-											filters.taskId === task.id && styles.selectedFilterOption,
-										]}
-										onPress={() => setFilters({ ...filters, taskId: task.id })}>
-										<Text
-											style={[
-												styles.filterOptionText,
-												filters.taskId === task.id &&
-													styles.selectedFilterOptionText,
-											]}>
-											{task.title}
-										</Text>
-									</TouchableOpacity>
-								))}
-							</View>
-						</ScrollView>
+						<TextInput
+							style={styles.feedbackInput}
+							placeholder='Izoh yozing...'
+							value={feedback}
+							onChangeText={setFeedback}
+							multiline
+							numberOfLines={4}
+						/>
 
-						<View style={styles.modalFooter}>
+						<View style={styles.buttonContainer}>
 							<TouchableOpacity
-								style={styles.clearButton}
-								onPress={clearFilters}>
-								<Text style={styles.clearButtonText}>Clear All</Text>
+								style={styles.cancelButton}
+								onPress={closeModal}>
+								<Text style={styles.cancelButtonText}>Bekor qilish</Text>
 							</TouchableOpacity>
 
 							<TouchableOpacity
-								style={styles.applyButton}
-								onPress={() => setShowFilterModal(false)}>
-								<Text style={styles.applyButtonText}>Apply</Text>
+								style={styles.submitButton}
+								onPress={handleRating}
+								disabled={saving}>
+								{saving ? (
+									<ActivityIndicator size='small' color='#fff' />
+								) : (
+									<Text style={styles.submitButtonText}>Baholash</Text>
+								)}
 							</TouchableOpacity>
 						</View>
 					</View>
@@ -417,7 +357,19 @@ export default function SubmissionsScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
+		marginTop: 30,
+	},
+	header: {
+		backgroundColor: "#4169E1",
+		paddingTop: 10,
+		paddingBottom: 15,
+		paddingHorizontal: 16,
+	},
+	headerTitle: {
+		color: "white",
+		fontSize: 20,
+		fontWeight: "bold",
 	},
 	loaderContainer: {
 		flex: 1,
@@ -428,226 +380,170 @@ const styles = StyleSheet.create({
 		padding: 16,
 		flexGrow: 1,
 	},
-	activeFiltersContainer: {
-		backgroundColor: "white",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
-		borderBottomColor: "#e0e0e0",
-	},
-	activeFiltersTitle: {
-		fontSize: 14,
-		fontWeight: "600",
-		color: "#333",
-		marginBottom: 8,
-	},
-	filterChipsContainer: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-	},
-	filterChip: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#e8eaf6",
-		borderRadius: 16,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		marginRight: 8,
-		marginBottom: 8,
-	},
-	filterChipText: {
-		color: "#3f51b5",
-		fontSize: 14,
-		marginRight: 6,
-	},
 	submissionCard: {
 		backgroundColor: "white",
 		borderRadius: 12,
 		padding: 16,
-		marginBottom: 12,
+		marginBottom: 16,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.05,
 		shadowRadius: 8,
 		elevation: 2,
 	},
-	submissionHeader: {
+	cardHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		marginBottom: 8,
+	},
+	taskTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#333",
+		flex: 1,
+	},
+	groupName: {
+		fontSize: 14,
+		color: "#666",
+		fontWeight: "500",
+	},
+	userInfo: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
 		marginBottom: 12,
 	},
-	taskInfo: {
+	studentName: {
+		fontSize: 16,
+		color: "#4169E1",
+		fontWeight: "500",
+	},
+	submittedDate: {
+		fontSize: 14,
+		color: "#777",
+	},
+	contentPreview: {
+		marginBottom: 12,
+		borderLeftWidth: 3,
+		borderLeftColor: "#e0e0e0",
+		paddingLeft: 10,
+	},
+	previewText: {
+		fontSize: 15,
+		color: "#555",
+		lineHeight: 22,
+	},
+	rating: {
+		alignItems: "flex-end",
+	},
+	stars: {
 		flexDirection: "row",
 		alignItems: "center",
-		flex: 1,
-	},
-	taskTitle: {
-		fontSize: 16,
-		fontWeight: "bold",
-		color: "#333",
-		marginLeft: 8,
-		flex: 1,
-	},
-	ratingBadge: {
-		backgroundColor: "#e8eaf6",
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 12,
 	},
 	ratingText: {
-		fontSize: 12,
-		fontWeight: "600",
-		color: "#3f51b5",
-	},
-	studentInfo: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 6,
-	},
-	groupInfo: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 6,
-	},
-	dateInfo: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	infoIcon: {
-		marginRight: 6,
-	},
-	studentName: {
+		marginLeft: 4,
 		fontSize: 14,
+		fontWeight: "bold",
 		color: "#333",
 	},
-	groupName: {
+	noRating: {
 		fontSize: 14,
-		color: "#666",
-	},
-	submissionDate: {
-		fontSize: 14,
-		color: "#666",
+		color: "#888",
+		fontStyle: "italic",
 	},
 	emptyContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		padding: 24,
-		marginTop: 80,
+		padding: 20,
 	},
 	emptyText: {
 		fontSize: 18,
 		fontWeight: "bold",
-		color: "#333",
+		color: "#555",
 		marginTop: 16,
 	},
 	emptySubtext: {
 		fontSize: 14,
-		color: "#666",
-		textAlign: "center",
+		color: "#888",
 		marginTop: 8,
-		marginBottom: 24,
+		textAlign: "center",
 	},
-	clearFiltersButton: {
-		backgroundColor: "#3f51b5",
-		paddingVertical: 10,
-		paddingHorizontal: 20,
-		borderRadius: 8,
-	},
-	clearFiltersText: {
-		color: "white",
-		fontWeight: "bold",
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		justifyContent: "center",
+		alignItems: "center",
 	},
 	modalContainer: {
-		flex: 1,
-		justifyContent: "center",
-		backgroundColor: "rgba(0, 0, 0, 0.5)",
-	},
-	modalContent: {
+		width: "85%",
 		backgroundColor: "white",
-		margin: 20,
-		borderRadius: 12,
+		borderRadius: 16,
 		padding: 20,
+		alignItems: "center",
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
 		shadowOpacity: 0.25,
 		shadowRadius: 4,
 		elevation: 5,
-		maxHeight: "80%",
-	},
-	modalScrollView: {
-		maxHeight: 400,
-	},
-	modalHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 20,
 	},
 	modalTitle: {
 		fontSize: 20,
 		fontWeight: "bold",
 		color: "#333",
+		marginBottom: 20,
 	},
-	filterLabel: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "#333",
-		marginBottom: 12,
-	},
-	filterOptions: {
+	starsContainer: {
 		flexDirection: "row",
-		flexWrap: "wrap",
+		justifyContent: "center",
+		marginBottom: 20,
 	},
-	filterOption: {
-		backgroundColor: "#f5f7fa",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		marginRight: 8,
-		marginBottom: 8,
+	starContainer: {
+		padding: 5,
+	},
+	feedbackInput: {
+		width: "100%",
 		borderWidth: 1,
-		borderColor: "#e0e6ed",
+		borderColor: "#ddd",
+		borderRadius: 8,
+		padding: 12,
+		minHeight: 100,
+		textAlignVertical: "top",
+		marginBottom: 20,
 	},
-	selectedFilterOption: {
-		backgroundColor: "#e8eaf6",
-		borderColor: "#3f51b5",
-	},
-	filterOptionText: {
-		fontSize: 14,
-		color: "#666",
-	},
-	selectedFilterOptionText: {
-		color: "#3f51b5",
-		fontWeight: "600",
-	},
-	modalFooter: {
+	buttonContainer: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		marginTop: 20,
-		paddingTop: 16,
-		borderTopWidth: 1,
-		borderTopColor: "#f0f0f0",
+		width: "100%",
 	},
-	clearButton: {
-		paddingVertical: 10,
-		paddingHorizontal: 16,
+	cancelButton: {
+		backgroundColor: "#f1f1f1",
+		paddingVertical: 12,
+		paddingHorizontal: 24,
+		borderRadius: 8,
+		flex: 1,
+		marginRight: 8,
+		alignItems: "center",
 	},
-	clearButtonText: {
+	cancelButtonText: {
 		color: "#666",
 		fontWeight: "600",
-		fontSize: 16,
 	},
-	applyButton: {
-		backgroundColor: "#3f51b5",
-		paddingVertical: 10,
-		paddingHorizontal: 20,
+	submitButton: {
+		backgroundColor: "#4169E1",
+		paddingVertical: 12,
+		paddingHorizontal: 24,
 		borderRadius: 8,
+		flex: 1,
+		marginLeft: 8,
+		alignItems: "center",
 	},
-	applyButtonText: {
+	submitButtonText: {
 		color: "white",
-		fontWeight: "bold",
-		fontSize: 16,
+		fontWeight: "600",
 	},
 });
