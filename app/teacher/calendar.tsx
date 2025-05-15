@@ -413,41 +413,24 @@ export default function CalendarScreen() {
 
 	const tasksForSelectedDate = getTasksForSelectedDate();
 
-	// Render weekday headers
-	const renderWeekdayHeaders = () => {
-		const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-		return (
-			<View style={styles.weekdayHeader}>
-				{weekdays.map((day) => (
-					<Text key={day} style={styles.weekdayText}>
-						{day}
-					</Text>
-				))}
-			</View>
-		);
-	};
-
 	return (
 		<SafeAreaView style={styles.container}>
 			<Stack.Screen
 				options={{
-					title: "Calendar",
-					headerTitleAlign: "center",
-					headerRight: () => (
-						<TouchableOpacity
-							onPress={() => setFilterModalVisible(true)}
-							style={{ marginRight: 15 }}>
-							<Ionicons name='filter' size={24} color='#3f51b5' />
-						</TouchableOpacity>
-					),
+					headerShown: false,
 				}}
 			/>
+
+			{/* Header */}
+			<View style={styles.header}>
+				<Text style={styles.headerTitle}>Kalendar</Text>
+			</View>
 
 			<View style={styles.calendarContainer}>
 				{/* Month navigation */}
 				<View style={styles.monthNavigator}>
 					<TouchableOpacity onPress={handlePreviousMonth}>
-						<Ionicons name='chevron-back' size={24} color='#3f51b5' />
+						<Ionicons name='chevron-back' size={24} color='#4169E1' />
 					</TouchableOpacity>
 
 					<Text style={styles.monthTitle}>
@@ -455,12 +438,20 @@ export default function CalendarScreen() {
 					</Text>
 
 					<TouchableOpacity onPress={handleNextMonth}>
-						<Ionicons name='chevron-forward' size={24} color='#3f51b5' />
+						<Ionicons name='chevron-forward' size={24} color='#4169E1' />
 					</TouchableOpacity>
 				</View>
 
 				{/* Weekday headers */}
-				{renderWeekdayHeaders()}
+				<View style={styles.weekdayHeader}>
+					<Text style={styles.weekdayText}>Sun</Text>
+					<Text style={styles.weekdayText}>Mon</Text>
+					<Text style={styles.weekdayText}>Tue</Text>
+					<Text style={styles.weekdayText}>Wed</Text>
+					<Text style={styles.weekdayText}>Thu</Text>
+					<Text style={styles.weekdayText}>Fri</Text>
+					<Text style={styles.weekdayText}>Sat</Text>
+				</View>
 
 				{/* Calendar grid */}
 				<View style={styles.calendarGrid}>
@@ -468,63 +459,46 @@ export default function CalendarScreen() {
 				</View>
 			</View>
 
-			{/* Filter chips */}
-			{(selectedGroup || selectedStudent) && (
-				<View style={styles.filtersApplied}>
-					{selectedGroup && groups.find((g) => g.id === selectedGroup) && (
-						<View style={styles.filterChip}>
-							<Text style={styles.filterChipText}>
-								Group: {groups.find((g) => g.id === selectedGroup)?.name}
-							</Text>
-							<TouchableOpacity onPress={() => setSelectedGroup(null)}>
-								<Ionicons name='close-circle' size={18} color='#666' />
-							</TouchableOpacity>
-						</View>
-					)}
-
-					{selectedStudent &&
-						students.find((s) => s.id === selectedStudent) && (
-							<View style={styles.filterChip}>
-								<Text style={styles.filterChipText}>
-									Student:{" "}
-									{students.find((s) => s.id === selectedStudent)?.name ||
-										"Unknown"}
-								</Text>
-								<TouchableOpacity onPress={() => setSelectedStudent(null)}>
-									<Ionicons name='close-circle' size={18} color='#666' />
-								</TouchableOpacity>
-							</View>
-						)}
-				</View>
-			)}
-
 			{/* Tasks for selected date */}
 			<View style={styles.selectedDateContainer}>
 				<Text style={styles.selectedDateTitle}>
-					Tasks for {format(selectedDate, "EEEE, MMMM d, yyyy")}
+					{format(selectedDate, "EEEE, d-MMMM, yyyy")} uchun vazifalar
 				</Text>
 
 				{tasksForSelectedDate.length > 0 ? (
 					<FlatList
 						data={tasksForSelectedDate}
-						renderItem={renderTaskItem}
+						renderItem={({ item }) => (
+							<View style={styles.taskItem}>
+								<View style={styles.taskIcon}>
+									<Ionicons
+										name='document-text-outline'
+										size={24}
+										color='#4169E1'
+									/>
+								</View>
+								<View style={styles.taskContent}>
+									<Text style={styles.taskTitle}>{item.title}</Text>
+									<Text style={styles.taskGroup}>
+										{item.group_name || "Guruh nomi"}
+									</Text>
+									{item.description && (
+										<Text style={styles.taskDescription} numberOfLines={1}>
+											{item.description}
+										</Text>
+									)}
+								</View>
+							</View>
+						)}
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={styles.tasksList}
 					/>
 				) : (
 					<View style={styles.noTasksContainer}>
-						<Text style={styles.noTasksText}>No tasks on this date</Text>
+						<Text style={styles.noTasksText}>Bu kunda vazifalar yo'q</Text>
 					</View>
 				)}
 			</View>
-
-			{/* Create task button */}
-			<TouchableOpacity
-				style={styles.createTaskButton}
-				onPress={handleCreateTask}>
-				<Ionicons name='add' size={24} color='white' />
-				<Text style={styles.createTaskButtonText}>Create Task</Text>
-			</TouchableOpacity>
 
 			{renderFilterModal()}
 		</SafeAreaView>
@@ -534,7 +508,18 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
+	},
+	header: {
+		backgroundColor: "#4169E1",
+		paddingTop: 50,
+		paddingBottom: 20,
+		paddingHorizontal: 16,
+	},
+	headerTitle: {
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "white",
 	},
 	loadingContainer: {
 		flex: 1,
@@ -578,30 +563,29 @@ const styles = StyleSheet.create({
 	calendarGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		justifyContent: "flex-start",
+		justifyContent: "space-around",
 	},
 	dayCell: {
-		width: "14.28%",
+		width: 40,
 		height: 40,
 		justifyContent: "center",
 		alignItems: "center",
-		marginVertical: 2,
-		position: "relative",
+		marginVertical: 4,
+		borderRadius: 20,
 	},
 	dayText: {
 		fontSize: 14,
 		color: "#333",
 	},
 	todayCell: {
-		backgroundColor: "#f0f0f0",
-		borderRadius: 20,
+		backgroundColor: "#EFF3FF",
 	},
 	todayText: {
 		fontWeight: "bold",
+		color: "#4169E1",
 	},
 	selectedDayCell: {
-		backgroundColor: "#3f51b5",
-		borderRadius: 20,
+		backgroundColor: "#4169E1",
 	},
 	selectedDayText: {
 		color: "white",
@@ -612,17 +596,20 @@ const styles = StyleSheet.create({
 	},
 	taskDot: {
 		position: "absolute",
-		bottom: 2,
-		backgroundColor: "#ff9800",
+		top: -4,
+		right: -4,
+		backgroundColor: "#4169E1",
 		width: 16,
 		height: 16,
 		borderRadius: 8,
 		justifyContent: "center",
 		alignItems: "center",
+		borderWidth: 2,
+		borderColor: "white",
 	},
 	taskCount: {
 		color: "white",
-		fontSize: 10,
+		fontSize: 9,
 		fontWeight: "bold",
 	},
 	selectedDateContainer: {
@@ -630,17 +617,18 @@ const styles = StyleSheet.create({
 		marginHorizontal: 16,
 	},
 	selectedDateTitle: {
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: "600",
-		marginBottom: 12,
+		marginBottom: 16,
 		color: "#333",
 	},
 	tasksList: {
-		paddingBottom: 80,
+		paddingBottom: 20,
 	},
 	taskItem: {
+		flexDirection: "row",
 		backgroundColor: "white",
-		borderRadius: 8,
+		borderRadius: 12,
 		padding: 16,
 		marginBottom: 12,
 		shadowColor: "#000",
@@ -648,6 +636,18 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 2,
 		elevation: 2,
+	},
+	taskIcon: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: "#EFF3FF",
+		justifyContent: "center",
+		alignItems: "center",
+		marginRight: 12,
+	},
+	taskContent: {
+		flex: 1,
 	},
 	taskHeader: {
 		flexDirection: "row",
@@ -657,54 +657,36 @@ const styles = StyleSheet.create({
 	},
 	taskTitle: {
 		fontSize: 16,
-		fontWeight: "bold",
+		fontWeight: "600",
 		color: "#333",
-		flex: 1,
+		marginBottom: 4,
 	},
 	taskDueTime: {
 		fontSize: 14,
-		color: "#ff9800",
+		color: "#FF9800",
 		fontWeight: "500",
 	},
 	taskGroup: {
 		fontSize: 14,
-		color: "#3f51b5",
-		marginBottom: 6,
+		color: "#4169E1",
+		marginBottom: 4,
 	},
 	taskDescription: {
 		fontSize: 14,
 		color: "#666",
 	},
 	noTasksContainer: {
-		flex: 1,
-		justifyContent: "center",
 		alignItems: "center",
 		paddingVertical: 30,
+		backgroundColor: "white",
+		borderRadius: 12,
 	},
 	noTasksText: {
 		fontSize: 16,
 		color: "#666",
 	},
 	createTaskButton: {
-		position: "absolute",
-		bottom: 20,
-		right: 20,
-		backgroundColor: "#3f51b5",
-		flexDirection: "row",
-		alignItems: "center",
-		paddingVertical: 12,
-		paddingHorizontal: 20,
-		borderRadius: 30,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.3,
-		shadowRadius: 4,
-		elevation: 5,
-	},
-	createTaskButtonText: {
-		color: "white",
-		fontWeight: "600",
-		marginLeft: 8,
+		display: "none",
 	},
 	filtersApplied: {
 		flexDirection: "row",
@@ -796,7 +778,7 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	applyButton: {
-		backgroundColor: "#3f51b5",
+		backgroundColor: "#4169E1",
 		paddingVertical: 12,
 		paddingHorizontal: 24,
 		borderRadius: 8,

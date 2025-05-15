@@ -115,9 +115,28 @@ export default function TeacherLayout() {
 				}}
 			/>
 			<Tabs.Screen
+				name='calendar'
+				options={{
+					title: "Calendar",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='calendar-outline' size={size} color={color} />
+					),
+				}}
+			/>
+
+			<Tabs.Screen
+				name='profile'
+				options={{
+					title: "Profil",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='person-outline' size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
 				name='notifications'
 				options={{
-					title: "Notifications",
+					title: "Xabarlar",
 					tabBarIcon: ({ color, size }) => (
 						<View>
 							<Ionicons
@@ -136,25 +155,6 @@ export default function TeacherLayout() {
 					),
 				}}
 			/>
-			<Tabs.Screen
-				name='profile'
-				options={{
-					title: "Profil",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='person-outline' size={size} color={color} />
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name='calendar'
-				options={{
-					title: "Calendar",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='calendar-outline' size={size} color={color} />
-					),
-				}}
-			/>
-
 			{/* Hide tasks from tab bar */}
 			<Tabs.Screen
 				name='tasks'
