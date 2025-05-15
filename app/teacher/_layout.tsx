@@ -123,6 +123,15 @@ export default function TeacherLayout() {
 					),
 				}}
 			/>
+			<Tabs.Screen
+				name='ratings'
+				options={{
+					title: "Reyting",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='trophy-outline' size={size} color={color} />
+					),
+				}}
+			/>
 
 			<Tabs.Screen
 				name='profile'
@@ -155,7 +164,7 @@ export default function TeacherLayout() {
 					),
 				}}
 			/>
-			{/* Hide tasks from tab bar */}
+
 			<Tabs.Screen
 				name='tasks'
 				options={{

@@ -130,6 +130,16 @@ export default function StudentLayout() {
 					),
 				}}
 			/>
+
+			<Tabs.Screen
+				name='ratings'
+				options={{
+					title: "Reyting",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='trophy-outline' size={size} color={color} />
+					),
+				}}
+			/>
 			<Tabs.Screen
 				name='profile'
 				options={{
@@ -158,15 +168,6 @@ export default function StudentLayout() {
 								</View>
 							)}
 						</View>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name='ratings'
-				options={{
-					title: "Reyting",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='trophy-outline' size={size} color={color} />
 					),
 				}}
 			/>
