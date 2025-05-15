@@ -123,7 +123,12 @@ export default function TaskDetailsScreen() {
           submitted_at,
           updated_at,
           feedback,
-          rating
+          rating,
+          has_files,
+          file_path,
+          file_name,
+          file_type,
+          file_size
         `
 				)
 				.eq("task_id", id)
@@ -133,25 +138,20 @@ export default function TaskDetailsScreen() {
 			if (submissionError && submissionError.code !== "PGRST116")
 				throw submissionError;
 
-			// Fetch submission file info
+			// Set submission file info from the submission record instead of separate table
 			let submissionFileInfo = null;
 			let hasSubmissionFiles = false;
 
-			if (submissionData) {
-				// Check if there are any files for this submission
-				const { data: fileData, error: fileError } = await supabase
-					.from("submission_files")
-					.select("file_name, file_path")
-					.eq("submission_id", submissionData.id)
-					.maybeSingle();
-
-				if (!fileError && fileData) {
-					submissionFileInfo = {
-						name: fileData.file_name,
-						path: fileData.file_path,
-					};
-					hasSubmissionFiles = true;
-				}
+			if (
+				submissionData &&
+				submissionData.has_files &&
+				submissionData.file_path
+			) {
+				submissionFileInfo = {
+					name: submissionData.file_name,
+					path: submissionData.file_path,
+				};
+				hasSubmissionFiles = true;
 			}
 
 			if (taskData) {
@@ -311,27 +311,29 @@ export default function TaskDetailsScreen() {
 					filePath = await uploadSubmissionFile(submissionId, selectedFile);
 
 					if (filePath) {
-						// Delete existing file record if any
-						if (submission?.file_info) {
-							await supabase
-								.from("submission_files")
-								.delete()
-								.eq("submission_id", submissionId);
-						}
-
-						// Create new file record
-						const { error: fileError } = await supabase
-							.from("submission_files")
-							.insert({
-								submission_id: submissionId,
+						// Update the submission directly with file information instead of using submission_files table
+						const { error: updateError } = await supabase
+							.from("submissions")
+							.update({
 								file_path: filePath,
 								file_name: selectedFile.name,
 								file_type: selectedFile.type,
 								file_size: selectedFile.size,
-							});
+								has_files: true,
+							})
+							.eq("id", submissionId);
 
-						if (fileError) {
-							console.error("Error recording file:", fileError);
+						if (updateError) {
+							console.error(
+								"Error updating submission with file info:",
+								updateError
+							);
+							Alert.alert(
+								"Ogohlantirish",
+								`Javob saqlandi va fayl yuklandi, lekin fayl ma'lumotlarini saqlashda xatolik yuzaga keldi: ${
+									updateError.message || "Noma'lum xatolik"
+								}`
+							);
 						}
 					}
 				} catch (uploadError) {
@@ -468,7 +470,7 @@ export default function TaskDetailsScreen() {
 									onPress={async () => {
 										if (submission?.file_info?.path) {
 											const { data } = await supabase.storage
-												.from("submission_files")
+												.from("task_files")
 												.getPublicUrl(submission.file_info.path);
 											if (data?.publicURL) {
 												await Linking.openURL(data.publicURL);

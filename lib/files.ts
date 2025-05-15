@@ -123,16 +123,16 @@ export const uploadSubmissionFile = async (
     const timestamp = new Date().getTime();
     const fileExtension = file.extension || file.name.split('.').pop() || '';
     const fileName = `submission_${submissionId}_${timestamp}.${fileExtension}`;
-    const filePath = `${submissionId}/${fileName}`;
+    const filePath = `submissions/${submissionId}/${fileName}`;
 
     // Read the file as base64
     const base64Content = await FileSystem.readAsStringAsync(file.uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    // Upload to Supabase
+    // Upload to Supabase using the existing task_files bucket
     const { data, error } = await supabase.storage
-      .from('submission_files')
+      .from('task_files')
       .upload(filePath, decode(base64Content), {
         contentType: file.type,
         upsert: false,
