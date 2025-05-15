@@ -370,22 +370,6 @@ export default function StudentCalendarScreen() {
 					</View>
 				)}
 			</View>
-
-			{/* Task status legend */}
-			<View style={styles.legend}>
-				<View style={styles.legendItem}>
-					<View style={[styles.legendDot, { backgroundColor: "#4CAF50" }]} />
-					<Text style={styles.legendText}>Bajarilgan</Text>
-				</View>
-				<View style={styles.legendItem}>
-					<View style={[styles.legendDot, { backgroundColor: "#FF9800" }]} />
-					<Text style={styles.legendText}>Kutilmoqda</Text>
-				</View>
-				<View style={styles.legendItem}>
-					<View style={[styles.legendDot, { backgroundColor: "#F44336" }]} />
-					<Text style={styles.legendText}>Kechiktirilgan</Text>
-				</View>
-			</View>
 		</SafeAreaView>
 	);
 }

@@ -12,7 +12,7 @@ import {
 	SafeAreaView,
 	Platform,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -270,7 +270,7 @@ export default function StudentProfileScreen() {
 		if (uploading) {
 			return (
 				<View style={styles.avatarContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			);
 		}
@@ -279,29 +279,25 @@ export default function StudentProfileScreen() {
 			return (
 				<View style={styles.avatarContainer}>
 					<Image source={{ uri: avatarUrl }} style={styles.avatar} />
-					{editMode && (
-						<TouchableOpacity
-							style={styles.changeAvatarButton}
-							onPress={pickImage}>
-							<Ionicons name='camera' size={20} color='white' />
-						</TouchableOpacity>
-					)}
-				</View>
-			);
-		}
-
-		return (
-			<View style={styles.avatarContainer}>
-				<View style={[styles.avatar, styles.avatarPlaceholder]}>
-					<Ionicons name='person' size={60} color='#ccc' />
-				</View>
-				{editMode && (
 					<TouchableOpacity
 						style={styles.changeAvatarButton}
 						onPress={pickImage}>
 						<Ionicons name='camera' size={20} color='white' />
 					</TouchableOpacity>
-				)}
+				</View>
+			);
+		}
+
+		// No avatar - render first letter in circle
+		const firstLetter = profile?.name?.charAt(0).toUpperCase() || "O";
+		return (
+			<View style={styles.avatarContainer}>
+				<View style={[styles.avatar, styles.avatarPlaceholder]}>
+					<Text style={styles.avatarLetterText}>{firstLetter}</Text>
+				</View>
+				<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>
+					<Ionicons name='camera' size={20} color='white' />
+				</TouchableOpacity>
 			</View>
 		);
 	};
@@ -309,9 +305,8 @@ export default function StudentProfileScreen() {
 	if (loading) {
 		return (
 			<SafeAreaView style={styles.container}>
-				<Stack.Screen options={{ title: "Profile" }} />
 				<View style={styles.loaderContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			</SafeAreaView>
 		);
@@ -321,111 +316,79 @@ export default function StudentProfileScreen() {
 		<SafeAreaView style={styles.container}>
 			<View style={styles.header}>
 				<Text style={styles.headerTitle}>Profil</Text>
-				{!editMode && (
-					<TouchableOpacity
-						style={styles.headerButton}
-						onPress={() => setEditMode(true)}>
-						<Ionicons name='pencil' size={24} color='#3f51b5' />
-					</TouchableOpacity>
-				)}
 			</View>
 
 			<ScrollView
-				style={styles.scrollView}
-				contentContainerStyle={styles.scrollContent}
+				style={styles.scrollContainer}
 				showsVerticalScrollIndicator={false}>
-				{renderProfileImage()}
+				<View style={styles.profileCard}>
+					{renderProfileImage()}
+					<Text style={styles.profileName}>{profile?.name || "O'quvchi"}</Text>
+					<Text style={styles.profileRole}>Student</Text>
+				</View>
 
-				<View style={styles.profileInfo}>
-					{editMode ? (
-						<View style={styles.formField}>
-							<Text style={styles.label}>Name</Text>
-							<TextInput
-								style={styles.input}
-								value={name}
-								onChangeText={setName}
-								placeholder='Enter your name'
-							/>
-						</View>
-					) : (
-						<View style={styles.infoField}>
-							<Text style={styles.label}>Name</Text>
-							<Text style={styles.value}>{profile?.name || "Not set"}</Text>
-						</View>
-					)}
+				<View style={styles.infoSection}>
+					<Text style={styles.sectionTitle}>Shaxsiy ma'lumotlar</Text>
 
-					<View style={styles.infoField}>
-						<Text style={styles.label}>Email</Text>
-						<Text style={styles.value}>{profile?.email}</Text>
+					<View style={styles.infoRow}>
+						<Ionicons
+							name='person-outline'
+							size={24}
+							color='#777'
+							style={styles.infoIcon}
+						/>
+						<View style={styles.infoContent}>
+							<Text style={styles.infoLabel}>Ism va familya</Text>
+							<Text style={styles.infoValue}>
+								{profile?.name || "O'quvchi"}
+							</Text>
+						</View>
 					</View>
 
-					<View style={styles.infoField}>
-						<Text style={styles.label}>Role</Text>
-						<Text style={styles.roleValue}>Student</Text>
+					<View style={styles.divider} />
+
+					<View style={styles.infoRow}>
+						<Ionicons
+							name='mail-outline'
+							size={24}
+							color='#777'
+							style={styles.infoIcon}
+						/>
+						<View style={styles.infoContent}>
+							<Text style={styles.infoLabel}>Email</Text>
+							<Text style={styles.infoValue}>
+								{profile?.email || "student@gmail.com"}
+							</Text>
+						</View>
+					</View>
+
+					<View style={styles.divider} />
+
+					<View style={styles.infoRow}>
+						<Ionicons
+							name='book-outline'
+							size={24}
+							color='#777'
+							style={styles.infoIcon}
+						/>
+						<View style={styles.infoContent}>
+							<Text style={styles.infoLabel}>Holati</Text>
+							<Text style={styles.infoValue}>Student</Text>
+						</View>
 					</View>
 				</View>
 
-				<View style={styles.actionButtonsContainer}>
-					{editMode ? (
-						<>
-							<TouchableOpacity
-								style={[styles.actionButton, styles.saveButton]}
-								onPress={handleUpdateProfile}
-								disabled={saving}>
-								{saving ? (
-									<ActivityIndicator size='small' color='white' />
-								) : (
-									<>
-										<Ionicons
-											name='checkmark-circle'
-											size={22}
-											color='white'
-											style={styles.buttonIcon}
-										/>
-										<Text style={styles.actionButtonText}>Save Changes</Text>
-									</>
-								)}
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.actionButton, styles.cancelButton]}
-								onPress={() => {
-									setEditMode(false);
-									setName(profile?.name || "");
-									setAvatarUrl(profile?.avatar_url || null);
-								}}>
-								<Ionicons
-									name='close-circle'
-									size={22}
-									color='#666'
-									style={styles.buttonIcon}
-								/>
-								<Text style={styles.cancelButtonText}>Cancel</Text>
-							</TouchableOpacity>
-						</>
-					) : (
-						<TouchableOpacity
-							style={[styles.actionButton, styles.editButton]}
-							onPress={() => setEditMode(true)}>
-							<Ionicons
-								name='create-outline'
-								size={22}
-								color='white'
-								style={styles.buttonIcon}
-							/>
-							<Text style={styles.actionButtonText}>Edit Profile</Text>
-						</TouchableOpacity>
-					)}
+				<View style={styles.actionSection}>
+					<Text style={styles.sectionTitle}>Ilova sozlamalari</Text>
 
-					<TouchableOpacity
-						style={[styles.actionButton, styles.logoutButton]}
-						onPress={handleLogout}>
+					<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
 						<Ionicons
 							name='log-out-outline'
-							size={22}
-							color='white'
-							style={styles.buttonIcon}
+							size={24}
+							color='#F44336'
+							style={styles.logoutIcon}
 						/>
-						<Text style={styles.actionButtonText}>Logout</Text>
+						<Text style={styles.logoutText}>Chiqish</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>
@@ -438,157 +401,151 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#f5f5f7",
 	},
+	scrollContainer: {
+		flex: 1,
+	},
 	loaderContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
 	},
-	scrollContent: {
-		flexGrow: 1,
+	header: {
+		backgroundColor: "#4169E1",
+		paddingTop: 50,
+		paddingBottom: 20,
+		paddingHorizontal: 16,
+		position: "relative",
+		zIndex: 99,
+	},
+	headerTitle: {
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "white",
+	},
+	profileCard: {
+		backgroundColor: "white",
+		borderRadius: 16,
+		marginHorizontal: 16,
+		marginTop: 6,
 		padding: 20,
+		alignItems: "center",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 8,
+		elevation: 4,
 	},
 	avatarContainer: {
 		alignItems: "center",
-		marginVertical: 20,
 		position: "relative",
+		marginBottom: 16,
 	},
 	avatar: {
-		width: 120,
-		height: 120,
-		borderRadius: 60,
+		width: 100,
+		height: 100,
+		borderRadius: 50,
 	},
 	avatarPlaceholder: {
-		backgroundColor: "#e1e1e1",
+		backgroundColor: "#4169E1",
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	avatarLetterText: {
+		fontSize: 48,
+		fontWeight: "bold",
+		color: "white",
 	},
 	changeAvatarButton: {
 		position: "absolute",
 		bottom: 0,
-		right: "35%",
-		backgroundColor: "#3f51b5",
-		width: 36,
-		height: 36,
-		borderRadius: 18,
+		right: 0,
+		backgroundColor: "#4169E1",
+		width: 32,
+		height: 32,
+		borderRadius: 16,
 		justifyContent: "center",
 		alignItems: "center",
 		borderWidth: 2,
 		borderColor: "white",
 	},
-	profileInfo: {
+	profileName: {
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "#333",
+		marginTop: 8,
+	},
+	profileRole: {
+		fontSize: 16,
+		color: "#666",
+		marginTop: 4,
+	},
+	infoSection: {
 		backgroundColor: "white",
-		borderRadius: 12,
-		padding: 16,
-		marginBottom: 20,
+		borderRadius: 16,
+		marginHorizontal: 16,
+		marginTop: 20,
+		padding: 20,
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
+		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.05,
-		shadowRadius: 8,
+		shadowRadius: 5,
 		elevation: 2,
 	},
-	infoField: {
+	sectionTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#333",
 		marginBottom: 16,
 	},
-	formField: {
-		marginBottom: 16,
+	infoRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingVertical: 12,
 	},
-	label: {
+	infoIcon: {
+		marginRight: 16,
+	},
+	infoContent: {
+		flex: 1,
+	},
+	infoLabel: {
 		fontSize: 14,
-		color: "#666",
+		color: "#888",
 		marginBottom: 4,
 	},
-	value: {
+	infoValue: {
 		fontSize: 16,
 		color: "#333",
 		fontWeight: "500",
 	},
-	roleValue: {
-		fontSize: 16,
-		color: "#3f51b5",
-		fontWeight: "600",
+	divider: {
+		height: 1,
+		backgroundColor: "#eee",
 	},
-	input: {
-		borderWidth: 1,
-		borderColor: "#ddd",
-		borderRadius: 8,
-		padding: 10,
-		fontSize: 16,
-		backgroundColor: "#f9f9f9",
-	},
-	actionButtonsContainer: {
-		marginBottom: 30,
-		paddingHorizontal: 10,
-	},
-	actionButton: {
-		paddingVertical: 16,
-		paddingHorizontal: 24,
-		borderRadius: 12,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		marginBottom: 14,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 3,
-	},
-	actionButtonText: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "white",
-	},
-	buttonIcon: {
-		marginRight: 10,
-	},
-	editButton: {
-		backgroundColor: "#3f51b5",
-		borderWidth: 0,
-	},
-	saveButton: {
-		backgroundColor: "#4caf50",
-		borderWidth: 0,
-	},
-	cancelButton: {
+	actionSection: {
 		backgroundColor: "white",
-		borderWidth: 1,
-		borderColor: "#ddd",
-	},
-	cancelButtonText: {
-		color: "#666",
-		fontWeight: "600",
-	},
-	passwordButton: {
-		backgroundColor: "#ff9800",
-		borderWidth: 0,
+		borderRadius: 16,
+		marginHorizontal: 16,
+		marginTop: 20,
+		padding: 20,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.05,
+		shadowRadius: 5,
+		elevation: 2,
+		marginBottom: 30,
 	},
 	logoutButton: {
-		backgroundColor: "#f44336",
-		borderWidth: 0,
-	},
-	header: {
 		flexDirection: "row",
-		justifyContent: "space-between",
 		alignItems: "center",
-		paddingHorizontal: 16,
 		paddingVertical: 12,
-		backgroundColor: "white",
-		borderBottomWidth: 1,
-		borderBottomColor: "#e0e0e0",
 	},
-	headerTitle: {
-		fontSize: 20,
-		fontWeight: "700",
-		color: "#333",
+	logoutIcon: {
+		marginRight: 16,
 	},
-	headerButton: {
-		width: 40,
-		height: 40,
-		justifyContent: "center",
-		alignItems: "center",
-		borderRadius: 20,
-	},
-	scrollView: {
-		flex: 1,
+	logoutText: {
+		fontSize: 16,
+		color: "#F44336",
+		fontWeight: "500",
 	},
 });
