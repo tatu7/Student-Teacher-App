@@ -10,6 +10,8 @@ import {
 	FlatList,
 	Modal,
 	TextInput,
+	useWindowDimensions,
+	StatusBar,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -65,6 +67,9 @@ export default function CalendarScreen() {
 	const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 	const [filterModalVisible, setFilterModalVisible] = useState(false);
 	const [searchText, setSearchText] = useState("");
+	const { width } = useWindowDimensions();
+
+	const isSmallScreen = width < 360;
 
 	// Calculate calendar days for current month
 	const calendarDays = useMemo(() => {
@@ -258,6 +263,7 @@ export default function CalendarScreen() {
 				key={day.toString()}
 				style={[
 					styles.dayCell,
+					isSmallScreen && styles.dayCellSmall,
 					isToday(day) && styles.todayCell,
 					isSelected && styles.selectedDayCell,
 					hasTask && styles.hasTaskCell,
@@ -266,14 +272,21 @@ export default function CalendarScreen() {
 				<Text
 					style={[
 						styles.dayText,
+						isSmallScreen && styles.dayTextSmall,
 						isSelected && styles.selectedDayText,
 						isToday(day) && styles.todayText,
 					]}>
 					{format(day, "d")}
 				</Text>
 				{hasTask && (
-					<View style={styles.taskDot}>
-						<Text style={styles.taskCount}>{dayTasks.length}</Text>
+					<View style={[styles.taskDot, isSmallScreen && styles.taskDotSmall]}>
+						<Text
+							style={[
+								styles.taskCount,
+								isSmallScreen && styles.taskCountSmall,
+							]}>
+							{dayTasks.length}
+						</Text>
 					</View>
 				)}
 			</TouchableOpacity>
@@ -288,7 +301,11 @@ export default function CalendarScreen() {
 			animationType='slide'
 			onRequestClose={() => setFilterModalVisible(false)}>
 			<View style={styles.modalOverlay}>
-				<View style={styles.modalContent}>
+				<View
+					style={[
+						styles.modalContent,
+						isSmallScreen && styles.modalContentSmall,
+					]}>
 					<View style={styles.modalHeader}>
 						<Text style={styles.modalTitle}>Filter Tasks</Text>
 						<TouchableOpacity
@@ -298,7 +315,8 @@ export default function CalendarScreen() {
 						</TouchableOpacity>
 					</View>
 
-					<ScrollView style={styles.modalBody}>
+					<ScrollView
+						style={[styles.modalBody, isSmallScreen && { maxHeight: 300 }]}>
 						<Text style={styles.filterSectionTitle}>By Group</Text>
 						<TouchableOpacity
 							style={[
@@ -308,7 +326,11 @@ export default function CalendarScreen() {
 							onPress={() => setSelectedGroup(null)}>
 							<Text style={styles.filterOptionText}>All Groups</Text>
 							{selectedGroup === null && (
-								<Ionicons name='checkmark' size={22} color='#3f51b5' />
+								<Ionicons
+									name='checkmark'
+									size={isSmallScreen ? 20 : 22}
+									color='#3f51b5'
+								/>
 							)}
 						</TouchableOpacity>
 
@@ -320,9 +342,15 @@ export default function CalendarScreen() {
 									selectedGroup === group.id && styles.selectedFilterOption,
 								]}
 								onPress={() => setSelectedGroup(group.id)}>
-								<Text style={styles.filterOptionText}>{group.name}</Text>
+								<Text style={styles.filterOptionText} numberOfLines={1}>
+									{group.name}
+								</Text>
 								{selectedGroup === group.id && (
-									<Ionicons name='checkmark' size={22} color='#3f51b5' />
+									<Ionicons
+										name='checkmark'
+										size={isSmallScreen ? 20 : 22}
+										color='#3f51b5'
+									/>
 								)}
 							</TouchableOpacity>
 						))}
@@ -338,7 +366,11 @@ export default function CalendarScreen() {
 							onPress={() => setSelectedStudent(null)}>
 							<Text style={styles.filterOptionText}>All Students</Text>
 							{selectedStudent === null && (
-								<Ionicons name='checkmark' size={22} color='#3f51b5' />
+								<Ionicons
+									name='checkmark'
+									size={isSmallScreen ? 20 : 22}
+									color='#3f51b5'
+								/>
 							)}
 						</TouchableOpacity>
 
@@ -350,11 +382,15 @@ export default function CalendarScreen() {
 									selectedStudent === student.id && styles.selectedFilterOption,
 								]}
 								onPress={() => setSelectedStudent(student.id)}>
-								<Text style={styles.filterOptionText}>
+								<Text style={styles.filterOptionText} numberOfLines={1}>
 									{student.name || student.email}
 								</Text>
 								{selectedStudent === student.id && (
-									<Ionicons name='checkmark' size={22} color='#3f51b5' />
+									<Ionicons
+										name='checkmark'
+										size={isSmallScreen ? 20 : 22}
+										color='#3f51b5'
+									/>
 								)}
 							</TouchableOpacity>
 						))}
@@ -420,13 +456,13 @@ export default function CalendarScreen() {
 
 				{/* Weekday headers */}
 				<View style={styles.weekdayHeader}>
-					<Text style={styles.weekdayText}>Sun</Text>
-					<Text style={styles.weekdayText}>Mon</Text>
-					<Text style={styles.weekdayText}>Tue</Text>
-					<Text style={styles.weekdayText}>Wed</Text>
-					<Text style={styles.weekdayText}>Thu</Text>
-					<Text style={styles.weekdayText}>Fri</Text>
-					<Text style={styles.weekdayText}>Sat</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "S" : "Sun"}</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "M" : "Mon"}</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "T" : "Tue"}</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "W" : "Wed"}</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "T" : "Thu"}</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "F" : "Fri"}</Text>
+					<Text style={styles.weekdayText}>{isSmallScreen ? "S" : "Sat"}</Text>
 				</View>
 
 				{/* Calendar grid */}
@@ -438,7 +474,9 @@ export default function CalendarScreen() {
 			{/* Tasks for selected date */}
 			<View style={styles.selectedDateContainer}>
 				<Text style={styles.selectedDateTitle}>
-					{format(selectedDate, "EEEE, d-MMMM, yyyy")} uchun vazifalar
+					{isSmallScreen
+						? format(selectedDate, "d-MMM-yyyy") + " uchun vazifalar"
+						: format(selectedDate, "EEEE, d-MMMM, yyyy") + " uchun vazifalar"}
 				</Text>
 
 				{tasksForSelectedDate.length > 0 ? (
@@ -449,13 +487,15 @@ export default function CalendarScreen() {
 								<View style={styles.taskIcon}>
 									<Ionicons
 										name='document-text-outline'
-										size={24}
+										size={isSmallScreen ? 20 : 24}
 										color='#4169E1'
 									/>
 								</View>
 								<View style={styles.taskContent}>
-									<Text style={styles.taskTitle}>{item.title}</Text>
-									<Text style={styles.taskGroup}>
+									<Text style={styles.taskTitle} numberOfLines={1}>
+										{item.title}
+									</Text>
+									<Text style={styles.taskGroup} numberOfLines={1}>
 										{item.group_name || "Guruh nomi"}
 									</Text>
 									{item.description && (
@@ -488,12 +528,12 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		backgroundColor: "#4169E1",
-		paddingTop: 50,
-		paddingBottom: 20,
+		paddingTop: StatusBar.currentHeight || 35,
+		paddingBottom: 15,
 		paddingHorizontal: 16,
 	},
 	headerTitle: {
-		fontSize: 24,
+		fontSize: 22,
 		fontWeight: "bold",
 		color: "white",
 	},
@@ -505,8 +545,8 @@ const styles = StyleSheet.create({
 	calendarContainer: {
 		backgroundColor: "white",
 		borderRadius: 12,
-		margin: 16,
-		padding: 16,
+		margin: 12,
+		padding: 12,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.05,
@@ -517,10 +557,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 16,
+		marginBottom: 12,
 	},
 	monthTitle: {
-		fontSize: 18,
+		fontSize: 16,
 		fontWeight: "600",
 		color: "#333",
 	},
@@ -530,11 +570,11 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	weekdayText: {
-		width: 36,
+		width: 32,
 		textAlign: "center",
 		fontWeight: "500",
 		color: "#666",
-		fontSize: 12,
+		fontSize: 11,
 	},
 	calendarGrid: {
 		flexDirection: "row",
@@ -542,16 +582,25 @@ const styles = StyleSheet.create({
 		justifyContent: "space-around",
 	},
 	dayCell: {
-		width: 40,
-		height: 40,
+		width: 38,
+		height: 38,
 		justifyContent: "center",
 		alignItems: "center",
-		marginVertical: 4,
-		borderRadius: 20,
+		marginVertical: 3,
+		borderRadius: 19,
+	},
+	dayCellSmall: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		marginVertical: 2,
 	},
 	dayText: {
 		fontSize: 14,
 		color: "#333",
+	},
+	dayTextSmall: {
+		fontSize: 12,
 	},
 	todayCell: {
 		backgroundColor: "#EFF3FF",
@@ -583,19 +632,28 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 		borderColor: "white",
 	},
+	taskDotSmall: {
+		width: 14,
+		height: 14,
+		borderRadius: 7,
+		borderWidth: 1.5,
+	},
 	taskCount: {
 		color: "white",
 		fontSize: 9,
 		fontWeight: "bold",
 	},
+	taskCountSmall: {
+		fontSize: 8,
+	},
 	selectedDateContainer: {
 		flex: 1,
-		marginHorizontal: 16,
+		marginHorizontal: 12,
 	},
 	selectedDateTitle: {
-		fontSize: 18,
+		fontSize: 16,
 		fontWeight: "600",
-		marginBottom: 16,
+		marginBottom: 12,
 		color: "#333",
 	},
 	tasksList: {
@@ -605,8 +663,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		backgroundColor: "white",
 		borderRadius: 12,
-		padding: 16,
-		marginBottom: 12,
+		padding: 14,
+		marginBottom: 10,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.1,
@@ -614,13 +672,13 @@ const styles = StyleSheet.create({
 		elevation: 2,
 	},
 	taskIcon: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
+		width: 36,
+		height: 36,
+		borderRadius: 18,
 		backgroundColor: "#EFF3FF",
 		justifyContent: "center",
 		alignItems: "center",
-		marginRight: 12,
+		marginRight: 10,
 	},
 	taskContent: {
 		flex: 1,
@@ -629,36 +687,36 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 8,
+		marginBottom: 6,
 	},
 	taskTitle: {
-		fontSize: 16,
+		fontSize: 15,
 		fontWeight: "600",
 		color: "#333",
 		marginBottom: 4,
 	},
 	taskDueTime: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#FF9800",
 		fontWeight: "500",
 	},
 	taskGroup: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#4169E1",
 		marginBottom: 4,
 	},
 	taskDescription: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#666",
 	},
 	noTasksContainer: {
 		alignItems: "center",
-		paddingVertical: 30,
+		paddingVertical: 25,
 		backgroundColor: "white",
 		borderRadius: 12,
 	},
 	noTasksText: {
-		fontSize: 16,
+		fontSize: 15,
 		color: "#666",
 	},
 	createTaskButton: {
@@ -667,22 +725,22 @@ const styles = StyleSheet.create({
 	filtersApplied: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		paddingHorizontal: 16,
-		marginBottom: 12,
+		paddingHorizontal: 12,
+		marginBottom: 10,
 	},
 	filterChip: {
 		flexDirection: "row",
 		alignItems: "center",
 		backgroundColor: "white",
-		borderRadius: 20,
-		paddingVertical: 6,
-		paddingHorizontal: 12,
-		marginRight: 8,
-		marginBottom: 8,
+		borderRadius: 16,
+		paddingVertical: 5,
+		paddingHorizontal: 10,
+		marginRight: 6,
+		marginBottom: 6,
 	},
 	filterChipText: {
-		fontSize: 14,
-		marginRight: 6,
+		fontSize: 13,
+		marginRight: 5,
 	},
 	modalOverlay: {
 		flex: 1,
@@ -693,38 +751,42 @@ const styles = StyleSheet.create({
 		backgroundColor: "white",
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
-		paddingTop: 20,
+		paddingTop: 16,
 		maxHeight: "80%",
+	},
+	modalContentSmall: {
+		paddingTop: 12,
+		maxHeight: "90%",
 	},
 	modalHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 16,
-		paddingHorizontal: 20,
+		marginBottom: 12,
+		paddingHorizontal: 16,
 	},
 	modalTitle: {
-		fontSize: 18,
+		fontSize: 17,
 		fontWeight: "bold",
 	},
 	closeButton: {
-		padding: 5,
+		padding: 4,
 	},
 	modalBody: {
-		paddingHorizontal: 20,
+		paddingHorizontal: 16,
 		maxHeight: 400,
 	},
 	filterSectionTitle: {
-		fontSize: 16,
+		fontSize: 15,
 		fontWeight: "600",
-		marginTop: 10,
-		marginBottom: 12,
+		marginTop: 8,
+		marginBottom: 10,
 	},
 	filterOption: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		paddingVertical: 12,
+		paddingVertical: 10,
 		borderBottomWidth: 1,
 		borderBottomColor: "#f0f0f0",
 	},
@@ -732,36 +794,36 @@ const styles = StyleSheet.create({
 		backgroundColor: "#f0f4ff",
 	},
 	filterOptionText: {
-		fontSize: 16,
+		fontSize: 15,
 	},
 	divider: {
 		height: 1,
 		backgroundColor: "#e0e0e0",
-		marginVertical: 15,
+		marginVertical: 12,
 	},
 	modalFooter: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		padding: 20,
+		padding: 16,
 		borderTopWidth: 1,
 		borderTopColor: "#f0f0f0",
 	},
 	resetButton: {
-		padding: 12,
+		padding: 10,
 	},
 	resetButtonText: {
 		color: "#666",
-		fontSize: 16,
+		fontSize: 15,
 	},
 	applyButton: {
 		backgroundColor: "#4169E1",
-		paddingVertical: 12,
-		paddingHorizontal: 24,
+		paddingVertical: 10,
+		paddingHorizontal: 20,
 		borderRadius: 8,
 	},
 	applyButtonText: {
 		color: "white",
-		fontSize: 16,
+		fontSize: 15,
 		fontWeight: "600",
 	},
 });

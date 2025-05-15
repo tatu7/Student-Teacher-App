@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
 	StyleSheet,
 	View,
@@ -10,6 +10,8 @@ import {
 	Image,
 	RefreshControl,
 	Alert,
+	Dimensions,
+	useWindowDimensions,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -41,6 +43,9 @@ type RatingTabState = {
 
 export default function TeacherRatingsScreen() {
 	const { user } = useAuth();
+	const { width } = useWindowDimensions();
+	const isSmallScreen = width < 375;
+
 	const [state, setState] = useState<RatingTabState>({
 		selectedGroup: null,
 		groups: [],
@@ -242,22 +247,59 @@ export default function TeacherRatingsScreen() {
 		const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
 		const rankColor = index < 3 ? rankColors[index] : "transparent";
 
+		// For very small screens, create a more compact view
+		const isVerySmallScreen = width < 320;
+
 		return (
 			<View
 				style={[
 					styles.studentCard,
 					{ borderLeftColor: rankColor, borderLeftWidth: index < 3 ? 5 : 0 },
+					isSmallScreen && styles.studentCardSmall,
+					isVerySmallScreen && styles.studentCardVerySmall,
 				]}>
-				<View style={styles.rankContainer}>
-					<Text style={styles.rankText}>{item.rank}</Text>
+				<View
+					style={[
+						styles.rankContainer,
+						isVerySmallScreen && styles.rankContainerVerySmall,
+					]}>
+					<Text
+						style={[
+							styles.rankText,
+							isSmallScreen && styles.rankTextSmall,
+							isVerySmallScreen && styles.rankTextVerySmall,
+						]}>
+						{item.rank}
+					</Text>
 				</View>
 
-				<View style={styles.avatarContainer}>
+				<View
+					style={[
+						styles.avatarContainer,
+						isVerySmallScreen && styles.avatarContainerVerySmall,
+					]}>
 					{item.avatar_url ? (
-						<Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+						<Image
+							source={{ uri: item.avatar_url }}
+							style={[
+								styles.avatar,
+								isSmallScreen && styles.avatarSmall,
+								isVerySmallScreen && styles.avatarVerySmall,
+							]}
+						/>
 					) : (
-						<View style={styles.avatarPlaceholder}>
-							<Text style={styles.avatarLetter}>
+						<View
+							style={[
+								styles.avatarPlaceholder,
+								isSmallScreen && styles.avatarSmall,
+								isVerySmallScreen && styles.avatarVerySmall,
+							]}>
+							<Text
+								style={[
+									styles.avatarLetter,
+									isSmallScreen && styles.avatarLetterSmall,
+									isVerySmallScreen && { fontSize: 14 },
+								]}>
 								{item.name ? item.name.charAt(0).toUpperCase() : "?"}
 							</Text>
 						</View>
@@ -265,17 +307,42 @@ export default function TeacherRatingsScreen() {
 				</View>
 
 				<View style={styles.infoContainer}>
-					<Text style={styles.studentName} numberOfLines={1}>
+					<Text
+						style={[
+							styles.studentName,
+							isSmallScreen && styles.studentNameSmall,
+							isVerySmallScreen && { fontSize: 12 },
+						]}
+						numberOfLines={1}>
 						{item.name}
 					</Text>
-					<Text style={styles.completedText}>
+					<Text
+						style={[
+							styles.completedText,
+							isSmallScreen && styles.completedTextSmall,
+							isVerySmallScreen && { fontSize: 10 },
+						]}>
 						{item.completed_tasks} topshiriq bajarilgan
 					</Text>
 				</View>
 
 				<View style={styles.scoreContainer}>
-					<Text style={styles.scoreText}>{Math.round(item.average_score)}</Text>
-					<Text style={styles.scoreLabel}>Ball</Text>
+					<Text
+						style={[
+							styles.scoreText,
+							isSmallScreen && styles.scoreTextSmall,
+							isVerySmallScreen && { fontSize: 14 },
+						]}>
+						{Math.round(item.average_score)}
+					</Text>
+					<Text
+						style={[
+							styles.scoreLabel,
+							isSmallScreen && styles.scoreLabelSmall,
+							isVerySmallScreen && { fontSize: 9 },
+						]}>
+						Ball
+					</Text>
 				</View>
 			</View>
 		);
@@ -293,6 +360,7 @@ export default function TeacherRatingsScreen() {
 							style={[
 								styles.groupTab,
 								state.selectedGroup === item.id && styles.selectedGroupTab,
+								isSmallScreen && styles.groupTabSmall,
 							]}
 							onPress={() =>
 								setState((prev) => ({ ...prev, selectedGroup: item.id }))
@@ -302,6 +370,7 @@ export default function TeacherRatingsScreen() {
 									styles.groupTabText,
 									state.selectedGroup === item.id &&
 										styles.selectedGroupTabText,
+									isSmallScreen && styles.groupTabTextSmall,
 								]}>
 								{item.name}
 							</Text>
@@ -316,8 +385,16 @@ export default function TeacherRatingsScreen() {
 
 	const renderEmptyList = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='trophy-outline' size={80} color='#D0D7F0' />
-			<Text style={styles.emptySubtitle}>
+			<Ionicons
+				name='trophy-outline'
+				size={isSmallScreen ? 60 : 80}
+				color='#D0D7F0'
+			/>
+			<Text
+				style={[
+					styles.emptySubtitle,
+					isSmallScreen && styles.emptySubtitleSmall,
+				]}>
 				Bu guruhda hali hech qanday baholar qo'yilmagan
 			</Text>
 		</View>
@@ -325,9 +402,20 @@ export default function TeacherRatingsScreen() {
 
 	const renderNoGroups = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='people-outline' size={80} color='#D0D7F0' />
-			<Text style={styles.emptyTitle}>Guruhlar topilmadi</Text>
-			<Text style={styles.emptySubtitle}>
+			<Ionicons
+				name='people-outline'
+				size={isSmallScreen ? 60 : 80}
+				color='#D0D7F0'
+			/>
+			<Text
+				style={[styles.emptyTitle, isSmallScreen && styles.emptyTitleSmall]}>
+				Guruhlar topilmadi
+			</Text>
+			<Text
+				style={[
+					styles.emptySubtitle,
+					isSmallScreen && styles.emptySubtitleSmall,
+				]}>
 				Reytinglarni ko'rish uchun avval guruh yarating
 			</Text>
 		</View>
@@ -335,8 +423,14 @@ export default function TeacherRatingsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>O'quvchilar reytingi</Text>
+			<View style={[styles.header, isSmallScreen && styles.headerSmall]}>
+				<Text
+					style={[
+						styles.headerTitle,
+						isSmallScreen && styles.headerTitleSmall,
+					]}>
+					O'quvchilar reytingi
+				</Text>
 			</View>
 
 			{state.groups.length > 0 ? (
@@ -352,7 +446,10 @@ export default function TeacherRatingsScreen() {
 							data={state.students}
 							renderItem={renderStudentItem}
 							keyExtractor={(item) => item.id}
-							contentContainerStyle={styles.listContainer}
+							contentContainerStyle={[
+								styles.listContainer,
+								isSmallScreen && styles.listContainerSmall,
+							]}
 							ListEmptyComponent={renderEmptyList}
 							refreshControl={
 								<RefreshControl
@@ -389,10 +486,18 @@ const styles = StyleSheet.create({
 		paddingBottom: 20,
 		paddingHorizontal: 16,
 	},
+	headerSmall: {
+		paddingTop: 40,
+		paddingBottom: 16,
+		paddingHorizontal: 12,
+	},
 	headerTitle: {
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "white",
+	},
+	headerTitleSmall: {
+		fontSize: 20,
 	},
 	loadingContainer: {
 		flex: 1,
@@ -419,6 +524,11 @@ const styles = StyleSheet.create({
 		marginRight: 10,
 		backgroundColor: "#F0F2F5",
 	},
+	groupTabSmall: {
+		paddingVertical: 6,
+		paddingHorizontal: 12,
+		marginRight: 8,
+	},
 	selectedGroupTab: {
 		backgroundColor: "#EEF2FF",
 		borderColor: "#4169E1",
@@ -429,6 +539,9 @@ const styles = StyleSheet.create({
 		fontWeight: "500",
 		color: "#555",
 	},
+	groupTabTextSmall: {
+		fontSize: 12,
+	},
 	selectedGroupTabText: {
 		color: "#4169E1",
 		fontWeight: "600",
@@ -436,6 +549,10 @@ const styles = StyleSheet.create({
 	listContainer: {
 		padding: 16,
 		paddingBottom: 40,
+	},
+	listContainerSmall: {
+		padding: 12,
+		paddingBottom: 32,
 	},
 	studentCard: {
 		flexDirection: "row",
@@ -450,23 +567,55 @@ const styles = StyleSheet.create({
 		elevation: 1,
 		alignItems: "center",
 	},
+	studentCardSmall: {
+		padding: 8,
+		borderRadius: 10,
+		marginBottom: 8,
+	},
+	studentCardVerySmall: {
+		padding: 6,
+		borderRadius: 8,
+		marginBottom: 6,
+	},
 	rankContainer: {
 		width: 30,
 		alignItems: "center",
 		justifyContent: "center",
+	},
+	rankContainerVerySmall: {
+		width: 20,
 	},
 	rankText: {
 		fontSize: 16,
 		fontWeight: "bold",
 		color: "#333",
 	},
+	rankTextSmall: {
+		fontSize: 14,
+	},
+	rankTextVerySmall: {
+		fontSize: 12,
+	},
 	avatarContainer: {
 		marginRight: 12,
+	},
+	avatarContainerVerySmall: {
+		marginRight: 8,
 	},
 	avatar: {
 		width: 40,
 		height: 40,
 		borderRadius: 20,
+	},
+	avatarSmall: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+	},
+	avatarVerySmall: {
+		width: 28,
+		height: 28,
+		borderRadius: 14,
 	},
 	avatarPlaceholder: {
 		width: 40,
@@ -481,6 +630,9 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "white",
 	},
+	avatarLetterSmall: {
+		fontSize: 16,
+	},
 	infoContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -491,9 +643,16 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginBottom: 2,
 	},
+	studentNameSmall: {
+		fontSize: 14,
+		marginBottom: 1,
+	},
 	completedText: {
 		fontSize: 13,
 		color: "#666",
+	},
+	completedTextSmall: {
+		fontSize: 11,
 	},
 	scoreContainer: {
 		alignItems: "center",
@@ -504,9 +663,15 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#4169E1",
 	},
+	scoreTextSmall: {
+		fontSize: 16,
+	},
 	scoreLabel: {
 		fontSize: 12,
 		color: "#666",
+	},
+	scoreLabelSmall: {
+		fontSize: 10,
 	},
 	emptyContainer: {
 		alignItems: "center",
@@ -521,10 +686,19 @@ const styles = StyleSheet.create({
 		marginTop: 16,
 		marginBottom: 8,
 	},
+	emptyTitleSmall: {
+		fontSize: 18,
+		marginTop: 12,
+		marginBottom: 6,
+	},
 	emptySubtitle: {
 		fontSize: 16,
 		color: "#666",
 		textAlign: "center",
 		lineHeight: 22,
+	},
+	emptySubtitleSmall: {
+		fontSize: 14,
+		lineHeight: 20,
 	},
 });

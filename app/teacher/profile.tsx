@@ -11,6 +11,7 @@ import {
 	ActivityIndicator,
 	SafeAreaView,
 	Platform,
+	useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,6 +31,10 @@ type Profile = {
 
 export default function ProfileScreen() {
 	const { user, signOut, resetPassword } = useAuth();
+	const { width } = useWindowDimensions();
+	const isSmallScreen = width < 375;
+	const isVerySmallScreen = width < 320;
+
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -278,11 +283,25 @@ export default function ProfileScreen() {
 		if (avatarUrl) {
 			return (
 				<View style={styles.avatarContainer}>
-					<Image source={{ uri: avatarUrl }} style={styles.avatar} />
+					<Image
+						source={{ uri: avatarUrl }}
+						style={[
+							styles.avatar,
+							isSmallScreen && styles.avatarSmall,
+							isVerySmallScreen && styles.avatarVerySmall,
+						]}
+					/>
 					<TouchableOpacity
-						style={styles.changeAvatarButton}
+						style={[
+							styles.changeAvatarButton,
+							isSmallScreen && styles.changeAvatarButtonSmall,
+						]}
 						onPress={pickImage}>
-						<Ionicons name='camera' size={20} color='white' />
+						<Ionicons
+							name='camera'
+							size={isSmallScreen ? 16 : 20}
+							color='white'
+						/>
 					</TouchableOpacity>
 				</View>
 			);
@@ -292,11 +311,32 @@ export default function ProfileScreen() {
 		const firstLetter = profile?.name?.charAt(0).toUpperCase() || "K";
 		return (
 			<View style={styles.avatarContainer}>
-				<View style={[styles.avatar, styles.avatarPlaceholder]}>
-					<Text style={styles.avatarLetterText}>{firstLetter}</Text>
+				<View
+					style={[
+						styles.avatar,
+						styles.avatarPlaceholder,
+						isSmallScreen && styles.avatarSmall,
+						isVerySmallScreen && styles.avatarVerySmall,
+					]}>
+					<Text
+						style={[
+							styles.avatarLetterText,
+							isSmallScreen && styles.avatarLetterTextSmall,
+						]}>
+						{firstLetter}
+					</Text>
 				</View>
-				<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>
-					<Ionicons name='camera' size={20} color='white' />
+				<TouchableOpacity
+					style={[
+						styles.changeAvatarButton,
+						isSmallScreen && styles.changeAvatarButtonSmall,
+					]}
+					onPress={pickImage}>
+					<Ionicons
+						name='camera'
+						size={isSmallScreen ? 16 : 20}
+						color='white'
+					/>
 				</TouchableOpacity>
 			</View>
 		);
@@ -314,32 +354,76 @@ export default function ProfileScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Profile</Text>
+			<View style={[styles.header, isSmallScreen && styles.headerSmall]}>
+				<Text
+					style={[
+						styles.headerTitle,
+						isSmallScreen && styles.headerTitleSmall,
+					]}>
+					Profile
+				</Text>
 			</View>
 
 			<ScrollView
 				style={styles.scrollContainer}
 				showsVerticalScrollIndicator={false}>
-				<View style={styles.profileCard}>
+				<View
+					style={[
+						styles.profileCard,
+						isSmallScreen && styles.profileCardSmall,
+					]}>
 					{renderProfileImage()}
-					<Text style={styles.profileName}>{profile?.name || "Karim"}</Text>
-					<Text style={styles.profileRole}>Teacher</Text>
+					<Text
+						style={[
+							styles.profileName,
+							isSmallScreen && styles.profileNameSmall,
+						]}>
+						{profile?.name || "Karim"}
+					</Text>
+					<Text
+						style={[
+							styles.profileRole,
+							isSmallScreen && styles.profileRoleSmall,
+						]}>
+						Teacher
+					</Text>
 				</View>
 
-				<View style={styles.infoSection}>
-					<Text style={styles.sectionTitle}>Shaxsiy ma'lumotlar</Text>
+				<View
+					style={[
+						styles.infoSection,
+						isSmallScreen && styles.infoSectionSmall,
+					]}>
+					<Text
+						style={[
+							styles.sectionTitle,
+							isSmallScreen && styles.sectionTitleSmall,
+						]}>
+						Shaxsiy ma'lumotlar
+					</Text>
 
 					<View style={styles.infoRow}>
 						<Ionicons
 							name='person-outline'
-							size={24}
+							size={isSmallScreen ? 20 : 24}
 							color='#777'
 							style={styles.infoIcon}
 						/>
 						<View style={styles.infoContent}>
-							<Text style={styles.infoLabel}>Ism va familya</Text>
-							<Text style={styles.infoValue}>{profile?.name || "Karim"}</Text>
+							<Text
+								style={[
+									styles.infoLabel,
+									isSmallScreen && styles.infoLabelSmall,
+								]}>
+								Ism va familya
+							</Text>
+							<Text
+								style={[
+									styles.infoValue,
+									isSmallScreen && styles.infoValueSmall,
+								]}>
+								{profile?.name || "Karim"}
+							</Text>
 						</View>
 					</View>
 
@@ -348,13 +432,23 @@ export default function ProfileScreen() {
 					<View style={styles.infoRow}>
 						<Ionicons
 							name='mail-outline'
-							size={24}
+							size={isSmallScreen ? 20 : 24}
 							color='#777'
 							style={styles.infoIcon}
 						/>
 						<View style={styles.infoContent}>
-							<Text style={styles.infoLabel}>Email</Text>
-							<Text style={styles.infoValue}>
+							<Text
+								style={[
+									styles.infoLabel,
+									isSmallScreen && styles.infoLabelSmall,
+								]}>
+								Email
+							</Text>
+							<Text
+								style={[
+									styles.infoValue,
+									isSmallScreen && styles.infoValueSmall,
+								]}>
 								{profile?.email || "karim@gmail.com"}
 							</Text>
 						</View>
@@ -365,28 +459,56 @@ export default function ProfileScreen() {
 					<View style={styles.infoRow}>
 						<Ionicons
 							name='book-outline'
-							size={24}
+							size={isSmallScreen ? 20 : 24}
 							color='#777'
 							style={styles.infoIcon}
 						/>
 						<View style={styles.infoContent}>
-							<Text style={styles.infoLabel}>Holati</Text>
-							<Text style={styles.infoValue}>Teacher</Text>
+							<Text
+								style={[
+									styles.infoLabel,
+									isSmallScreen && styles.infoLabelSmall,
+								]}>
+								Holati
+							</Text>
+							<Text
+								style={[
+									styles.infoValue,
+									isSmallScreen && styles.infoValueSmall,
+								]}>
+								Teacher
+							</Text>
 						</View>
 					</View>
 				</View>
 
-				<View style={styles.actionSection}>
-					<Text style={styles.sectionTitle}>Ilova sozlamalari</Text>
+				<View
+					style={[
+						styles.actionSection,
+						isSmallScreen && styles.actionSectionSmall,
+					]}>
+					<Text
+						style={[
+							styles.sectionTitle,
+							isSmallScreen && styles.sectionTitleSmall,
+						]}>
+						Ilova sozlamalari
+					</Text>
 
 					<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
 						<Ionicons
 							name='log-out-outline'
-							size={24}
+							size={isSmallScreen ? 20 : 24}
 							color='#F44336'
 							style={styles.logoutIcon}
 						/>
-						<Text style={styles.logoutText}>Chiqish</Text>
+						<Text
+							style={[
+								styles.logoutText,
+								isSmallScreen && styles.logoutTextSmall,
+							]}>
+							Chiqish
+						</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>
@@ -415,10 +537,18 @@ const styles = StyleSheet.create({
 		position: "relative",
 		zIndex: 99,
 	},
+	headerSmall: {
+		paddingTop: 40,
+		paddingBottom: 16,
+		paddingHorizontal: 12,
+	},
 	headerTitle: {
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "white",
+	},
+	headerTitleSmall: {
+		fontSize: 20,
 	},
 	profileCard: {
 		backgroundColor: "white",
@@ -433,6 +563,12 @@ const styles = StyleSheet.create({
 		shadowRadius: 8,
 		elevation: 4,
 	},
+	profileCardSmall: {
+		borderRadius: 12,
+		marginHorizontal: 12,
+		padding: 16,
+		marginTop: 4,
+	},
 	avatarContainer: {
 		alignItems: "center",
 		position: "relative",
@@ -443,6 +579,16 @@ const styles = StyleSheet.create({
 		height: 100,
 		borderRadius: 50,
 	},
+	avatarSmall: {
+		width: 80,
+		height: 80,
+		borderRadius: 40,
+	},
+	avatarVerySmall: {
+		width: 70,
+		height: 70,
+		borderRadius: 35,
+	},
 	avatarPlaceholder: {
 		backgroundColor: "#4169E1",
 		justifyContent: "center",
@@ -452,6 +598,9 @@ const styles = StyleSheet.create({
 		fontSize: 48,
 		fontWeight: "bold",
 		color: "white",
+	},
+	avatarLetterTextSmall: {
+		fontSize: 36,
 	},
 	changeAvatarButton: {
 		position: "absolute",
@@ -466,16 +615,30 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 		borderColor: "white",
 	},
+	changeAvatarButtonSmall: {
+		width: 28,
+		height: 28,
+		borderRadius: 14,
+		borderWidth: 1.5,
+	},
 	profileName: {
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "#333",
 		marginTop: 8,
 	},
+	profileNameSmall: {
+		fontSize: 20,
+		marginTop: 6,
+	},
 	profileRole: {
 		fontSize: 16,
 		color: "#666",
 		marginTop: 4,
+	},
+	profileRoleSmall: {
+		fontSize: 14,
+		marginTop: 2,
 	},
 	infoSection: {
 		backgroundColor: "white",
@@ -489,11 +652,21 @@ const styles = StyleSheet.create({
 		shadowRadius: 5,
 		elevation: 2,
 	},
+	infoSectionSmall: {
+		borderRadius: 12,
+		marginHorizontal: 12,
+		marginTop: 16,
+		padding: 16,
+	},
 	sectionTitle: {
 		fontSize: 18,
 		fontWeight: "bold",
 		color: "#333",
 		marginBottom: 16,
+	},
+	sectionTitleSmall: {
+		fontSize: 16,
+		marginBottom: 12,
 	},
 	infoRow: {
 		flexDirection: "row",
@@ -511,10 +684,17 @@ const styles = StyleSheet.create({
 		color: "#888",
 		marginBottom: 4,
 	},
+	infoLabelSmall: {
+		fontSize: 12,
+		marginBottom: 2,
+	},
 	infoValue: {
 		fontSize: 16,
 		color: "#333",
 		fontWeight: "500",
+	},
+	infoValueSmall: {
+		fontSize: 14,
 	},
 	divider: {
 		height: 1,
@@ -531,6 +711,13 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.05,
 		shadowRadius: 5,
 		elevation: 2,
+		marginBottom: 20,
+	},
+	actionSectionSmall: {
+		borderRadius: 12,
+		marginHorizontal: 12,
+		marginTop: 16,
+		padding: 16,
 	},
 	logoutButton: {
 		flexDirection: "row",
@@ -544,5 +731,8 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: "#F44336",
 		fontWeight: "500",
+	},
+	logoutTextSmall: {
+		fontSize: 14,
 	},
 });

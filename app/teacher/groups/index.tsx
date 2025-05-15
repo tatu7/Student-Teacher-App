@@ -14,6 +14,7 @@ import {
 	TextInput,
 	TouchableWithoutFeedback,
 	Keyboard,
+	useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,6 +49,8 @@ type Task = {
 
 export default function GroupsScreen() {
 	const { user } = useAuth();
+	const { width } = useWindowDimensions();
+	const isSmallScreen = width < 375;
 	const [groups, setGroups] = useState<Group[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [tasks, setTasks] = useState<{ [groupId: string]: Task[] }>({});
@@ -578,22 +581,35 @@ export default function GroupsScreen() {
 	};
 
 	const renderTaskItem = (task: Task, groupId: string) => (
-		<View key={task.id} style={styles.taskItem}>
+		<View
+			key={task.id}
+			style={[styles.taskItem, isSmallScreen && styles.smallTaskItem]}>
 			<View style={styles.taskItemLeftSection}>
-				<View style={styles.taskIconContainer}>
+				<View
+					style={[
+						styles.taskIconContainer,
+						isSmallScreen && styles.smallTaskIconContainer,
+					]}>
 					<Ionicons
 						name={task.has_files ? "document-text" : "document-text-outline"}
-						size={20}
+						size={isSmallScreen ? 16 : 20}
 						color='#4285F4'
 					/>
 				</View>
 				<View style={styles.taskDetails}>
-					<Text style={styles.taskTitle} numberOfLines={1}>
+					<Text
+						style={[styles.taskTitle, isSmallScreen && styles.smallTaskTitle]}
+						numberOfLines={1}>
 						{task.title}
 					</Text>
 					<View style={styles.taskDateContainer}>
-						<Ionicons name='calendar-outline' size={14} color='#777' />
-						<Text style={styles.taskDate}>
+						<Ionicons
+							name='calendar-outline'
+							size={isSmallScreen ? 12 : 14}
+							color='#777'
+						/>
+						<Text
+							style={[styles.taskDate, isSmallScreen && styles.smallTaskDate]}>
 							{formatTaskDate(task.due_date).replace("Muddat: ", "")}
 						</Text>
 					</View>
@@ -601,9 +617,13 @@ export default function GroupsScreen() {
 			</View>
 
 			<TouchableOpacity
-				style={styles.editButton}
+				style={[styles.editButton, isSmallScreen && styles.smallEditButton]}
 				onPress={() => openEditTaskModal(task, groupId)}>
-				<Ionicons name='pencil' size={16} color='#4285F4' />
+				<Ionicons
+					name='pencil'
+					size={isSmallScreen ? 14 : 16}
+					color='#4285F4'
+				/>
 			</TouchableOpacity>
 		</View>
 	);
@@ -616,26 +636,57 @@ export default function GroupsScreen() {
 		return (
 			<View style={styles.groupSection}>
 				<TouchableOpacity
-					style={styles.groupCard}
+					style={[styles.groupCard, isSmallScreen && styles.smallGroupCard]}
 					onPress={() => openTaskModal(item)}>
-					<View style={styles.userIconContainer}>
-						<Ionicons name='person-outline' size={24} color='#4285F4' />
+					<View
+						style={[
+							styles.userIconContainer,
+							isSmallScreen && styles.smallUserIconContainer,
+						]}>
+						<Ionicons
+							name='person-outline'
+							size={isSmallScreen ? 20 : 24}
+							color='#4285F4'
+						/>
 					</View>
 					<View style={styles.groupInfo}>
-						<Text style={styles.groupName}>{item.name}</Text>
+						<Text
+							style={[
+								styles.groupName,
+								isSmallScreen && styles.smallGroupName,
+							]}>
+							{item.name}
+						</Text>
 						{item.description ? (
-							<Text style={styles.groupDescription} numberOfLines={2}>
+							<Text
+								style={[
+									styles.groupDescription,
+									isSmallScreen && styles.smallGroupDescription,
+								]}
+								numberOfLines={2}>
 								{item.description}
 							</Text>
 						) : null}
-						<Text style={styles.groupDate}>{formatDate(item.created_at)}</Text>
+						<Text
+							style={[
+								styles.groupDate,
+								isSmallScreen && styles.smallGroupDate,
+							]}>
+							{formatDate(item.created_at)}
+						</Text>
 						<TouchableOpacity
-							style={styles.idContainer}
+							style={[
+								styles.idContainer,
+								isSmallScreen && styles.smallIdContainer,
+							]}
 							onPress={(e) => {
 								e.stopPropagation();
 								copyToClipboard(item.id);
 							}}>
-							<Text style={styles.groupId}>ID: {shortenId(item.id)}</Text>
+							<Text
+								style={[styles.groupId, isSmallScreen && styles.smallGroupId]}>
+								ID: {shortenId(item.id)}
+							</Text>
 						</TouchableOpacity>
 					</View>
 				</TouchableOpacity>
@@ -645,41 +696,63 @@ export default function GroupsScreen() {
 					<TouchableOpacity
 						style={[
 							styles.tasksHeaderRow,
+							isSmallScreen && styles.smallTasksHeaderRow,
 							item.expanded && {
 								borderBottomWidth: 1,
 								borderBottomColor: "#f0f0f0",
 							},
 						]}
 						onPress={() => toggleGroupExpanded(item.id)}>
-						<Text style={styles.tasksSectionTitle}>
+						<Text
+							style={[
+								styles.tasksSectionTitle,
+								isSmallScreen && styles.smallTasksSectionTitle,
+							]}>
 							Vazifalar ({groupTasks.length})
 						</Text>
 						<Ionicons
 							name={item.expanded ? "chevron-down" : "chevron-forward"}
-							size={18}
+							size={isSmallScreen ? 16 : 18}
 							color='#000'
 						/>
 					</TouchableOpacity>
 
 					{item.expanded && (
-						<View style={styles.tasksExpandedContent}>
+						<View
+							style={[
+								styles.tasksExpandedContent,
+								isSmallScreen && styles.smallTasksExpandedContent,
+							]}>
 							{displayTasks.length > 0 ? (
 								<>
 									{displayTasks.map((task) => renderTaskItem(task, item.id))}
 
 									{hasMoreTasks && (
 										<TouchableOpacity
-											style={styles.seeAllButton}
+											style={[
+												styles.seeAllButton,
+												isSmallScreen && styles.smallSeeAllButton,
+											]}
 											onPress={() =>
 												navigateToViewAllTasks(item.id, item.name)
 											}>
-											<Text style={styles.seeAllText}>Hammasini ko'rish</Text>
+											<Text
+												style={[
+													styles.seeAllText,
+													isSmallScreen && styles.smallSeeAllText,
+												]}>
+												Hammasini ko'rish
+											</Text>
 										</TouchableOpacity>
 									)}
 								</>
 							) : (
 								<View style={styles.emptyTasksContainer}>
-									<Text style={styles.emptyTasksText}>
+									<Text
+										style={[
+											styles.emptyTasksText,
+											isSmallScreen && styles.smallEmptyTasksText,
+										]}>
 										Bu guruh uchun vazifalar mavjud emas
 									</Text>
 								</View>
@@ -693,13 +766,30 @@ export default function GroupsScreen() {
 
 	const renderEmptyList = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='people-outline' size={60} color='#ccc' />
-			<Text style={styles.emptyText}>Guruhlar topilmadi</Text>
-			<Text style={styles.emptySubtext}>
+			<Ionicons
+				name='people-outline'
+				size={isSmallScreen ? 50 : 60}
+				color='#ccc'
+			/>
+			<Text style={[styles.emptyText, isSmallScreen && { fontSize: 16 }]}>
+				Guruhlar topilmadi
+			</Text>
+			<Text style={[styles.emptySubtext, isSmallScreen && { fontSize: 13 }]}>
 				Birinchi guruh yaratish uchun bosing
 			</Text>
-			<TouchableOpacity style={styles.createButton} onPress={openCreateModal}>
-				<Text style={styles.createButtonText}>Guruh yaratish</Text>
+			<TouchableOpacity
+				style={[
+					styles.createButton,
+					isSmallScreen && {
+						paddingVertical: 10,
+						paddingHorizontal: 20,
+					},
+				]}
+				onPress={openCreateModal}>
+				<Text
+					style={[styles.createButtonText, isSmallScreen && { fontSize: 14 }]}>
+					Guruh yaratish
+				</Text>
 			</TouchableOpacity>
 		</View>
 	);
@@ -708,11 +798,20 @@ export default function GroupsScreen() {
 		<SafeAreaView style={styles.safeArea}>
 			<View style={styles.container}>
 				<View style={styles.header}>
-					<Text style={styles.headerTitle}>Mening guruhlarim</Text>
+					<Text
+						style={[
+							styles.headerTitle,
+							isSmallScreen && styles.smallHeaderTitle,
+						]}>
+						Mening guruhlarim
+					</Text>
 					<TouchableOpacity
 						onPress={openCreateModal}
-						style={styles.headerButton}>
-						<Ionicons name='add' size={24} color='white' />
+						style={[
+							styles.headerButton,
+							isSmallScreen && styles.smallHeaderButton,
+						]}>
+						<Ionicons name='add' size={isSmallScreen ? 20 : 24} color='white' />
 					</TouchableOpacity>
 				</View>
 
@@ -725,7 +824,10 @@ export default function GroupsScreen() {
 						data={groups}
 						renderItem={renderGroupItem}
 						keyExtractor={(item) => item.id}
-						contentContainerStyle={styles.listContent}
+						contentContainerStyle={[
+							styles.listContent,
+							isSmallScreen && styles.smallListContent,
+						]}
 						ListEmptyComponent={renderEmptyList}
 						refreshing={loading}
 						onRefresh={fetchGroups}
@@ -965,6 +1067,9 @@ const styles = StyleSheet.create({
 		fontWeight: "700",
 		color: "white",
 	},
+	smallHeaderTitle: {
+		fontSize: 20,
+	},
 	headerButton: {
 		width: 30,
 		height: 30,
@@ -974,6 +1079,11 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: "white",
 	},
+	smallHeaderButton: {
+		width: 26,
+		height: 26,
+		borderRadius: 13,
+	},
 	loaderContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -982,6 +1092,9 @@ const styles = StyleSheet.create({
 	listContent: {
 		padding: 16,
 		flexGrow: 1,
+	},
+	smallListContent: {
+		padding: 12,
 	},
 	groupSection: {
 		marginBottom: 16,
@@ -998,6 +1111,11 @@ const styles = StyleSheet.create({
 		elevation: 2,
 		marginBottom: 8,
 	},
+	smallGroupCard: {
+		padding: 12,
+		borderRadius: 10,
+		marginBottom: 6,
+	},
 	userIconContainer: {
 		width: 50,
 		height: 50,
@@ -1006,6 +1124,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 		marginRight: 12,
+	},
+	smallUserIconContainer: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		marginRight: 10,
 	},
 	groupInfo: {
 		flex: 1,
@@ -1017,10 +1141,18 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginBottom: 4,
 	},
+	smallGroupName: {
+		fontSize: 16,
+		marginBottom: 2,
+	},
 	groupDate: {
 		fontSize: 14,
 		color: "#777",
 		marginBottom: 8,
+	},
+	smallGroupDate: {
+		fontSize: 12,
+		marginBottom: 6,
 	},
 	idContainer: {
 		backgroundColor: "#E8F0FE",
@@ -1029,10 +1161,18 @@ const styles = StyleSheet.create({
 		borderRadius: 4,
 		alignSelf: "flex-start",
 	},
+	smallIdContainer: {
+		paddingVertical: 3,
+		paddingHorizontal: 8,
+		borderRadius: 3,
+	},
 	groupId: {
 		fontSize: 12,
 		color: "#4285F4",
 		fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+	},
+	smallGroupId: {
+		fontSize: 10,
 	},
 	tasksSectionContainer: {
 		backgroundColor: "white",
@@ -1046,13 +1186,22 @@ const styles = StyleSheet.create({
 		padding: 16,
 		borderBottomWidth: 0,
 	},
+	smallTasksHeaderRow: {
+		padding: 12,
+	},
 	tasksSectionTitle: {
 		fontSize: 16,
 		fontWeight: "600",
 		color: "#333",
 	},
+	smallTasksSectionTitle: {
+		fontSize: 14,
+	},
 	tasksExpandedContent: {
 		padding: 8,
+	},
+	smallTasksExpandedContent: {
+		padding: 6,
 	},
 	taskItem: {
 		flexDirection: "row",
@@ -1063,6 +1212,12 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		backgroundColor: "#F8F9FD",
 		marginBottom: 8,
+	},
+	smallTaskItem: {
+		paddingVertical: 10,
+		paddingHorizontal: 10,
+		borderRadius: 6,
+		marginBottom: 6,
 	},
 	taskItemLeftSection: {
 		flexDirection: "row",
@@ -1078,6 +1233,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		marginRight: 12,
 	},
+	smallTaskIconContainer: {
+		width: 30,
+		height: 30,
+		borderRadius: 15,
+		marginRight: 8,
+	},
 	taskDetails: {
 		flex: 1,
 	},
@@ -1086,6 +1247,10 @@ const styles = StyleSheet.create({
 		fontWeight: "500",
 		color: "#333",
 		marginBottom: 4,
+	},
+	smallTaskTitle: {
+		fontSize: 14,
+		marginBottom: 2,
 	},
 	taskDateContainer: {
 		flexDirection: "row",
@@ -1096,6 +1261,10 @@ const styles = StyleSheet.create({
 		color: "#777",
 		marginLeft: 4,
 	},
+	smallTaskDate: {
+		fontSize: 12,
+		marginLeft: 3,
+	},
 	editButton: {
 		width: 30,
 		height: 30,
@@ -1103,6 +1272,11 @@ const styles = StyleSheet.create({
 		backgroundColor: "#E8F0FE",
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	smallEditButton: {
+		width: 26,
+		height: 26,
+		borderRadius: 13,
 	},
 
 	// File display styles
@@ -1138,9 +1312,15 @@ const styles = StyleSheet.create({
 		padding: 12,
 		alignItems: "center",
 	},
+	smallSeeAllButton: {
+		padding: 10,
+	},
 	seeAllText: {
 		color: "#4285F4",
 		fontWeight: "500",
+	},
+	smallSeeAllText: {
+		fontSize: 13,
 	},
 	emptyTasksContainer: {
 		padding: 16,
@@ -1149,6 +1329,9 @@ const styles = StyleSheet.create({
 	emptyTasksText: {
 		color: "#777",
 		fontSize: 14,
+	},
+	smallEmptyTasksText: {
+		fontSize: 12,
 	},
 	emptyContainer: {
 		flex: 1,
@@ -1180,6 +1363,49 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontWeight: "bold",
 	},
+
+	// Other existing styles
+	// ... (unchanged)
+
+	groupDescription: {
+		fontSize: 14,
+		color: "#666",
+		marginBottom: 4,
+	},
+	smallGroupDescription: {
+		fontSize: 12,
+		marginBottom: 2,
+	},
+
+	// Date picker styles
+	datePickerButton: {
+		borderWidth: 1,
+		borderColor: "#ddd",
+		borderRadius: 8,
+		padding: 12,
+		backgroundColor: "#f9f9f9",
+	},
+	dateText: {
+		fontSize: 16,
+		color: "#333",
+	},
+
+	// File picker styles
+	filePickerButton: {
+		borderWidth: 1,
+		borderColor: "#ddd",
+		borderRadius: 8,
+		padding: 12,
+		backgroundColor: "#f9f9f9",
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	filePickerText: {
+		fontSize: 16,
+		color: "#333",
+		marginLeft: 8,
+	},
+
 	// Modal styles
 	modalOverlay: {
 		flex: 1,
@@ -1253,39 +1479,5 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontSize: 16,
 		fontWeight: "600",
-	},
-	groupDescription: {
-		fontSize: 14,
-		color: "#666",
-		marginBottom: 4,
-	},
-
-	// Date picker styles
-	datePickerButton: {
-		borderWidth: 1,
-		borderColor: "#ddd",
-		borderRadius: 8,
-		padding: 12,
-		backgroundColor: "#f9f9f9",
-	},
-	dateText: {
-		fontSize: 16,
-		color: "#333",
-	},
-
-	// File picker styles
-	filePickerButton: {
-		borderWidth: 1,
-		borderColor: "#ddd",
-		borderRadius: 8,
-		padding: 12,
-		backgroundColor: "#f9f9f9",
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	filePickerText: {
-		fontSize: 16,
-		color: "#333",
-		marginLeft: 8,
 	},
 });

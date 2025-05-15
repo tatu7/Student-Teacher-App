@@ -11,6 +11,7 @@ import {
 	StatusBar,
 	Modal,
 	TextInput,
+	useWindowDimensions,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -34,6 +35,7 @@ type Submission = {
 
 export default function SubmissionsScreen() {
 	const { user } = useAuth();
+	const { width } = useWindowDimensions();
 	const [submissions, setSubmissions] = useState<Submission[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -221,6 +223,7 @@ export default function SubmissionsScreen() {
 	};
 
 	const renderStars = () => {
+		const starSize = width < 350 ? 30 : 36;
 		const stars = [];
 		for (let i = 1; i <= 5; i++) {
 			stars.push(
@@ -230,7 +233,7 @@ export default function SubmissionsScreen() {
 					onPress={() => handleStarPress(i)}>
 					<Ionicons
 						name={i <= (currentRating || 0) ? "star" : "star-outline"}
-						size={36}
+						size={starSize}
 						color='#FFD700'
 					/>
 				</TouchableOpacity>
@@ -244,12 +247,18 @@ export default function SubmissionsScreen() {
 			style={styles.submissionCard}
 			onPress={() => openRatingModal(item)}>
 			<View style={styles.cardHeader}>
-				<Text style={styles.taskTitle}>{item.task_title}</Text>
-				<Text style={styles.groupName}>{item.group_name}</Text>
+				<Text style={styles.taskTitle} numberOfLines={2}>
+					{item.task_title}
+				</Text>
+				<Text style={styles.groupName} numberOfLines={1}>
+					{item.group_name}
+				</Text>
 			</View>
 
 			<View style={styles.userInfo}>
-				<Text style={styles.studentName}>{item.student_name}</Text>
+				<Text style={styles.studentName} numberOfLines={1}>
+					{item.student_name}
+				</Text>
 				<Text style={styles.submittedDate}>
 					{new Date(item.submitted_at).toLocaleDateString()}
 				</Text>
@@ -319,7 +328,11 @@ export default function SubmissionsScreen() {
 				visible={modalVisible}
 				onRequestClose={closeModal}>
 				<View style={styles.modalOverlay}>
-					<View style={styles.modalContainer}>
+					<View
+						style={[
+							styles.modalContainer,
+							width < 350 && styles.smallModalContainer,
+						]}>
 						<Text style={styles.modalTitle}>Javobni baholash</Text>
 
 						<View style={styles.starsContainer}>{renderStars()}</View>
@@ -365,13 +378,13 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		backgroundColor: "#4169E1",
-		paddingTop: 50,
-		paddingBottom: 20,
-		paddingHorizontal: 20,
+		paddingTop: StatusBar.currentHeight || 35,
+		paddingBottom: 15,
+		paddingHorizontal: 16,
 	},
 	headerTitle: {
 		color: "white",
-		fontSize: 24,
+		fontSize: 22,
 		fontWeight: "bold",
 	},
 	loaderContainer: {
@@ -380,14 +393,14 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	listContent: {
-		padding: 16,
+		padding: 12,
 		flexGrow: 1,
 	},
 	submissionCard: {
 		backgroundColor: "white",
 		borderRadius: 12,
-		padding: 16,
-		marginBottom: 16,
+		padding: 14,
+		marginBottom: 12,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.05,
@@ -397,45 +410,51 @@ const styles = StyleSheet.create({
 	cardHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 8,
+		alignItems: "flex-start",
+		marginBottom: 6,
+		flexWrap: "wrap",
 	},
 	taskTitle: {
-		fontSize: 18,
+		fontSize: 16,
 		fontWeight: "bold",
 		color: "#333",
 		flex: 1,
+		marginRight: 8,
 	},
 	groupName: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#666",
 		fontWeight: "500",
+		maxWidth: "40%",
+		textAlign: "right",
 	},
 	userInfo: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 12,
+		marginBottom: 10,
+		flexWrap: "wrap",
 	},
 	studentName: {
-		fontSize: 16,
+		fontSize: 15,
 		color: "#4169E1",
 		fontWeight: "500",
+		marginRight: 8,
 	},
 	submittedDate: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#777",
 	},
 	contentPreview: {
-		marginBottom: 12,
+		marginBottom: 10,
 		borderLeftWidth: 3,
 		borderLeftColor: "#e0e0e0",
-		paddingLeft: 10,
+		paddingLeft: 8,
 	},
 	previewText: {
-		fontSize: 15,
+		fontSize: 14,
 		color: "#555",
-		lineHeight: 22,
+		lineHeight: 20,
 	},
 	rating: {
 		alignItems: "flex-end",
@@ -446,12 +465,12 @@ const styles = StyleSheet.create({
 	},
 	ratingText: {
 		marginLeft: 4,
-		fontSize: 14,
+		fontSize: 13,
 		fontWeight: "bold",
 		color: "#333",
 	},
 	noRating: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#888",
 		fontStyle: "italic",
 	},
@@ -459,16 +478,16 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		padding: 20,
+		padding: 16,
 	},
 	emptyText: {
-		fontSize: 18,
+		fontSize: 17,
 		fontWeight: "bold",
 		color: "#555",
 		marginTop: 16,
 	},
 	emptySubtext: {
-		fontSize: 14,
+		fontSize: 13,
 		color: "#888",
 		marginTop: 8,
 		textAlign: "center",
@@ -480,10 +499,10 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	modalContainer: {
-		width: "85%",
+		width: "90%",
 		backgroundColor: "white",
 		borderRadius: 16,
-		padding: 20,
+		padding: 16,
 		alignItems: "center",
 		shadowColor: "#000",
 		shadowOffset: {
@@ -494,29 +513,34 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		elevation: 5,
 	},
+	smallModalContainer: {
+		width: "95%",
+		padding: 12,
+	},
 	modalTitle: {
-		fontSize: 20,
+		fontSize: 18,
 		fontWeight: "bold",
 		color: "#333",
-		marginBottom: 20,
+		marginBottom: 16,
 	},
 	starsContainer: {
 		flexDirection: "row",
 		justifyContent: "center",
-		marginBottom: 20,
+		marginBottom: 16,
+		flexWrap: "wrap",
 	},
 	starContainer: {
-		padding: 5,
+		padding: 4,
 	},
 	feedbackInput: {
 		width: "100%",
 		borderWidth: 1,
 		borderColor: "#ddd",
 		borderRadius: 8,
-		padding: 12,
-		minHeight: 100,
+		padding: 10,
+		minHeight: 90,
 		textAlignVertical: "top",
-		marginBottom: 20,
+		marginBottom: 16,
 	},
 	buttonContainer: {
 		flexDirection: "row",
@@ -525,28 +549,30 @@ const styles = StyleSheet.create({
 	},
 	cancelButton: {
 		backgroundColor: "#f1f1f1",
-		paddingVertical: 12,
-		paddingHorizontal: 24,
+		paddingVertical: 10,
+		paddingHorizontal: 16,
 		borderRadius: 8,
 		flex: 1,
-		marginRight: 8,
+		marginRight: 6,
 		alignItems: "center",
 	},
 	cancelButtonText: {
 		color: "#666",
 		fontWeight: "600",
+		fontSize: 14,
 	},
 	submitButton: {
 		backgroundColor: "#4169E1",
-		paddingVertical: 12,
-		paddingHorizontal: 24,
+		paddingVertical: 10,
+		paddingHorizontal: 16,
 		borderRadius: 8,
 		flex: 1,
-		marginLeft: 8,
+		marginLeft: 6,
 		alignItems: "center",
 	},
 	submitButtonText: {
 		color: "white",
 		fontWeight: "600",
+		fontSize: 14,
 	},
 });

@@ -9,6 +9,7 @@ import {
 	RefreshControl,
 	Image,
 	SafeAreaView,
+	useWindowDimensions,
 } from "react-native";
 import { useNotifications } from "../../context/NotificationsContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -29,22 +30,29 @@ type NotificationItem = {
 export default function NotificationsScreen() {
 	const { notifications, loading, markAsRead, refresh, unreadCount } =
 		useNotifications();
+	const { width } = useWindowDimensions();
+	const isSmallScreen = width < 375;
+	const isVerySmallScreen = width < 320;
 
 	const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
 		const getIcon = () => {
+			const iconSize = isSmallScreen ? 20 : 24;
+
 			switch (item.type) {
 				case "submission_received":
 					return (
 						<MaterialIcons
 							name='assignment-turned-in'
-							size={24}
+							size={iconSize}
 							color='#4169E1'
 						/>
 					);
 				case "group_update":
-					return <Ionicons name='people' size={24} color='#4169E1' />;
+					return <Ionicons name='people' size={iconSize} color='#4169E1' />;
 				default:
-					return <Ionicons name='notifications' size={24} color='#4169E1' />;
+					return (
+						<Ionicons name='notifications' size={iconSize} color='#4169E1' />
+					);
 			}
 		};
 
@@ -74,20 +82,42 @@ export default function NotificationsScreen() {
 				style={[
 					styles.notificationItem,
 					{ backgroundColor: item.is_read ? "white" : "#EEF6FF" },
+					isSmallScreen && styles.notificationItemSmall,
 				]}
 				onPress={() => markAsRead(item.id)}>
-				<View style={styles.iconContainer}>
+				<View
+					style={[
+						styles.iconContainer,
+						isSmallScreen && styles.iconContainerSmall,
+					]}>
 					{getIcon()}
-					{!item.is_read && <View style={styles.unreadDot} />}
+					{!item.is_read && (
+						<View
+							style={[styles.unreadDot, isSmallScreen && styles.unreadDotSmall]}
+						/>
+					)}
 				</View>
 
 				<View style={styles.contentContainer}>
 					<View style={styles.headerRow}>
-						<Text style={styles.notificationTitle}>{getTitle()}</Text>
-						<Text style={styles.timeText}>{getTime()}</Text>
+						<Text
+							style={[
+								styles.notificationTitle,
+								isSmallScreen && styles.notificationTitleSmall,
+							]}>
+							{getTitle()}
+						</Text>
+						<Text
+							style={[styles.timeText, isSmallScreen && styles.timeTextSmall]}>
+							{getTime()}
+						</Text>
 					</View>
 
-					<Text style={styles.messageText}>
+					<Text
+						style={[
+							styles.messageText,
+							isSmallScreen && styles.messageTextSmall,
+						]}>
 						{item.data?.message || "Sizda yangi xabarnoma mavjud"}
 					</Text>
 				</View>
@@ -97,9 +127,20 @@ export default function NotificationsScreen() {
 
 	const renderEmptyComponent = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='notifications-outline' size={80} color='#D0D7F0' />
-			<Text style={styles.emptyTitle}>Xabarnomalar yo'q</Text>
-			<Text style={styles.emptySubtitle}>
+			<Ionicons
+				name='notifications-outline'
+				size={isSmallScreen ? 60 : 80}
+				color='#D0D7F0'
+			/>
+			<Text
+				style={[styles.emptyTitle, isSmallScreen && styles.emptyTitleSmall]}>
+				Xabarnomalar yo'q
+			</Text>
+			<Text
+				style={[
+					styles.emptySubtitle,
+					isSmallScreen && styles.emptySubtitleSmall,
+				]}>
 				Bu yerda topshiriqlar va guruhlar haqidagi xabarlarni ko'rasiz
 			</Text>
 		</View>
@@ -107,19 +148,32 @@ export default function NotificationsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Xabarnomalar</Text>
+			<View style={[styles.header, isSmallScreen && styles.headerSmall]}>
+				<Text
+					style={[
+						styles.headerTitle,
+						isSmallScreen && styles.headerTitleSmall,
+					]}>
+					Xabarnomalar
+				</Text>
 			</View>
 
 			{unreadCount > 0 && (
 				<TouchableOpacity
-					style={styles.markAllReadButton}
+					style={[
+						styles.markAllReadButton,
+						isSmallScreen && styles.markAllReadButtonSmall,
+					]}
 					onPress={() => {
 						notifications
 							.filter((n) => !n.is_read)
 							.forEach((n) => markAsRead(n.id));
 					}}>
-					<Text style={styles.markAllReadText}>
+					<Text
+						style={[
+							styles.markAllReadText,
+							isSmallScreen && styles.markAllReadTextSmall,
+						]}>
 						Barchasini o'qilgan deb belgilash
 					</Text>
 				</TouchableOpacity>
@@ -129,7 +183,10 @@ export default function NotificationsScreen() {
 				data={notifications}
 				renderItem={renderNotificationItem}
 				keyExtractor={(item) => item.id}
-				contentContainerStyle={styles.listContainer}
+				contentContainerStyle={[
+					styles.listContainer,
+					isSmallScreen && styles.listContainerSmall,
+				]}
 				refreshControl={
 					<RefreshControl refreshing={loading} onRefresh={refresh} />
 				}
@@ -156,10 +213,18 @@ const styles = StyleSheet.create({
 		paddingBottom: 20,
 		paddingHorizontal: 20,
 	},
+	headerSmall: {
+		paddingTop: 40,
+		paddingBottom: 16,
+		paddingHorizontal: 16,
+	},
 	headerTitle: {
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "white",
+	},
+	headerTitleSmall: {
+		fontSize: 20,
 	},
 	markAllReadButton: {
 		alignSelf: "flex-end",
@@ -170,15 +235,29 @@ const styles = StyleSheet.create({
 		backgroundColor: "#EEF6FF",
 		borderRadius: 8,
 	},
+	markAllReadButtonSmall: {
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+		marginTop: 12,
+		marginRight: 12,
+		borderRadius: 6,
+	},
 	markAllReadText: {
 		color: "#4169E1",
 		fontWeight: "600",
 		fontSize: 14,
 	},
+	markAllReadTextSmall: {
+		fontSize: 12,
+	},
 	listContainer: {
 		flexGrow: 1,
 		paddingHorizontal: 16,
 		paddingVertical: 16,
+	},
+	listContainerSmall: {
+		paddingHorizontal: 12,
+		paddingVertical: 12,
 	},
 	notificationItem: {
 		flexDirection: "row",
@@ -191,6 +270,11 @@ const styles = StyleSheet.create({
 		shadowRadius: 5,
 		elevation: 2,
 	},
+	notificationItemSmall: {
+		padding: 12,
+		borderRadius: 12,
+		marginBottom: 10,
+	},
 	iconContainer: {
 		width: 48,
 		height: 48,
@@ -199,6 +283,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 		marginRight: 16,
+	},
+	iconContainerSmall: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		marginRight: 12,
 	},
 	unreadDot: {
 		position: "absolute",
@@ -210,6 +300,12 @@ const styles = StyleSheet.create({
 		backgroundColor: "#FF5252",
 		borderWidth: 2,
 		borderColor: "white",
+	},
+	unreadDotSmall: {
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		borderWidth: 1.5,
 	},
 	contentContainer: {
 		flex: 1,
@@ -225,14 +321,24 @@ const styles = StyleSheet.create({
 		fontWeight: "600",
 		color: "#333",
 	},
+	notificationTitleSmall: {
+		fontSize: 14,
+	},
 	timeText: {
 		fontSize: 12,
 		color: "#999",
+	},
+	timeTextSmall: {
+		fontSize: 10,
 	},
 	messageText: {
 		fontSize: 14,
 		color: "#666",
 		lineHeight: 20,
+	},
+	messageTextSmall: {
+		fontSize: 12,
+		lineHeight: 18,
 	},
 	emptyContainer: {
 		flex: 1,
@@ -248,11 +354,19 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginTop: 16,
 	},
+	emptyTitleSmall: {
+		fontSize: 16,
+		marginTop: 12,
+	},
 	emptySubtitle: {
 		fontSize: 14,
 		color: "#999",
 		textAlign: "center",
 		marginTop: 8,
+	},
+	emptySubtitleSmall: {
+		fontSize: 12,
+		marginTop: 6,
 	},
 	emptyImage: {
 		width: 120,
