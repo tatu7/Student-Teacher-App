@@ -40,6 +40,10 @@ type Task = {
 	due_date: string;
 	description?: string;
 	has_files?: boolean;
+	file_info?: {
+		name: string;
+		path: string;
+	} | null;
 };
 
 export default function GroupsScreen() {
@@ -62,6 +66,10 @@ export default function GroupsScreen() {
 	const [taskLoading, setTaskLoading] = useState(false);
 	const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
 	const [fileUploading, setFileUploading] = useState(false);
+
+	// Add states for editing tasks
+	const [isEditMode, setIsEditMode] = useState(false);
+	const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
 	useEffect(() => {
 		fetchGroups();
@@ -149,7 +157,29 @@ export default function GroupsScreen() {
 			});
 
 			// Populate tasks for each group
-			data.forEach((task) => {
+			const taskPromises = data.map(async (task) => {
+				let fileInfo = null;
+
+				// Get file info for tasks with files
+				if (task.has_files) {
+					try {
+						const { data: fileData, error: fileError } = await supabase
+							.from("task_files")
+							.select("file_name, file_path")
+							.eq("task_id", task.id)
+							.maybeSingle();
+
+						if (!fileError && fileData) {
+							fileInfo = {
+								name: fileData.file_name,
+								path: fileData.file_path,
+							};
+						}
+					} catch (fileError) {
+						console.error("Error fetching file info:", fileError);
+					}
+				}
+
 				if (task.group_id && tasksByGroup[task.group_id]) {
 					tasksByGroup[task.group_id].push({
 						id: task.id,
@@ -157,9 +187,13 @@ export default function GroupsScreen() {
 						due_date: task.due_date,
 						description: task.description,
 						has_files: task.has_files,
+						file_info: fileInfo,
 					});
 				}
 			});
+
+			// Wait for all file info to be fetched
+			await Promise.all(taskPromises);
 
 			setTasks(tasksByGroup);
 		} catch (error) {
@@ -343,9 +377,9 @@ export default function GroupsScreen() {
 	const formatTaskDate = (dateString: string) => {
 		try {
 			const date = new Date(dateString);
-			return format(date, "d-MMM, yyyy");
+			return `Muddat: ${format(date, "MMMM d, yyyy")}`;
 		} catch (e) {
-			return "-";
+			return "Muddat: -";
 		}
 	};
 
@@ -377,21 +411,200 @@ export default function GroupsScreen() {
 		});
 	};
 
-	const renderTaskItem = (task: Task) => (
+	// Function to enter edit mode for a task
+	const openEditTaskModal = (task: Task, groupId: string) => {
+		// Find the group
+		const group = groups.find((g) => g.id === groupId);
+		if (!group) return;
+
+		setSelectedGroup(group);
+		setTaskToEdit(task);
+		setTaskTitle(task.title);
+		setTaskDescription(task.description || "");
+		setTaskDueDate(new Date(task.due_date));
+		setSelectedFile(null); // Don't set the old file here, only for display
+		setIsEditMode(true);
+		setTaskModalVisible(true);
+	};
+
+	// Function to close the edit modal and reset state
+	const closeEditTaskModal = () => {
+		closeTaskModal();
+		setTaskToEdit(null);
+		setIsEditMode(false);
+	};
+
+	// Function to update a task
+	const handleUpdateTask = async () => {
+		if (!taskToEdit || !selectedGroup) return;
+
+		// Validate input
+		if (!taskTitle.trim()) {
+			Alert.alert("Xato", "Iltimos vazifa sarlavhasini kiriting");
+			return;
+		}
+
+		try {
+			setTaskLoading(true);
+
+			// Update task in the database
+			const updateData: any = {
+				title: taskTitle,
+				description: taskDescription.trim() || null,
+				due_date: taskDueDate.toISOString(),
+			};
+
+			// If a new file was selected, mark as having files
+			if (selectedFile) {
+				updateData.has_files = true;
+			}
+
+			const { error: taskError } = await supabase
+				.from("tasks")
+				.update(updateData)
+				.eq("id", taskToEdit.id);
+
+			if (taskError) throw taskError;
+
+			// Handle file upload/replacement if selected
+			if (selectedFile) {
+				setFileUploading(true);
+				try {
+					// Upload the new file
+					const filePath = await uploadTaskFile(taskToEdit.id, selectedFile);
+
+					// Delete old file record (if exists) and create new one
+					if (filePath) {
+						// First delete old record
+						await supabase
+							.from("task_files")
+							.delete()
+							.eq("task_id", taskToEdit.id);
+
+						// Then create new record
+						const { error: fileError } = await supabase
+							.from("task_files")
+							.insert({
+								task_id: taskToEdit.id,
+								file_path: filePath,
+								file_name: selectedFile.name,
+								file_type: selectedFile.type,
+								file_size: selectedFile.size,
+							});
+
+						if (fileError) {
+							console.error("Error updating file record:", fileError);
+						}
+					}
+				} catch (uploadError) {
+					console.error("Error uploading new file:", uploadError);
+					Alert.alert(
+						"Ogohlantirish",
+						"Vazifa yangilandi, lekin faylni yuklashda muammo yuzaga keldi."
+					);
+				} finally {
+					setFileUploading(false);
+				}
+			}
+
+			// Close modal and refresh tasks
+			closeEditTaskModal();
+			await fetchTasksForGroups([selectedGroup.id]);
+
+			// Show success message
+			Alert.alert("Muvaffaqiyat", "Vazifa muvaffaqiyatli yangilandi");
+		} catch (error) {
+			console.error("Error updating task:", error);
+			Alert.alert("Xato", "Vazifani yangilashda xatolik yuz berdi");
+		} finally {
+			setTaskLoading(false);
+		}
+	};
+
+	// Function to delete file from a task
+	const handleDeleteFile = async () => {
+		if (!taskToEdit || !selectedGroup) return;
+
+		Alert.alert(
+			"Faylni o'chirish",
+			"Haqiqatan ham faylni o'chirishni xohlaysizmi?",
+			[
+				{
+					text: "Bekor qilish",
+					style: "cancel",
+				},
+				{
+					text: "O'chirish",
+					style: "destructive",
+					onPress: async () => {
+						try {
+							setFileUploading(true);
+
+							// Delete file record
+							const { error: deleteError } = await supabase
+								.from("task_files")
+								.delete()
+								.eq("task_id", taskToEdit.id);
+
+							if (deleteError) throw deleteError;
+
+							// Update task to indicate no files
+							const { error: updateError } = await supabase
+								.from("tasks")
+								.update({ has_files: false })
+								.eq("id", taskToEdit.id);
+
+							if (updateError) throw updateError;
+
+							// Update local state
+							setSelectedFile(null);
+							setTaskToEdit({
+								...taskToEdit,
+								has_files: false,
+								file_info: null,
+							});
+
+							Alert.alert("Muvaffaqiyat", "Fayl muvaffaqiyatli o'chirildi");
+						} catch (error) {
+							console.error("Error deleting file:", error);
+							Alert.alert("Xato", "Faylni o'chirishda xatolik yuz berdi");
+						} finally {
+							setFileUploading(false);
+						}
+					},
+				},
+			]
+		);
+	};
+
+	const renderTaskItem = (task: Task, groupId: string) => (
 		<View key={task.id} style={styles.taskItem}>
-			<View style={styles.taskIconContainer}>
-				<Ionicons
-					name={task.has_files ? "document-text" : "document-text-outline"}
-					size={20}
-					color='#4285F4'
-				/>
+			<View style={styles.taskItemLeftSection}>
+				<View style={styles.taskIconContainer}>
+					<Ionicons
+						name={task.has_files ? "document-text" : "document-text-outline"}
+						size={20}
+						color='#4285F4'
+					/>
+				</View>
+				<View style={styles.taskDetails}>
+					<Text style={styles.taskTitle} numberOfLines={1}>
+						{task.title}
+					</Text>
+					<View style={styles.taskDateContainer}>
+						<Ionicons name='calendar-outline' size={14} color='#777' />
+						<Text style={styles.taskDate}>
+							{formatTaskDate(task.due_date).replace("Muddat: ", "")}
+						</Text>
+					</View>
+				</View>
 			</View>
-			<View style={styles.taskDetails}>
-				<Text style={styles.taskTitle}>{task.title}</Text>
-				<Text style={styles.taskDate}>
-					Vazifa: {formatTaskDate(task.due_date)}
-				</Text>
-			</View>
+
+			<TouchableOpacity
+				style={styles.editButton}
+				onPress={() => openEditTaskModal(task, groupId)}>
+				<Ionicons name='pencil' size={16} color='#4285F4' />
+			</TouchableOpacity>
 		</View>
 	);
 
@@ -452,7 +665,7 @@ export default function GroupsScreen() {
 						<View style={styles.tasksExpandedContent}>
 							{displayTasks.length > 0 ? (
 								<>
-									{displayTasks.map((task) => renderTaskItem(task))}
+									{displayTasks.map((task) => renderTaskItem(task, item.id))}
 
 									{hasMoreTasks && (
 										<TouchableOpacity
@@ -580,17 +793,22 @@ export default function GroupsScreen() {
 					</TouchableWithoutFeedback>
 				</Modal>
 
-				{/* Task Creation Modal */}
+				{/* Task Creation/Edit Modal */}
 				<Modal
 					animationType='slide'
 					transparent={true}
 					visible={taskModalVisible}
-					onRequestClose={closeTaskModal}>
-					<TouchableWithoutFeedback onPress={closeTaskModal}>
+					onRequestClose={isEditMode ? closeEditTaskModal : closeTaskModal}>
+					<TouchableWithoutFeedback
+						onPress={isEditMode ? closeEditTaskModal : closeTaskModal}>
 						<View style={styles.modalOverlay}>
 							<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 								<View style={styles.modalContent}>
-									<Text style={styles.modalTitle}>Yangi vazifa yaratish</Text>
+									<Text style={styles.modalTitle}>
+										{isEditMode
+											? "Vazifani tahrirlash"
+											: "Yangi vazifa yaratish"}
+									</Text>
 
 									<View style={styles.inputGroup}>
 										<Text style={styles.inputLabel}>Vazifa nomi</Text>
@@ -636,38 +854,80 @@ export default function GroupsScreen() {
 
 									<View style={styles.inputGroup}>
 										<Text style={styles.inputLabel}>Fayl (Ixtiyoriy)</Text>
-										<TouchableOpacity
-											style={styles.filePickerButton}
-											onPress={handlePickFile}>
-											<Ionicons
-												name='cloud-upload-outline'
-												size={20}
-												color='#4285F4'
-											/>
-											<Text style={styles.filePickerText}>
-												{selectedFile
-													? selectedFile.name
-													: "Fayl qo'shish (PDF yoki DOCX)"}
-											</Text>
-										</TouchableOpacity>
+
+										{/* Show current file if in edit mode and has files */}
+										{isEditMode &&
+										taskToEdit?.has_files &&
+										taskToEdit?.file_info &&
+										!selectedFile ? (
+											<View style={styles.fileInfoContainer}>
+												<View style={styles.fileInfo}>
+													<Ionicons
+														name='document-text'
+														size={20}
+														color='#4285F4'
+													/>
+													<Text style={styles.fileName} numberOfLines={1}>
+														{taskToEdit.file_info.name}
+													</Text>
+												</View>
+												<TouchableOpacity
+													style={styles.deleteFileButton}
+													onPress={handleDeleteFile}>
+													<Ionicons
+														name='trash-outline'
+														size={20}
+														color='#FF3B30'
+													/>
+												</TouchableOpacity>
+											</View>
+										) : (
+											<TouchableOpacity
+												style={styles.filePickerButton}
+												onPress={handlePickFile}>
+												<Ionicons
+													name='cloud-upload-outline'
+													size={20}
+													color='#4285F4'
+												/>
+												<Text style={styles.filePickerText}>
+													{selectedFile
+														? selectedFile.name
+														: "Fayl qo'shish (PDF yoki DOCX)"}
+												</Text>
+												{selectedFile && (
+													<TouchableOpacity
+														style={styles.deleteSelectedFileButton}
+														onPress={() => setSelectedFile(null)}>
+														<Ionicons
+															name='close-circle'
+															size={20}
+															color='#FF3B30'
+														/>
+													</TouchableOpacity>
+												)}
+											</TouchableOpacity>
+										)}
 									</View>
 
 									<View style={styles.modalButtons}>
 										<TouchableOpacity
 											style={styles.cancelButton}
-											onPress={closeTaskModal}>
+											onPress={
+												isEditMode ? closeEditTaskModal : closeTaskModal
+											}>
 											<Text style={styles.cancelButtonText}>Bekor qilish</Text>
 										</TouchableOpacity>
 
 										<TouchableOpacity
 											style={styles.createModalButton}
-											onPress={handleCreateTask}
+											onPress={isEditMode ? handleUpdateTask : handleCreateTask}
 											disabled={taskLoading || fileUploading}>
 											{taskLoading || fileUploading ? (
 												<ActivityIndicator size='small' color='#fff' />
 											) : (
 												<Text style={styles.createModalButtonText}>
-													Vazifa yaratish
+													{isEditMode ? "Saqlash" : "Vazifa yaratish"}
 												</Text>
 											)}
 										</TouchableOpacity>
@@ -797,10 +1057,17 @@ const styles = StyleSheet.create({
 	taskItem: {
 		flexDirection: "row",
 		alignItems: "center",
+		justifyContent: "space-between",
 		paddingVertical: 12,
-		paddingHorizontal: 8,
-		borderBottomWidth: 1,
-		borderBottomColor: "#f0f0f0",
+		paddingHorizontal: 12,
+		borderRadius: 8,
+		backgroundColor: "#F8F9FD",
+		marginBottom: 8,
+	},
+	taskItemLeftSection: {
+		flexDirection: "row",
+		alignItems: "center",
+		flex: 1,
 	},
 	taskIconContainer: {
 		width: 36,
@@ -818,11 +1085,54 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontWeight: "500",
 		color: "#333",
-		marginBottom: 2,
+		marginBottom: 4,
+	},
+	taskDateContainer: {
+		flexDirection: "row",
+		alignItems: "center",
 	},
 	taskDate: {
-		fontSize: 12,
+		fontSize: 14,
 		color: "#777",
+		marginLeft: 4,
+	},
+	editButton: {
+		width: 30,
+		height: 30,
+		borderRadius: 15,
+		backgroundColor: "#E8F0FE",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+
+	// File display styles
+	fileInfoContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		borderWidth: 1,
+		borderColor: "#ddd",
+		borderRadius: 8,
+		padding: 12,
+		backgroundColor: "#f9f9f9",
+	},
+	fileInfo: {
+		flexDirection: "row",
+		alignItems: "center",
+		flex: 1,
+	},
+	fileName: {
+		fontSize: 16,
+		color: "#333",
+		marginLeft: 8,
+		flex: 1,
+	},
+	deleteFileButton: {
+		padding: 4,
+	},
+	deleteSelectedFileButton: {
+		marginLeft: "auto",
+		padding: 2,
 	},
 	seeAllButton: {
 		padding: 12,
