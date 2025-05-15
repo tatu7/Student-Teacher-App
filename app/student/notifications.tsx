@@ -34,22 +34,22 @@ export default function NotificationsScreen() {
 		const getIcon = () => {
 			switch (item.type) {
 				case "task_assigned":
-					return <MaterialIcons name='assignment' size={24} color='#3f51b5' />;
+					return <MaterialIcons name='assignment' size={24} color='#4169E1' />;
 				case "group_invitation":
-					return <Ionicons name='people' size={24} color='#3f51b5' />;
+					return <Ionicons name='people' size={24} color='#4169E1' />;
 				default:
-					return <Ionicons name='notifications' size={24} color='#3f51b5' />;
+					return <Ionicons name='notifications' size={24} color='#4169E1' />;
 			}
 		};
 
 		const getTitle = () => {
 			switch (item.type) {
 				case "task_assigned":
-					return "New Task Assigned";
+					return "Yangi vazifa qo'shildi";
 				case "group_invitation":
-					return "Group Invitation";
+					return "Guruh taklifi";
 				default:
-					return "Notification";
+					return "Xabar";
 			}
 		};
 
@@ -82,7 +82,7 @@ export default function NotificationsScreen() {
 					</View>
 
 					<Text style={styles.messageText}>
-						{item.data?.message || "You have a new notification"}
+						{item.data?.message || "Sizda yangi xabar bor"}
 					</Text>
 				</View>
 			</TouchableOpacity>
@@ -96,9 +96,9 @@ export default function NotificationsScreen() {
 				style={styles.emptyImage}
 				onError={() => {}}
 			/>
-			<Text style={styles.emptyTitle}>No notifications yet</Text>
+			<Text style={styles.emptyTitle}>Hozircha xabarlar yo'q</Text>
 			<Text style={styles.emptySubtitle}>
-				You'll see notifications about your tasks and groups here
+				Bu yerda topshiriqlar va guruhlar haqidagi xabarlarni ko'rasiz
 			</Text>
 		</View>
 	);
@@ -117,7 +117,9 @@ export default function NotificationsScreen() {
 							.filter((n) => !n.is_read)
 							.forEach((n) => markAsRead(n.id));
 					}}>
-					<Text style={styles.markAllReadText}>Mark all as read</Text>
+					<Text style={styles.markAllReadText}>
+						Barchasini o'qilgan deb belgilash
+					</Text>
 				</TouchableOpacity>
 			)}
 
@@ -134,7 +136,7 @@ export default function NotificationsScreen() {
 
 			{loading && notifications.length === 0 && (
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			)}
 		</SafeAreaView>
@@ -144,22 +146,18 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
 	},
 	header: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
+		backgroundColor: "#4169E1",
+		paddingTop: 50,
+		paddingBottom: 20,
 		paddingHorizontal: 16,
-		paddingVertical: 12,
-		backgroundColor: "white",
-		borderBottomWidth: 1,
-		borderBottomColor: "#e0e0e0",
 	},
 	headerTitle: {
-		fontSize: 20,
-		fontWeight: "700",
-		color: "#333",
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "white",
 	},
 	markAllReadButton: {
 		alignSelf: "flex-end",
@@ -169,7 +167,7 @@ const styles = StyleSheet.create({
 		marginRight: 16,
 	},
 	markAllReadText: {
-		color: "#3f51b5",
+		color: "#4169E1",
 		fontWeight: "600",
 		fontSize: 14,
 	},

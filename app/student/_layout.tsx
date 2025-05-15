@@ -47,6 +47,9 @@ export default function StudentLayout() {
 				case "profile":
 					setCurrentTitle("Profile");
 					break;
+				case "ratings":
+					setCurrentTitle("Reyting");
+					break;
 				default:
 					setCurrentTitle("Dashboard");
 			}
@@ -71,7 +74,7 @@ export default function StudentLayout() {
 		<Tabs
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: "#3f51b5",
+				tabBarActiveTintColor: "#4169E1",
 				tabBarInactiveTintColor: "#687076",
 				tabBarStyle: {
 					backgroundColor: "white",
@@ -155,6 +158,15 @@ export default function StudentLayout() {
 								</View>
 							)}
 						</View>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='ratings'
+				options={{
+					title: "Reyting",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='trophy-outline' size={size} color={color} />
 					),
 				}}
 			/>
