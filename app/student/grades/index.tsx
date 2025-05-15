@@ -9,6 +9,8 @@ import {
 	SafeAreaView,
 	Alert,
 	Image,
+	Dimensions,
+	useWindowDimensions,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
@@ -33,6 +35,10 @@ export default function StudentGradesScreen() {
 	const { user } = useAuth();
 	const [gradedTasks, setGradedTasks] = useState<GradedTask[]>([]);
 	const [loading, setLoading] = useState(true);
+	const { width } = useWindowDimensions();
+
+	// Determine if small screen
+	const isSmallScreen = width < 375;
 
 	useEffect(() => {
 		fetchGradedTasks();
@@ -138,6 +144,7 @@ export default function StudentGradesScreen() {
 
 		// Calculate stars (out of 5) based on rating out of 100
 		const stars = Math.round((rating / 100) * 5);
+		const starSize = isSmallScreen ? 14 : 18;
 
 		return (
 			<View style={styles.starsContainer}>
@@ -145,12 +152,14 @@ export default function StudentGradesScreen() {
 					<FontAwesome
 						key={i}
 						name={i <= stars ? "star" : "star-o"}
-						size={18}
+						size={starSize}
 						color={i <= stars ? "#FFD700" : "#D3D3D3"}
 						style={styles.starIcon}
 					/>
 				))}
-				<Text style={styles.ratingText}>{stars}/5</Text>
+				<Text style={[styles.ratingText, isSmallScreen && styles.smallText]}>
+					{stars}/5
+				</Text>
 			</View>
 		);
 	};
@@ -167,8 +176,11 @@ export default function StudentGradesScreen() {
 				)
 			}>
 			<View style={styles.taskHeader}>
-				<Text style={styles.taskTitle}>{item.title}</Text>
-				<Text style={styles.taskDate}>
+				<Text
+					style={[styles.taskTitle, isSmallScreen && styles.smallTitleText]}>
+					{item.title}
+				</Text>
+				<Text style={[styles.taskDate, isSmallScreen && styles.smallText]}>
 					{new Date(item.due_date).toLocaleDateString("uz-UZ")}
 				</Text>
 			</View>
@@ -177,22 +189,36 @@ export default function StudentGradesScreen() {
 
 			{item.feedback && (
 				<View style={styles.feedbackContainer}>
-					<Text style={styles.feedbackLabel}>O'qituvchi izohi:</Text>
-					<Text style={styles.feedbackText}>{item.feedback}</Text>
+					<Text
+						style={[styles.feedbackLabel, isSmallScreen && styles.smallText]}>
+						O'qituvchi izohi:
+					</Text>
+					<Text
+						style={[styles.feedbackText, isSmallScreen && styles.smallText]}>
+						{item.feedback}
+					</Text>
 				</View>
 			)}
 
 			<View style={styles.taskFooter}>
-				<Text style={styles.groupName}>{item.group_name}</Text>
+				<Text style={[styles.groupName, isSmallScreen && styles.smallText]}>
+					{item.group_name}
+				</Text>
 			</View>
 		</TouchableOpacity>
 	);
 
 	const renderEmptyList = () => (
 		<View style={styles.emptyContainer}>
-			<MaterialIcons name='star-border' size={70} color='#D0D7F0' />
-			<Text style={styles.emptyText}>Baholangan vazifalar topilmadi</Text>
-			<Text style={styles.emptySubtext}>
+			<MaterialIcons
+				name='star-border'
+				size={isSmallScreen ? 50 : 70}
+				color='#D0D7F0'
+			/>
+			<Text style={[styles.emptyText, isSmallScreen && styles.smallEmptyText]}>
+				Baholangan vazifalar topilmadi
+			</Text>
+			<Text style={[styles.emptySubtext, isSmallScreen && styles.smallText]}>
 				Hozircha hech qanday vazifa baholanmagan
 			</Text>
 		</View>
@@ -201,7 +227,13 @@ export default function StudentGradesScreen() {
 	return (
 		<SafeAreaView style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Baholar</Text>
+				<Text
+					style={[
+						styles.headerTitle,
+						isSmallScreen && styles.smallHeaderTitle,
+					]}>
+					Baholar
+				</Text>
 			</View>
 
 			{loading ? (
@@ -242,20 +274,23 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "white",
 	},
+	smallHeaderTitle: {
+		fontSize: 20,
+	},
 	loaderContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
 	},
 	listContent: {
-		padding: 16,
+		padding: 12,
 		flexGrow: 1,
 	},
 	taskCard: {
 		backgroundColor: "white",
 		borderRadius: 12,
-		padding: 16,
-		marginBottom: 16,
+		padding: 14,
+		marginBottom: 14,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.05,
@@ -266,7 +301,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "flex-start",
-		marginBottom: 12,
+		marginBottom: 10,
 	},
 	taskTitle: {
 		fontSize: 18,
@@ -275,6 +310,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 		marginRight: 8,
 	},
+	smallTitleText: {
+		fontSize: 16,
+	},
 	taskDate: {
 		fontSize: 14,
 		color: "#666",
@@ -282,7 +320,8 @@ const styles = StyleSheet.create({
 	starsContainer: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginBottom: 12,
+		marginBottom: 10,
+		flexWrap: "wrap",
 	},
 	starIcon: {
 		marginRight: 2,
@@ -296,8 +335,8 @@ const styles = StyleSheet.create({
 	feedbackContainer: {
 		backgroundColor: "#f5f5f5",
 		borderRadius: 8,
-		padding: 12,
-		marginBottom: 12,
+		padding: 10,
+		marginBottom: 10,
 	},
 	feedbackLabel: {
 		fontSize: 14,
@@ -324,8 +363,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		padding: 24,
-		marginTop: 80,
+		padding: 20,
+		marginTop: 60,
 	},
 	emptyText: {
 		fontSize: 18,
@@ -333,10 +372,16 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginTop: 16,
 	},
+	smallEmptyText: {
+		fontSize: 16,
+	},
 	emptySubtext: {
 		fontSize: 14,
 		color: "#666",
 		textAlign: "center",
 		marginTop: 8,
+	},
+	smallText: {
+		fontSize: 12,
 	},
 });

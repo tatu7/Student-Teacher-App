@@ -11,6 +11,8 @@ import {
 	SafeAreaView,
 	StatusBar,
 	Platform,
+	Dimensions,
+	useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNotifications } from "../../context/NotificationsContext";
@@ -20,6 +22,10 @@ export default function StudentLayout() {
 	const segments = useSegments();
 	const { unreadCount } = useNotifications();
 	const [currentTitle, setCurrentTitle] = useState("Dashboard");
+	const { width: screenWidth } = useWindowDimensions();
+
+	// Determine if we're on a small screen
+	const isSmallScreen = screenWidth < 380;
 
 	// Set the title based on the current route
 	useEffect(() => {
@@ -70,6 +76,14 @@ export default function StudentLayout() {
 	// Show nothing while checking authentication
 	if (loading || !user) return null;
 
+	// Calculate tab bar height and padding based on screen size
+	const tabBarHeight = isSmallScreen ? 50 : 60;
+	const tabBarPaddingBottom = isSmallScreen ? 4 : 8;
+	const tabBarPaddingTop = isSmallScreen ? 4 : 6;
+	const iconSize = isSmallScreen ? 20 : 24;
+
+	// For small screens, we'll configure which tabs to show and which to hide in the "More" menu
+	// On very small screens, we'll only show the most important tabs
 	return (
 		<Tabs
 			screenOptions={{
@@ -84,21 +98,23 @@ export default function StudentLayout() {
 					shadowOpacity: 0.1,
 					shadowRadius: 3,
 					elevation: 3,
-					height: 60,
-					paddingBottom: 8,
-					paddingTop: 6,
+					height: tabBarHeight,
+					paddingBottom: tabBarPaddingBottom,
+					paddingTop: tabBarPaddingTop,
 				},
 				tabBarLabelStyle: {
-					fontSize: 12,
+					fontSize: isSmallScreen ? 10 : 12,
 					fontWeight: "500",
+					marginTop: isSmallScreen ? -2 : 0,
 				},
+				lazy: true,
 			}}>
 			<Tabs.Screen
 				name='dashboard'
 				options={{
-					title: "Bosh sahifa",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='home-outline' size={size} color={color} />
+					title: isSmallScreen ? "Bosh" : "Bosh sahifa",
+					tabBarIcon: ({ color }) => (
+						<Ionicons name='home-outline' size={iconSize} color={color} />
 					),
 				}}
 			/>
@@ -106,63 +122,96 @@ export default function StudentLayout() {
 				name='groups'
 				options={{
 					title: "Guruhlar",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='people-outline' size={size} color={color} />
+					tabBarIcon: ({ color }) => (
+						<Ionicons name='people-outline' size={iconSize} color={color} />
 					),
 				}}
 			/>
 
-			<Tabs.Screen
-				name='grades'
-				options={{
-					title: "Baholar",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='star-outline' size={size} color={color} />
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name='calendar'
-				options={{
-					title: "Kalendar",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='calendar-outline' size={size} color={color} />
-					),
-				}}
-			/>
+			{!isSmallScreen ? (
+				<Tabs.Screen
+					name='grades'
+					options={{
+						title: "Baholar",
+						tabBarIcon: ({ color }) => (
+							<Ionicons name='star-outline' size={iconSize} color={color} />
+						),
+					}}
+				/>
+			) : (
+				<Tabs.Screen
+					name='grades'
+					options={{
+						title: "Baholar",
+						tabBarIcon: ({ color }) => (
+							<Ionicons name='star-outline' size={iconSize} color={color} />
+						),
+						href: screenWidth < 320 ? null : undefined,
+					}}
+				/>
+			)}
+
+			{!isSmallScreen ? (
+				<Tabs.Screen
+					name='calendar'
+					options={{
+						title: "Kalendar",
+						tabBarIcon: ({ color }) => (
+							<Ionicons name='calendar-outline' size={iconSize} color={color} />
+						),
+					}}
+				/>
+			) : (
+				<Tabs.Screen
+					name='calendar'
+					options={{
+						title: "Kalendar",
+						tabBarIcon: ({ color }) => (
+							<Ionicons name='calendar-outline' size={iconSize} color={color} />
+						),
+						href: screenWidth < 320 ? null : undefined,
+					}}
+				/>
+			)}
 
 			<Tabs.Screen
 				name='ratings'
 				options={{
-					title: "Reyting",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='trophy-outline' size={size} color={color} />
+					title: isSmallScreen ? "Rating" : "Reyting",
+					tabBarIcon: ({ color }) => (
+						<Ionicons name='trophy-outline' size={iconSize} color={color} />
 					),
+					href: screenWidth < 320 ? null : undefined,
 				}}
 			/>
 			<Tabs.Screen
 				name='profile'
 				options={{
 					title: "Profil",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='person-outline' size={size} color={color} />
+					tabBarIcon: ({ color }) => (
+						<Ionicons name='person-outline' size={iconSize} color={color} />
 					),
 				}}
 			/>
 			<Tabs.Screen
 				name='notifications'
 				options={{
-					title: "Xabarlar",
-					tabBarIcon: ({ color, size }) => (
+					title: isSmallScreen ? "Xabar" : "Xabarlar",
+					tabBarIcon: ({ color }) => (
 						<View>
 							<Ionicons
 								name='notifications-outline'
-								size={size}
+								size={iconSize}
 								color={color}
 							/>
 							{unreadCount > 0 && (
-								<View style={styles.badge}>
-									<Text style={styles.badgeText}>
+								<View
+									style={[styles.badge, isSmallScreen && styles.smallBadge]}>
+									<Text
+										style={[
+											styles.badgeText,
+											isSmallScreen && styles.smallBadgeText,
+										]}>
 										{unreadCount > 99 ? "99+" : unreadCount}
 									</Text>
 								</View>
@@ -196,9 +245,20 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 		borderColor: "white",
 	},
+	smallBadge: {
+		right: -4,
+		top: -4,
+		minWidth: 16,
+		height: 16,
+		borderRadius: 8,
+		borderWidth: 1.5,
+	},
 	badgeText: {
 		color: "white",
 		fontSize: 11,
 		fontWeight: "bold",
+	},
+	smallBadgeText: {
+		fontSize: 9,
 	},
 });

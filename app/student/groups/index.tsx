@@ -12,6 +12,8 @@ import {
 	TextInput,
 	TouchableWithoutFeedback,
 	Keyboard,
+	useWindowDimensions,
+	Platform,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -49,6 +51,21 @@ export default function StudentGroupsScreen() {
 	const [joinModalVisible, setJoinModalVisible] = useState(false);
 	const [groupIdInput, setGroupIdInput] = useState("");
 	const [joiningGroup, setJoiningGroup] = useState(false);
+	const { width: screenWidth } = useWindowDimensions();
+
+	// Determine if we're on a small screen
+	const isSmallScreen = screenWidth < 380;
+	const isVerySmallScreen = screenWidth < 340;
+
+	// Helper function for responsive sizes
+	const getResponsiveSize = (
+		baseSize: number,
+		smallSize: number,
+		verySmallSize?: number
+	): number => {
+		if (isVerySmallScreen && verySmallSize !== undefined) return verySmallSize;
+		return isSmallScreen ? smallSize : baseSize;
+	};
 
 	useEffect(() => {
 		fetchGroups();
@@ -244,23 +261,67 @@ export default function StudentGroupsScreen() {
 	const renderTaskItem = (task: Task) => (
 		<TouchableOpacity
 			key={task.id}
-			style={styles.taskItem}
+			style={[
+				styles.taskItem,
+				{
+					paddingVertical: getResponsiveSize(12, 10, 8),
+					paddingHorizontal: getResponsiveSize(12, 10, 8),
+					borderRadius: getResponsiveSize(8, 6, 6),
+					marginBottom: getResponsiveSize(8, 6, 4),
+				},
+			]}
 			onPress={() => navigateToTaskDetails(task.id, task.title)}>
 			<View style={styles.taskItemLeftSection}>
-				<View style={styles.taskIconContainer}>
+				<View
+					style={[
+						styles.taskIconContainer,
+						{
+							width: getResponsiveSize(36, 32, 28),
+							height: getResponsiveSize(36, 32, 28),
+							borderRadius: getResponsiveSize(18, 16, 14),
+							marginRight: getResponsiveSize(12, 8, 6),
+						},
+					]}>
 					{task.completed ? (
-						<Ionicons name='checkmark-circle' size={18} color='#4CAF50' />
+						<Ionicons
+							name='checkmark-circle'
+							size={getResponsiveSize(18, 16, 14)}
+							color='#4CAF50'
+						/>
 					) : (
-						<Ionicons name='time-outline' size={18} color='#FF9800' />
+						<Ionicons
+							name='time-outline'
+							size={getResponsiveSize(18, 16, 14)}
+							color='#FF9800'
+						/>
 					)}
 				</View>
 				<View style={styles.taskDetails}>
-					<Text style={styles.taskTitle} numberOfLines={1}>
+					<Text
+						style={[
+							styles.taskTitle,
+							{
+								fontSize: getResponsiveSize(16, 14, 13),
+								marginBottom: getResponsiveSize(4, 3, 2),
+							},
+						]}
+						numberOfLines={1}>
 						{task.title}
 					</Text>
 					<View style={styles.taskDateContainer}>
-						<Ionicons name='calendar-outline' size={14} color='#777' />
-						<Text style={styles.taskDate}>
+						<Ionicons
+							name='calendar-outline'
+							size={getResponsiveSize(14, 12, 10)}
+							color='#777'
+						/>
+						<Text
+							style={[
+								styles.taskDate,
+								{
+									fontSize: getResponsiveSize(14, 12, 11),
+									marginLeft: getResponsiveSize(4, 3, 2),
+								},
+							]}>
 							{formatTaskDate(task.due_date).replace("Muddat: ", "")}
 						</Text>
 					</View>
@@ -268,8 +329,20 @@ export default function StudentGroupsScreen() {
 			</View>
 
 			{task.has_files && (
-				<View style={styles.taskFileIndicator}>
-					<Ionicons name='document-text' size={16} color='#4169E1' />
+				<View
+					style={[
+						styles.taskFileIndicator,
+						{
+							width: getResponsiveSize(30, 26, 24),
+							height: getResponsiveSize(30, 26, 24),
+							borderRadius: getResponsiveSize(15, 13, 12),
+						},
+					]}>
+					<Ionicons
+						name='document-text'
+						size={getResponsiveSize(16, 14, 12)}
+						color='#4169E1'
+					/>
 				</View>
 			)}
 		</TouchableOpacity>
@@ -280,40 +353,87 @@ export default function StudentGroupsScreen() {
 		const displayTasks = item.expanded ? groupTasks.slice(0, 3) : [];
 		const hasMoreTasks = groupTasks.length > 3;
 
-		console.log(
-			"Rendering group item:",
-			item.id,
-			item.name,
-			"Tasks:",
-			groupTasks.length
-		);
-
 		return (
 			<View style={styles.groupSection}>
 				<TouchableOpacity
-					style={styles.groupCard}
+					style={[
+						styles.groupCard,
+						{
+							borderRadius: getResponsiveSize(16, 14, 12),
+							padding: getResponsiveSize(16, 14, 12),
+							marginBottom: getResponsiveSize(8, 6, 4),
+						},
+					]}
 					onPress={() => {
-						console.log("Group card pressed:", item.id, item.name);
 						navigateToGroupDetails(item.id, item.name);
 					}}>
 					<View style={styles.groupContent}>
-						<View style={styles.groupIconContainer}>
-							<Ionicons name='people' size={28} color='#4169E1' />
+						<View
+							style={[
+								styles.groupIconContainer,
+								{
+									width: getResponsiveSize(60, 50, 45),
+									height: getResponsiveSize(60, 50, 45),
+									borderRadius: getResponsiveSize(30, 25, 22.5),
+									marginRight: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							<Ionicons
+								name='people'
+								size={getResponsiveSize(28, 24, 22)}
+								color='#4169E1'
+							/>
 						</View>
 
 						<View style={styles.groupDetails}>
-							<Text style={styles.groupName}>{item.name}</Text>
-							<Text style={styles.groupDescription}>
+							<Text
+								style={[
+									styles.groupName,
+									{
+										fontSize: getResponsiveSize(18, 16, 15),
+										marginBottom: getResponsiveSize(4, 3, 2),
+									},
+								]}>
+								{item.name}
+							</Text>
+							<Text
+								style={[
+									styles.groupDescription,
+									{
+										fontSize: getResponsiveSize(14, 13, 12),
+										marginBottom: getResponsiveSize(6, 5, 4),
+									},
+								]}>
 								{item.description || item.name.toLowerCase()}
 							</Text>
-							<Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
+							<Text
+								style={[
+									styles.dateText,
+									{
+										fontSize: getResponsiveSize(12, 11, 10),
+										marginBottom: getResponsiveSize(8, 6, 4),
+									},
+								]}>
+								{formatDate(item.created_at)}
+							</Text>
 
 							{/* Task Stats */}
 							<View style={styles.taskStats}>
 								{item.pending_tasks !== undefined && (
 									<View style={styles.taskStat}>
-										<Ionicons name='time-outline' size={14} color='#FF9800' />
-										<Text style={styles.pendingTasksText}>
+										<Ionicons
+											name='time-outline'
+											size={getResponsiveSize(14, 12, 11)}
+											color='#FF9800'
+										/>
+										<Text
+											style={[
+												styles.pendingTasksText,
+												{
+													fontSize: getResponsiveSize(12, 11, 10),
+													marginLeft: getResponsiveSize(4, 3, 2),
+												},
+											]}>
 											{item.pending_tasks} vazifa
 										</Text>
 									</View>
@@ -323,10 +443,17 @@ export default function StudentGroupsScreen() {
 									<View style={styles.taskStat}>
 										<Ionicons
 											name='checkmark-circle-outline'
-											size={14}
+											size={getResponsiveSize(14, 12, 11)}
 											color='#4CAF50'
 										/>
-										<Text style={styles.completedTasksText}>
+										<Text
+											style={[
+												styles.completedTasksText,
+												{
+													fontSize: getResponsiveSize(12, 11, 10),
+													marginLeft: getResponsiveSize(4, 3, 2),
+												},
+											]}>
 											{item.completed_tasks} bajarilgan
 										</Text>
 									</View>
@@ -337,52 +464,98 @@ export default function StudentGroupsScreen() {
 
 					<Ionicons
 						name='chevron-forward'
-						size={24}
+						size={getResponsiveSize(24, 20, 18)}
 						color='#C0C0C0'
 						style={styles.arrowIcon}
 					/>
 				</TouchableOpacity>
 
 				{/* Tasks section for this group */}
-				<View style={styles.tasksSectionContainer}>
+				<View
+					style={[
+						styles.tasksSectionContainer,
+						{
+							borderRadius: getResponsiveSize(12, 10, 8),
+						},
+					]}>
 					<TouchableOpacity
 						style={[
 							styles.tasksHeaderRow,
+							{
+								padding: getResponsiveSize(16, 14, 12),
+							},
 							item.expanded && {
 								borderBottomWidth: 1,
 								borderBottomColor: "#f0f0f0",
 							},
 						]}
 						onPress={() => toggleGroupExpanded(item.id)}>
-						<Text style={styles.tasksSectionTitle}>
+						<Text
+							style={[
+								styles.tasksSectionTitle,
+								{
+									fontSize: getResponsiveSize(16, 14, 13),
+								},
+							]}>
 							Vazifalar ({groupTasks.length})
 						</Text>
 						<Ionicons
 							name={item.expanded ? "chevron-down" : "chevron-forward"}
-							size={18}
+							size={getResponsiveSize(18, 16, 14)}
 							color='#000'
 						/>
 					</TouchableOpacity>
 
 					{item.expanded && (
-						<View style={styles.tasksExpandedContent}>
+						<View
+							style={[
+								styles.tasksExpandedContent,
+								{
+									padding: getResponsiveSize(8, 6, 4),
+								},
+							]}>
 							{displayTasks.length > 0 ? (
 								<>
 									{displayTasks.map((task) => renderTaskItem(task))}
 
 									{hasMoreTasks && (
 										<TouchableOpacity
-											style={styles.seeAllButton}
+											style={[
+												styles.seeAllButton,
+												{
+													padding: getResponsiveSize(12, 10, 8),
+												},
+											]}
 											onPress={() =>
 												navigateToGroupDetails(item.id, item.name)
 											}>
-											<Text style={styles.seeAllText}>Hammasini ko'rish</Text>
+											<Text
+												style={[
+													styles.seeAllText,
+													{
+														fontSize: getResponsiveSize(14, 13, 12),
+													},
+												]}>
+												Hammasini ko'rish
+											</Text>
 										</TouchableOpacity>
 									)}
 								</>
 							) : (
-								<View style={styles.emptyTasksContainer}>
-									<Text style={styles.emptyTasksText}>
+								<View
+									style={[
+										styles.emptyTasksContainer,
+										{
+											padding: getResponsiveSize(16, 14, 12),
+										},
+									]}>
+									<Text
+										style={[
+											styles.emptyTasksText,
+											{
+												fontSize: getResponsiveSize(14, 13, 12),
+											},
+										]}>
 										Bu guruh uchun vazifalar mavjud emas
 									</Text>
 								</View>
@@ -396,9 +569,29 @@ export default function StudentGroupsScreen() {
 
 	const renderEmptyList = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='people-outline' size={70} color='#D0D7F0' />
-			<Text style={styles.emptyText}>Guruhlar topilmadi</Text>
-			<Text style={styles.emptySubtext}>
+			<Ionicons
+				name='people-outline'
+				size={getResponsiveSize(70, 60, 50)}
+				color='#D0D7F0'
+			/>
+			<Text
+				style={[
+					styles.emptyText,
+					{
+						fontSize: getResponsiveSize(18, 16, 15),
+						marginTop: getResponsiveSize(16, 14, 12),
+					},
+				]}>
+				Guruhlar topilmadi
+			</Text>
+			<Text
+				style={[
+					styles.emptySubtext,
+					{
+						fontSize: getResponsiveSize(14, 13, 12),
+						marginTop: getResponsiveSize(8, 6, 4),
+					},
+				]}>
 				Hozircha siz hech qanday guruhga qo'shilmagansiz
 			</Text>
 		</View>
@@ -547,23 +740,60 @@ export default function StudentGroupsScreen() {
 				}}
 			/>
 
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Mening guruhlarim</Text>
-				<TouchableOpacity style={styles.headerButton} onPress={openJoinModal}>
-					<Ionicons name='add' size={24} color='white' />
+			<View
+				style={[
+					styles.header,
+					{
+						paddingTop: getResponsiveSize(50, 40, 35),
+						paddingBottom: getResponsiveSize(20, 16, 14),
+						paddingHorizontal: getResponsiveSize(20, 16, 14),
+					},
+				]}>
+				<Text
+					style={[
+						styles.headerTitle,
+						{
+							fontSize: getResponsiveSize(24, 20, 18),
+						},
+					]}>
+					Mening guruhlarim
+				</Text>
+				<TouchableOpacity
+					style={[
+						styles.headerButton,
+						{
+							width: getResponsiveSize(36, 32, 30),
+							height: getResponsiveSize(36, 32, 30),
+							borderRadius: getResponsiveSize(18, 16, 15),
+						},
+					]}
+					onPress={openJoinModal}>
+					<Ionicons
+						name='add'
+						size={getResponsiveSize(24, 20, 18)}
+						color='white'
+					/>
 				</TouchableOpacity>
 			</View>
 
 			{loading ? (
 				<View style={styles.loaderContainer}>
-					<ActivityIndicator size='large' color='#4169E1' />
+					<ActivityIndicator
+						size={isSmallScreen ? "small" : "large"}
+						color='#4169E1'
+					/>
 				</View>
 			) : (
 				<FlatList
 					data={groups}
 					renderItem={renderGroupItem}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={styles.listContent}
+					contentContainerStyle={[
+						styles.listContent,
+						{
+							padding: getResponsiveSize(16, 14, 12),
+						},
+					]}
 					ListEmptyComponent={renderEmptyList}
 					refreshing={loading}
 					onRefresh={fetchGroups}
@@ -579,13 +809,52 @@ export default function StudentGroupsScreen() {
 				<TouchableWithoutFeedback onPress={closeJoinModal}>
 					<View style={styles.modalOverlay}>
 						<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-							<View style={styles.modalContent}>
-								<Text style={styles.modalTitle}>Guruhga Qo'shilish</Text>
+							<View
+								style={[
+									styles.modalContent,
+									{
+										borderRadius: getResponsiveSize(20, 16, 14),
+										padding: getResponsiveSize(20, 16, 14),
+										width: isSmallScreen ? "90%" : "85%",
+									},
+								]}>
+								<Text
+									style={[
+										styles.modalTitle,
+										{
+											fontSize: getResponsiveSize(22, 20, 18),
+											marginBottom: getResponsiveSize(20, 16, 14),
+										},
+									]}>
+									Guruhga Qo'shilish
+								</Text>
 
-								<View style={styles.inputGroup}>
-									<Text style={styles.inputLabel}>Guruh ID</Text>
+								<View
+									style={[
+										styles.inputGroup,
+										{
+											marginBottom: getResponsiveSize(20, 16, 14),
+										},
+									]}>
+									<Text
+										style={[
+											styles.inputLabel,
+											{
+												fontSize: getResponsiveSize(16, 14, 13),
+												marginBottom: getResponsiveSize(8, 6, 5),
+											},
+										]}>
+										Guruh ID
+									</Text>
 									<TextInput
-										style={styles.input}
+										style={[
+											styles.input,
+											{
+												borderRadius: getResponsiveSize(8, 6, 5),
+												padding: getResponsiveSize(12, 10, 8),
+												fontSize: getResponsiveSize(16, 14, 13),
+											},
+										]}
 										placeholder="O'qituvchi bergan guruh ID sini kiriting"
 										value={groupIdInput}
 										onChangeText={setGroupIdInput}
@@ -593,21 +862,57 @@ export default function StudentGroupsScreen() {
 									/>
 								</View>
 
-								<View style={styles.modalButtons}>
+								<View
+									style={[
+										styles.modalButtons,
+										{
+											marginTop: getResponsiveSize(16, 14, 12),
+										},
+									]}>
 									<TouchableOpacity
-										style={styles.cancelButton}
+										style={[
+											styles.cancelButton,
+											{
+												borderRadius: getResponsiveSize(8, 6, 5),
+												padding: getResponsiveSize(12, 10, 8),
+												marginRight: getResponsiveSize(8, 6, 4),
+											},
+										]}
 										onPress={closeJoinModal}>
-										<Text style={styles.cancelButtonText}>Bekor qilish</Text>
+										<Text
+											style={[
+												styles.cancelButtonText,
+												{
+													fontSize: getResponsiveSize(16, 14, 13),
+												},
+											]}>
+											Bekor qilish
+										</Text>
 									</TouchableOpacity>
 
 									<TouchableOpacity
-										style={styles.joinButton}
+										style={[
+											styles.joinButton,
+											{
+												borderRadius: getResponsiveSize(8, 6, 5),
+												padding: getResponsiveSize(12, 10, 8),
+												marginLeft: getResponsiveSize(8, 6, 4),
+											},
+										]}
 										onPress={handleJoinGroup}
 										disabled={joiningGroup}>
 										{joiningGroup ? (
 											<ActivityIndicator size='small' color='#fff' />
 										) : (
-											<Text style={styles.joinButtonText}>Qo'shilish</Text>
+											<Text
+												style={[
+													styles.joinButtonText,
+													{
+														fontSize: getResponsiveSize(16, 14, 13),
+													},
+												]}>
+												Qo'shilish
+											</Text>
 										)}
 									</TouchableOpacity>
 								</View>

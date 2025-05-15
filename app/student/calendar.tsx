@@ -8,6 +8,7 @@ import {
 	ActivityIndicator,
 	SafeAreaView,
 	FlatList,
+	useWindowDimensions,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,6 +55,10 @@ export default function StudentCalendarScreen() {
 	const [groups, setGroups] = useState<Group[]>([]);
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 	const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+	const { width } = useWindowDimensions();
+
+	// Determine if small screen
+	const isSmallScreen = width < 375;
 
 	// Calculate calendar days for current month
 	const calendarDays = useMemo(() => {
@@ -229,12 +234,15 @@ export default function StudentCalendarScreen() {
 		});
 
 		const hasTask = dayTasks.length > 0;
+		const cellSize = isSmallScreen ? 32 : 40;
+		const dotSize = isSmallScreen ? 14 : 16;
 
 		return (
 			<TouchableOpacity
 				key={day.toString()}
 				style={[
 					styles.dayCell,
+					{ width: cellSize, height: cellSize },
 					isToday(day) && styles.todayCell,
 					isSelected && styles.selectedDayCell,
 					hasTask && styles.hasTaskCell,
@@ -243,14 +251,25 @@ export default function StudentCalendarScreen() {
 				<Text
 					style={[
 						styles.dayText,
+						isSmallScreen && styles.smallDayText,
 						isSelected && styles.selectedDayText,
 						isToday(day) && styles.todayText,
 					]}>
 					{format(day, "d")}
 				</Text>
 				{hasTask && (
-					<View style={styles.taskDot}>
-						<Text style={styles.taskCount}>{dayTasks.length}</Text>
+					<View
+						style={[
+							styles.taskDot,
+							{ width: dotSize, height: dotSize, borderRadius: dotSize / 2 },
+						]}>
+						<Text
+							style={[
+								styles.taskCount,
+								isSmallScreen && styles.smallTaskCount,
+							]}>
+							{dayTasks.length}
+						</Text>
 					</View>
 				)}
 			</TouchableOpacity>
@@ -263,7 +282,12 @@ export default function StudentCalendarScreen() {
 		return (
 			<View style={styles.weekdayHeader}>
 				{weekdays.map((day) => (
-					<Text key={day} style={styles.weekdayText}>
+					<Text
+						key={day}
+						style={[
+							styles.weekdayText,
+							isSmallScreen && styles.smallWeekdayText,
+						]}>
 						{day}
 					</Text>
 				))}
@@ -294,35 +318,45 @@ export default function StudentCalendarScreen() {
 
 			{/* Header */}
 			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Kalendar</Text>
+				<Text
+					style={[
+						styles.headerTitle,
+						isSmallScreen && styles.smallHeaderTitle,
+					]}>
+					Kalendar
+				</Text>
 			</View>
 
 			<View style={styles.calendarContainer}>
 				{/* Month navigation */}
 				<View style={styles.monthNavigator}>
 					<TouchableOpacity onPress={handlePreviousMonth}>
-						<Ionicons name='chevron-back' size={24} color='#4169E1' />
+						<Ionicons
+							name='chevron-back'
+							size={isSmallScreen ? 20 : 24}
+							color='#4169E1'
+						/>
 					</TouchableOpacity>
 
-					<Text style={styles.monthTitle}>
+					<Text
+						style={[
+							styles.monthTitle,
+							isSmallScreen && styles.smallMonthTitle,
+						]}>
 						{format(selectedMonth, "MMMM yyyy")}
 					</Text>
 
 					<TouchableOpacity onPress={handleNextMonth}>
-						<Ionicons name='chevron-forward' size={24} color='#4169E1' />
+						<Ionicons
+							name='chevron-forward'
+							size={isSmallScreen ? 20 : 24}
+							color='#4169E1'
+						/>
 					</TouchableOpacity>
 				</View>
 
 				{/* Weekday headers */}
-				<View style={styles.weekdayHeader}>
-					<Text style={styles.weekdayText}>Sun</Text>
-					<Text style={styles.weekdayText}>Mon</Text>
-					<Text style={styles.weekdayText}>Tue</Text>
-					<Text style={styles.weekdayText}>Wed</Text>
-					<Text style={styles.weekdayText}>Thu</Text>
-					<Text style={styles.weekdayText}>Fri</Text>
-					<Text style={styles.weekdayText}>Sat</Text>
-				</View>
+				{renderWeekdayHeaders()}
 
 				{/* Calendar grid */}
 				<View style={styles.calendarGrid}>
@@ -332,7 +366,11 @@ export default function StudentCalendarScreen() {
 
 			{/* Tasks for selected date */}
 			<View style={styles.selectedDateContainer}>
-				<Text style={styles.selectedDateTitle}>
+				<Text
+					style={[
+						styles.selectedDateTitle,
+						isSmallScreen && styles.smallSelectedDateTitle,
+					]}>
 					{format(selectedDate, "EEEE, d-MMMM, yyyy")} uchun vazifalar
 				</Text>
 
@@ -341,20 +379,39 @@ export default function StudentCalendarScreen() {
 						data={tasksForSelectedDate}
 						renderItem={({ item }) => (
 							<View style={styles.taskItem}>
-								<View style={styles.taskIcon}>
+								<View
+									style={[
+										styles.taskIcon,
+										isSmallScreen && styles.smallTaskIcon,
+									]}>
 									<Ionicons
 										name='document-text-outline'
-										size={24}
+										size={isSmallScreen ? 20 : 24}
 										color='#4169E1'
 									/>
 								</View>
 								<View style={styles.taskContent}>
-									<Text style={styles.taskTitle}>{item.title}</Text>
-									<Text style={styles.taskGroup}>
+									<Text
+										style={[
+											styles.taskTitle,
+											isSmallScreen && styles.smallTaskTitle,
+										]}>
+										{item.title}
+									</Text>
+									<Text
+										style={[
+											styles.taskGroup,
+											isSmallScreen && styles.smallTaskGroup,
+										]}>
 										{item.group_name || "Guruh nomi"}
 									</Text>
 									{item.description && (
-										<Text style={styles.taskDescription} numberOfLines={1}>
+										<Text
+											style={[
+												styles.taskDescription,
+												isSmallScreen && styles.smallTaskDescription,
+											]}
+											numberOfLines={1}>
 											{item.description}
 										</Text>
 									)}
@@ -366,7 +423,13 @@ export default function StudentCalendarScreen() {
 					/>
 				) : (
 					<View style={styles.noTasksContainer}>
-						<Text style={styles.noTasksText}>Bu kunda vazifalar yo'q</Text>
+						<Text
+							style={[
+								styles.noTasksText,
+								isSmallScreen && styles.smallNoTasksText,
+							]}>
+							Bu kunda vazifalar yo'q
+						</Text>
 					</View>
 				)}
 			</View>
@@ -390,6 +453,9 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "white",
 	},
+	smallHeaderTitle: {
+		fontSize: 20,
+	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -398,8 +464,8 @@ const styles = StyleSheet.create({
 	calendarContainer: {
 		backgroundColor: "white",
 		borderRadius: 12,
-		margin: 16,
-		padding: 16,
+		margin: 12,
+		padding: 12,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.05,
@@ -410,12 +476,15 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 16,
+		marginBottom: 12,
 	},
 	monthTitle: {
 		fontSize: 18,
 		fontWeight: "600",
 		color: "#333",
+	},
+	smallMonthTitle: {
+		fontSize: 16,
 	},
 	weekdayHeader: {
 		flexDirection: "row",
@@ -429,22 +498,27 @@ const styles = StyleSheet.create({
 		color: "#666",
 		fontSize: 12,
 	},
+	smallWeekdayText: {
+		width: 30,
+		fontSize: 10,
+	},
 	calendarGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
 		justifyContent: "space-around",
 	},
 	dayCell: {
-		width: 40,
-		height: 40,
 		justifyContent: "center",
 		alignItems: "center",
-		marginVertical: 4,
+		marginVertical: 2,
 		borderRadius: 20,
 	},
 	dayText: {
 		fontSize: 14,
 		color: "#333",
+	},
+	smallDayText: {
+		fontSize: 12,
 	},
 	todayCell: {
 		backgroundColor: "#EFF3FF",
@@ -468,9 +542,6 @@ const styles = StyleSheet.create({
 		top: -4,
 		right: -4,
 		backgroundColor: "#4169E1",
-		width: 16,
-		height: 16,
-		borderRadius: 8,
 		justifyContent: "center",
 		alignItems: "center",
 		borderWidth: 2,
@@ -481,15 +552,22 @@ const styles = StyleSheet.create({
 		fontSize: 9,
 		fontWeight: "bold",
 	},
+	smallTaskCount: {
+		fontSize: 7,
+	},
 	selectedDateContainer: {
 		flex: 1,
-		marginHorizontal: 16,
+		marginHorizontal: 12,
 	},
 	selectedDateTitle: {
 		fontSize: 18,
 		fontWeight: "600",
-		marginBottom: 16,
+		marginBottom: 12,
 		color: "#333",
+	},
+	smallSelectedDateTitle: {
+		fontSize: 16,
+		marginBottom: 8,
 	},
 	tasksList: {
 		paddingBottom: 20,
@@ -498,8 +576,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		backgroundColor: "white",
 		borderRadius: 12,
-		padding: 16,
-		marginBottom: 12,
+		padding: 12,
+		marginBottom: 10,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.1,
@@ -515,6 +593,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		marginRight: 12,
 	},
+	smallTaskIcon: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		marginRight: 8,
+	},
 	taskContent: {
 		flex: 1,
 	},
@@ -524,14 +608,25 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginBottom: 4,
 	},
+	smallTaskTitle: {
+		fontSize: 14,
+		marginBottom: 2,
+	},
 	taskGroup: {
 		fontSize: 14,
 		color: "#4169E1",
 		marginBottom: 4,
 	},
+	smallTaskGroup: {
+		fontSize: 12,
+		marginBottom: 2,
+	},
 	taskDescription: {
 		fontSize: 14,
 		color: "#666",
+	},
+	smallTaskDescription: {
+		fontSize: 12,
 	},
 	noTasksContainer: {
 		alignItems: "center",
@@ -542,6 +637,9 @@ const styles = StyleSheet.create({
 	noTasksText: {
 		fontSize: 16,
 		color: "#666",
+	},
+	smallNoTasksText: {
+		fontSize: 14,
 	},
 	legend: {
 		flexDirection: "row",

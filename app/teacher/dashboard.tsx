@@ -8,6 +8,8 @@ import {
 	SafeAreaView,
 	ActivityIndicator,
 	FlatList,
+	useWindowDimensions,
+	Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -41,6 +43,21 @@ export default function TeacherDashboard() {
 	const [loading, setLoading] = useState(true);
 	const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
 	const [recentSubmissions, setRecentSubmissions] = useState<Submission[]>([]);
+	const { width: screenWidth } = useWindowDimensions();
+
+	// Determine if we're on a small screen
+	const isSmallScreen = screenWidth < 380;
+	const isVerySmallScreen = screenWidth < 340;
+
+	// Helper function for responsive sizes
+	const getResponsiveSize = (
+		baseSize: number,
+		smallSize: number,
+		verySmallSize?: number
+	): number => {
+		if (isVerySmallScreen && verySmallSize !== undefined) return verySmallSize;
+		return isSmallScreen ? smallSize : baseSize;
+	};
 
 	// Fetch dashboard data
 	useEffect(() => {
@@ -169,21 +186,74 @@ export default function TeacherDashboard() {
 	// Render upcoming task item
 	const renderTaskItem = ({ item }: { item: Task }) => (
 		<TouchableOpacity
-			style={styles.taskCard}
+			style={[
+				styles.taskCard,
+				{
+					padding: getResponsiveSize(16, 14, 12),
+					marginBottom: getResponsiveSize(12, 10, 8),
+					borderRadius: getResponsiveSize(16, 12, 10),
+				},
+			]}
 			onPress={() => router.push(`/teacher/tasks/${item.id}`)}>
 			<View>
-				<Text style={styles.taskTitle}>{item.title}</Text>
-				<Text style={styles.taskGroup}>{item.group_name}</Text>
-				<View style={styles.taskDate}>
-					<Ionicons name='calendar-outline' size={16} color='#666' />
-					<Text style={styles.dateText}>
+				<Text
+					style={[
+						styles.taskTitle,
+						{
+							fontSize: getResponsiveSize(18, 16, 14),
+							marginBottom: getResponsiveSize(4, 3, 2),
+						},
+					]}>
+					{item.title}
+				</Text>
+				<Text
+					style={[
+						styles.taskGroup,
+						{
+							fontSize: getResponsiveSize(14, 12, 11),
+							marginBottom: getResponsiveSize(8, 6, 4),
+						},
+					]}>
+					{item.group_name}
+				</Text>
+				<View
+					style={[
+						styles.taskDate,
+						{ marginBottom: getResponsiveSize(6, 4, 3) },
+					]}>
+					<Ionicons
+						name='calendar-outline'
+						size={getResponsiveSize(16, 14, 12)}
+						color='#666'
+					/>
+					<Text
+						style={[
+							styles.dateText,
+							{
+								fontSize: getResponsiveSize(14, 12, 11),
+								marginLeft: getResponsiveSize(6, 4, 3),
+							},
+						]}>
 						Muddat: {format(parseISO(item.due_date), "MMM d")}
 					</Text>
 				</View>
 				{isDeadlineApproaching(item.due_date) && (
 					<View style={styles.deadlineWarning}>
-						<Ionicons name='time-outline' size={16} color='#FF9800' />
-						<Text style={styles.deadlineText}>Tez orada muddati tugaydi</Text>
+						<Ionicons
+							name='time-outline'
+							size={getResponsiveSize(16, 14, 12)}
+							color='#FF9800'
+						/>
+						<Text
+							style={[
+								styles.deadlineText,
+								{
+									fontSize: getResponsiveSize(14, 12, 11),
+									marginLeft: getResponsiveSize(6, 4, 3),
+								},
+							]}>
+							{isSmallScreen ? "Muddat yaqin" : "Tez orada muddati tugaydi"}
+						</Text>
 					</View>
 				)}
 			</View>
@@ -193,12 +263,45 @@ export default function TeacherDashboard() {
 	// Render submission item
 	const renderSubmissionItem = ({ item }: { item: Submission }) => (
 		<TouchableOpacity
-			style={styles.submissionCard}
+			style={[
+				styles.submissionCard,
+				{
+					padding: getResponsiveSize(16, 14, 12),
+					marginBottom: getResponsiveSize(12, 10, 8),
+					borderRadius: getResponsiveSize(16, 12, 10),
+				},
+			]}
 			// onPress={() => router.push(`/teacher/tasks/${item.id}`)}
 		>
-			<Text style={styles.submissionTitle}>{item.title}</Text>
-			<Text style={styles.submissionGroup}>{item.group_name}</Text>
-			<Text style={styles.submissionDate}>
+			<Text
+				style={[
+					styles.submissionTitle,
+					{
+						fontSize: getResponsiveSize(18, 16, 14),
+						marginBottom: getResponsiveSize(6, 4, 3),
+					},
+				]}>
+				{item.title}
+			</Text>
+			<Text
+				style={[
+					styles.submissionGroup,
+					{
+						fontSize: getResponsiveSize(14, 12, 11),
+						marginBottom: getResponsiveSize(4, 3, 2),
+					},
+				]}>
+				{item.group_name}
+			</Text>
+			<Text
+				style={[
+					styles.submissionDate,
+					{
+						fontSize: getResponsiveSize(14, 12, 11),
+						top: getResponsiveSize(16, 14, 12),
+						right: getResponsiveSize(16, 14, 12),
+					},
+				]}>
 				{format(parseISO(item.due_date), "MM/dd/yyyy")}
 			</Text>
 		</TouchableOpacity>
@@ -210,58 +313,220 @@ export default function TeacherDashboard() {
 				style={styles.scrollView}
 				showsVerticalScrollIndicator={false}>
 				{/* Header Section */}
-				<View style={styles.header}>
+				<View
+					style={[
+						styles.header,
+						{
+							paddingTop: getResponsiveSize(60, 40, 30),
+							paddingBottom: getResponsiveSize(30, 20, 15),
+							paddingHorizontal: getResponsiveSize(20, 16, 12),
+						},
+					]}>
 					<View>
-						<Text style={styles.welcomeText}>
+						<Text
+							style={[
+								styles.welcomeText,
+								{
+									fontSize: getResponsiveSize(28, 24, 20),
+								},
+							]}>
 							Salom, {user?.email?.split("@")[0] || "Karim"}
 						</Text>
-						<Text style={styles.roleText}>Teacher</Text>
+						<Text
+							style={[
+								styles.roleText,
+								{
+									fontSize: getResponsiveSize(18, 16, 14),
+								},
+							]}>
+							Teacher
+						</Text>
 					</View>
 				</View>
 
 				{/* Stats Overview */}
 				{loading ? (
-					<View style={styles.loadingContainer}>
-						<ActivityIndicator size='large' color='#4169E1' />
+					<View
+						style={[
+							styles.loadingContainer,
+							{
+								padding: getResponsiveSize(20, 16, 12),
+								height: getResponsiveSize(100, 80, 60),
+							},
+						]}>
+						<ActivityIndicator
+							size={isSmallScreen ? "small" : "large"}
+							color='#4169E1'
+						/>
 					</View>
 				) : (
-					<View style={styles.statsContainer}>
-						<View style={styles.statCard}>
+					<View
+						style={[
+							styles.statsContainer,
+							{
+								paddingHorizontal: getResponsiveSize(16, 12, 8),
+								marginTop: getResponsiveSize(-20, -16, -12),
+							},
+						]}>
+						<View
+							style={[
+								styles.statCard,
+								{
+									padding: getResponsiveSize(16, 12, 10),
+									borderRadius: getResponsiveSize(16, 12, 10),
+								},
+							]}>
 							<View
-								style={[styles.statIconCircle, { backgroundColor: "#E3F2FD" }]}>
-								<Ionicons name='book-outline' size={24} color='#4169E1' />
-							</View>
-							<Text style={styles.statValue}>{stats.groups}</Text>
-							<Text style={styles.statLabel}>Guruhlar</Text>
-						</View>
-
-						<View style={styles.statCard}>
-							<View
-								style={[styles.statIconCircle, { backgroundColor: "#E8EAF6" }]}>
-								<Ionicons name='time-outline' size={24} color='#4169E1' />
-							</View>
-							<Text style={styles.statValue}>{stats.upcomingTasks}</Text>
-							<Text style={styles.statLabel}>Yaqin vazifalar</Text>
-						</View>
-
-						<View style={styles.statCard}>
-							<View
-								style={[styles.statIconCircle, { backgroundColor: "#E0F2F1" }]}>
+								style={[
+									styles.statIconCircle,
+									{
+										backgroundColor: "#E3F2FD",
+										width: getResponsiveSize(50, 40, 36),
+										height: getResponsiveSize(50, 40, 36),
+										borderRadius: getResponsiveSize(25, 20, 18),
+										marginBottom: getResponsiveSize(10, 8, 6),
+									},
+								]}>
 								<Ionicons
-									name='checkmark-circle-outline'
-									size={24}
+									name='book-outline'
+									size={getResponsiveSize(24, 20, 18)}
 									color='#4169E1'
 								/>
 							</View>
-							<Text style={styles.statValue}>{stats.submissions}</Text>
-							<Text style={styles.statLabel}>Oxirgi javoblar</Text>
+							<Text
+								style={[
+									styles.statValue,
+									{
+										fontSize: getResponsiveSize(24, 20, 18),
+										marginVertical: getResponsiveSize(4, 3, 2),
+									},
+								]}>
+								{stats.groups}
+							</Text>
+							<Text
+								style={[
+									styles.statLabel,
+									{
+										fontSize: getResponsiveSize(12, 10, 9),
+									},
+								]}>
+								Guruhlar
+							</Text>
+						</View>
+
+						<View
+							style={[
+								styles.statCard,
+								{
+									padding: getResponsiveSize(16, 12, 10),
+									borderRadius: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							<View
+								style={[
+									styles.statIconCircle,
+									{
+										backgroundColor: "#E8EAF6",
+										width: getResponsiveSize(50, 40, 36),
+										height: getResponsiveSize(50, 40, 36),
+										borderRadius: getResponsiveSize(25, 20, 18),
+										marginBottom: getResponsiveSize(10, 8, 6),
+									},
+								]}>
+								<Ionicons
+									name='time-outline'
+									size={getResponsiveSize(24, 20, 18)}
+									color='#4169E1'
+								/>
+							</View>
+							<Text
+								style={[
+									styles.statValue,
+									{
+										fontSize: getResponsiveSize(24, 20, 18),
+										marginVertical: getResponsiveSize(4, 3, 2),
+									},
+								]}>
+								{stats.upcomingTasks}
+							</Text>
+							<Text
+								style={[
+									styles.statLabel,
+									{
+										fontSize: getResponsiveSize(12, 10, 9),
+									},
+								]}>
+								{isSmallScreen ? "Vazifalar" : "Yaqin vazifalar"}
+							</Text>
+						</View>
+
+						<View
+							style={[
+								styles.statCard,
+								{
+									padding: getResponsiveSize(16, 12, 10),
+									borderRadius: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							<View
+								style={[
+									styles.statIconCircle,
+									{
+										backgroundColor: "#E0F2F1",
+										width: getResponsiveSize(50, 40, 36),
+										height: getResponsiveSize(50, 40, 36),
+										borderRadius: getResponsiveSize(25, 20, 18),
+										marginBottom: getResponsiveSize(10, 8, 6),
+									},
+								]}>
+								<Ionicons
+									name='checkmark-circle-outline'
+									size={getResponsiveSize(24, 20, 18)}
+									color='#4169E1'
+								/>
+							</View>
+							<Text
+								style={[
+									styles.statValue,
+									{
+										fontSize: getResponsiveSize(24, 20, 18),
+										marginVertical: getResponsiveSize(4, 3, 2),
+									},
+								]}>
+								{stats.submissions}
+							</Text>
+							<Text
+								style={[
+									styles.statLabel,
+									{
+										fontSize: getResponsiveSize(12, 10, 9),
+									},
+								]}>
+								{isSmallScreen ? "Javoblar" : "Oxirgi javoblar"}
+							</Text>
 						</View>
 					</View>
 				)}
 
 				{/* Upcoming Tasks Section */}
-				<View style={styles.tasksSection}>
-					<Text style={styles.sectionTitle}>Yaqinlashgan Vazifalar</Text>
+				<View
+					style={[
+						styles.tasksSection,
+						{
+							padding: getResponsiveSize(20, 16, 12),
+							marginTop: getResponsiveSize(20, 16, 12),
+						},
+					]}>
+					<Text
+						style={[
+							styles.sectionTitle,
+							{
+								fontSize: getResponsiveSize(20, 18, 16),
+								marginBottom: getResponsiveSize(16, 12, 10),
+							},
+						]}>
+						Yaqinlashgan Vazifalar
+					</Text>
 
 					{upcomingTasks.length > 0 ? (
 						<FlatList
@@ -271,8 +536,21 @@ export default function TeacherDashboard() {
 							scrollEnabled={false}
 						/>
 					) : (
-						<View style={styles.noTasksContainer}>
-							<Text style={styles.noTasksText}>
+						<View
+							style={[
+								styles.noTasksContainer,
+								{
+									padding: getResponsiveSize(20, 16, 12),
+									borderRadius: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							<Text
+								style={[
+									styles.noTasksText,
+									{
+										fontSize: getResponsiveSize(16, 14, 12),
+									},
+								]}>
 								Yaqinlashgan vazifalar yo'q
 							</Text>
 						</View>
@@ -280,8 +558,24 @@ export default function TeacherDashboard() {
 				</View>
 
 				{/* Recent Submissions Section */}
-				<View style={styles.submissionsSection}>
-					<Text style={styles.sectionTitle}>Oxirgi javoblar</Text>
+				<View
+					style={[
+						styles.submissionsSection,
+						{
+							padding: getResponsiveSize(20, 16, 12),
+							paddingTop: 0,
+						},
+					]}>
+					<Text
+						style={[
+							styles.sectionTitle,
+							{
+								fontSize: getResponsiveSize(20, 18, 16),
+								marginBottom: getResponsiveSize(16, 12, 10),
+							},
+						]}>
+						Oxirgi javoblar
+					</Text>
 
 					{recentSubmissions.length > 0 ? (
 						<FlatList
@@ -291,8 +585,23 @@ export default function TeacherDashboard() {
 							scrollEnabled={false}
 						/>
 					) : (
-						<View style={styles.noSubmissionsContainer}>
-							<Text style={styles.noSubmissionsText}>Oxirgi javoblar yo'q</Text>
+						<View
+							style={[
+								styles.noSubmissionsContainer,
+								{
+									padding: getResponsiveSize(20, 16, 12),
+									borderRadius: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							<Text
+								style={[
+									styles.noSubmissionsText,
+									{
+										fontSize: getResponsiveSize(16, 14, 12),
+									},
+								]}>
+								Oxirgi javoblar yo'q
+							</Text>
 						</View>
 					)}
 				</View>

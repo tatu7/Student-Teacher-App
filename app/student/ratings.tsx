@@ -10,6 +10,7 @@ import {
 	Image,
 	RefreshControl,
 	Alert,
+	useWindowDimensions,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -41,6 +42,9 @@ type RatingTabState = {
 
 export default function RatingsScreen() {
 	const { user } = useAuth();
+	const { width } = useWindowDimensions();
+	const isSmallScreen = width < 375;
+
 	const [state, setState] = useState<RatingTabState>({
 		selectedGroup: null,
 		groups: [],
@@ -251,23 +255,51 @@ export default function RatingsScreen() {
 		const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
 		const rankColor = index < 3 ? rankColors[index] : "transparent";
 
+		const avatarSize = isSmallScreen ? 32 : 40;
+
 		return (
 			<View
 				style={[
 					styles.studentCard,
 					isCurrentUser && styles.currentUserCard,
 					{ borderLeftColor: rankColor, borderLeftWidth: index < 3 ? 5 : 0 },
+					isSmallScreen && styles.smallStudentCard,
 				]}>
 				<View style={styles.rankContainer}>
-					<Text style={styles.rankText}>{item.rank}</Text>
+					<Text
+						style={[styles.rankText, isSmallScreen && styles.smallRankText]}>
+						{item.rank}
+					</Text>
 				</View>
 
 				<View style={styles.avatarContainer}>
 					{item.avatar_url ? (
-						<Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+						<Image
+							source={{ uri: item.avatar_url }}
+							style={[
+								styles.avatar,
+								{
+									width: avatarSize,
+									height: avatarSize,
+									borderRadius: avatarSize / 2,
+								},
+							]}
+						/>
 					) : (
-						<View style={styles.avatarPlaceholder}>
-							<Text style={styles.avatarLetter}>
+						<View
+							style={[
+								styles.avatarPlaceholder,
+								{
+									width: avatarSize,
+									height: avatarSize,
+									borderRadius: avatarSize / 2,
+								},
+							]}>
+							<Text
+								style={[
+									styles.avatarLetter,
+									isSmallScreen && styles.smallAvatarLetter,
+								]}>
 								{item.name ? item.name.charAt(0).toUpperCase() : "?"}
 							</Text>
 						</View>
@@ -275,17 +307,35 @@ export default function RatingsScreen() {
 				</View>
 
 				<View style={styles.infoContainer}>
-					<Text style={styles.studentName} numberOfLines={1}>
+					<Text
+						style={[
+							styles.studentName,
+							isSmallScreen && styles.smallStudentName,
+						]}
+						numberOfLines={1}>
 						{item.name} {isCurrentUser && "(Siz)"}
 					</Text>
-					<Text style={styles.completedText}>
+					<Text
+						style={[
+							styles.completedText,
+							isSmallScreen && styles.smallCompletedText,
+						]}>
 						{item.completed_tasks} topshiriq bajarilgan
 					</Text>
 				</View>
 
 				<View style={styles.scoreContainer}>
-					<Text style={styles.scoreText}>{Math.round(item.average_score)}</Text>
-					<Text style={styles.scoreLabel}>Ball</Text>
+					<Text
+						style={[styles.scoreText, isSmallScreen && styles.smallScoreText]}>
+						{Math.round(item.average_score)}
+					</Text>
+					<Text
+						style={[
+							styles.scoreLabel,
+							isSmallScreen && styles.smallScoreLabel,
+						]}>
+						Ball
+					</Text>
 				</View>
 			</View>
 		);
@@ -303,6 +353,7 @@ export default function RatingsScreen() {
 							style={[
 								styles.groupTab,
 								state.selectedGroup === item.id && styles.selectedGroupTab,
+								isSmallScreen && styles.smallGroupTab,
 							]}
 							onPress={() =>
 								setState((prev) => ({ ...prev, selectedGroup: item.id }))
@@ -312,6 +363,7 @@ export default function RatingsScreen() {
 									styles.groupTabText,
 									state.selectedGroup === item.id &&
 										styles.selectedGroupTabText,
+									isSmallScreen && styles.smallGroupTabText,
 								]}>
 								{item.name}
 							</Text>
@@ -326,9 +378,20 @@ export default function RatingsScreen() {
 
 	const renderEmptyList = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='trophy-outline' size={80} color='#D0D7F0' />
-			<Text style={styles.emptyTitle}>Hech qanday reytinglar topilmadi</Text>
-			<Text style={styles.emptySubtitle}>
+			<Ionicons
+				name='trophy-outline'
+				size={isSmallScreen ? 60 : 80}
+				color='#D0D7F0'
+			/>
+			<Text
+				style={[styles.emptyTitle, isSmallScreen && styles.smallEmptyTitle]}>
+				Hech qanday reytinglar topilmadi
+			</Text>
+			<Text
+				style={[
+					styles.emptySubtitle,
+					isSmallScreen && styles.smallEmptySubtitle,
+				]}>
 				Bu guruhda hali hech qanday baholar qo'yilmagan
 			</Text>
 		</View>
@@ -337,7 +400,13 @@ export default function RatingsScreen() {
 	return (
 		<SafeAreaView style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Reyting</Text>
+				<Text
+					style={[
+						styles.headerTitle,
+						isSmallScreen && styles.smallHeaderTitle,
+					]}>
+					Reyting
+				</Text>
 			</View>
 
 			{state.groups.length > 0 && renderGroupTabs()}
@@ -351,7 +420,10 @@ export default function RatingsScreen() {
 					data={state.students}
 					renderItem={renderStudentItem}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={styles.listContainer}
+					contentContainerStyle={[
+						styles.listContainer,
+						isSmallScreen && styles.smallListContainer,
+					]}
 					ListEmptyComponent={renderEmptyList}
 					refreshControl={
 						<RefreshControl
@@ -381,6 +453,9 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "white",
 	},
+	smallHeaderTitle: {
+		fontSize: 20,
+	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -406,6 +481,11 @@ const styles = StyleSheet.create({
 		marginRight: 10,
 		backgroundColor: "#F0F2F5",
 	},
+	smallGroupTab: {
+		paddingVertical: 6,
+		paddingHorizontal: 12,
+		marginRight: 8,
+	},
 	selectedGroupTab: {
 		backgroundColor: "#EEF2FF",
 		borderColor: "#4169E1",
@@ -416,6 +496,9 @@ const styles = StyleSheet.create({
 		fontWeight: "500",
 		color: "#555",
 	},
+	smallGroupTabText: {
+		fontSize: 12,
+	},
 	selectedGroupTabText: {
 		color: "#4169E1",
 		fontWeight: "600",
@@ -423,6 +506,10 @@ const styles = StyleSheet.create({
 	listContainer: {
 		padding: 16,
 		paddingBottom: 40,
+	},
+	smallListContainer: {
+		padding: 12,
+		paddingBottom: 30,
 	},
 	studentCard: {
 		flexDirection: "row",
@@ -436,6 +523,11 @@ const styles = StyleSheet.create({
 		shadowRadius: 2,
 		elevation: 1,
 		alignItems: "center",
+	},
+	smallStudentCard: {
+		padding: 8,
+		marginBottom: 8,
+		borderRadius: 10,
 	},
 	currentUserCard: {
 		backgroundColor: "#EEF2FF",
@@ -451,6 +543,9 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontWeight: "bold",
 		color: "#333",
+	},
+	smallRankText: {
+		fontSize: 14,
 	},
 	avatarContainer: {
 		marginRight: 12,
@@ -473,6 +568,9 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "white",
 	},
+	smallAvatarLetter: {
+		fontSize: 16,
+	},
 	infoContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -483,9 +581,16 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginBottom: 2,
 	},
+	smallStudentName: {
+		fontSize: 14,
+		marginBottom: 1,
+	},
 	completedText: {
 		fontSize: 13,
 		color: "#666",
+	},
+	smallCompletedText: {
+		fontSize: 11,
 	},
 	scoreContainer: {
 		alignItems: "center",
@@ -496,9 +601,15 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#4169E1",
 	},
+	smallScoreText: {
+		fontSize: 16,
+	},
 	scoreLabel: {
 		fontSize: 12,
 		color: "#666",
+	},
+	smallScoreLabel: {
+		fontSize: 10,
 	},
 	emptyContainer: {
 		alignItems: "center",
@@ -513,10 +624,19 @@ const styles = StyleSheet.create({
 		marginTop: 16,
 		marginBottom: 8,
 	},
+	smallEmptyTitle: {
+		fontSize: 18,
+		marginTop: 12,
+		marginBottom: 6,
+	},
 	emptySubtitle: {
 		fontSize: 16,
 		color: "#666",
 		textAlign: "center",
 		lineHeight: 22,
+	},
+	smallEmptySubtitle: {
+		fontSize: 14,
+		lineHeight: 20,
 	},
 });
