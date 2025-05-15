@@ -97,6 +97,7 @@ export default function StudentGroupsScreen() {
 
 			if (!data || data.length === 0) {
 				setGroups([]);
+				setTasks({}); // Reset tasks when no groups
 				setLoading(false);
 				return;
 			}
@@ -139,8 +140,12 @@ export default function StudentGroupsScreen() {
 			// Fetch task counts for each group
 			const groupIds = groupsWithTeachers.map((group) => group.id);
 
+			// Initialize tasksByGroup object
+			let tasksByGroup: { [groupId: string]: Task[] } = {};
+
 			// Get tasks for all these groups
 			if (groupIds.length > 0) {
+				// Fetch all tasks for these groups
 				const { data: tasksData, error: tasksError } = await supabase
 					.from("tasks")
 					.select("id, group_id, title, description, due_date, has_files")
@@ -148,7 +153,7 @@ export default function StudentGroupsScreen() {
 
 				if (tasksError) {
 					console.error("Error fetching tasks:", tasksError);
-				} else if (tasksData) {
+				} else if (tasksData && tasksData.length > 0) {
 					// Get submissions for this student
 					const { data: submissionsData, error: submissionsError } =
 						await supabase
@@ -158,56 +163,71 @@ export default function StudentGroupsScreen() {
 
 					if (submissionsError) {
 						console.error("Error fetching submissions:", submissionsError);
-					} else {
-						// Calculate task stats for each group
-						const groupsWithTaskStats = groupsWithTeachers.map((group) => {
-							// Get tasks for this group
-							const groupTasks = tasksData.filter(
-								(task) => task.group_id === group.id
-							);
-
-							// Check which tasks have submissions
-							const completedTaskIds = submissionsData
-								? submissionsData.map((sub) => sub.task_id)
-								: [];
-
-							const completedTasks = groupTasks.filter((task) =>
-								completedTaskIds.includes(task.id)
-							).length;
-
-							const pendingTasks = groupTasks.length - completedTasks;
-
-							return {
-								...group,
-								pending_tasks: pendingTasks,
-								completed_tasks: completedTasks,
-							};
-						});
-
-						setGroups(groupsWithTaskStats);
-
-						// Organize tasks by group_id and mark completed ones
-						const tasksByGroup: { [groupId: string]: Task[] } = {};
-						groupIds.forEach((groupId) => {
-							const groupTasks = tasksData
-								.filter((task) => task.group_id === groupId)
-								.map((task) => ({
-									id: task.id,
-									title: task.title,
-									due_date: task.due_date,
-									description: task.description,
-									has_files: task.has_files,
-									completed: submissionsData
-										? submissionsData.some((sub) => sub.task_id === task.id)
-										: false,
-								}));
-							tasksByGroup[groupId] = groupTasks;
-						});
-						setTasks(tasksByGroup);
 					}
+
+					// Calculate task stats for each group
+					const groupsWithTaskStats = groupsWithTeachers.map((group) => {
+						// Get tasks for this group
+						const groupTasks = tasksData.filter(
+							(task) => task.group_id === group.id
+						);
+
+						// Check which tasks have submissions
+						const completedTaskIds = submissionsData
+							? submissionsData.map((sub) => sub.task_id)
+							: [];
+
+						const completedTasks = groupTasks.filter((task) =>
+							completedTaskIds.includes(task.id)
+						).length;
+
+						const pendingTasks = groupTasks.length - completedTasks;
+
+						return {
+							...group,
+							pending_tasks: pendingTasks,
+							completed_tasks: completedTasks,
+						};
+					});
+
+					// Set groups with task stats
+					setGroups(groupsWithTaskStats);
+
+					// Process tasks for each group
+					for (const groupId of groupIds) {
+						const groupTasks = tasksData
+							.filter((task) => task.group_id === groupId)
+							.map((task) => ({
+								id: task.id,
+								title: task.title,
+								due_date: task.due_date,
+								description: task.description,
+								has_files: task.has_files,
+								completed: submissionsData
+									? submissionsData.some((sub) => sub.task_id === task.id)
+									: false,
+							}));
+
+						// Store tasks for this group
+						tasksByGroup[groupId] = groupTasks;
+					}
+
+					// Update tasks state with all groups' tasks
+					setTasks(tasksByGroup);
+				} else {
+					// No tasks found, set empty tasks object
+					const emptyTasks = groupIds.reduce((acc, groupId) => {
+						acc[groupId] = [];
+						return acc;
+					}, {} as { [groupId: string]: Task[] });
+
+					setTasks(emptyTasks);
+					setGroups(groupsWithTeachers);
 				}
 			} else {
+				// No groups found
 				setGroups(groupsWithTeachers);
+				setTasks({});
 			}
 		} catch (error) {
 			console.error("Error fetching groups:", error);
