@@ -12,7 +12,7 @@ import {
 	Modal,
 	TextInput,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
@@ -286,7 +286,11 @@ export default function SubmissionsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<StatusBar barStyle='light-content' />
+			<Stack.Screen
+				options={{
+					headerShown: false,
+				}}
+			/>
 
 			<View style={styles.header}>
 				<Text style={styles.headerTitle}>Javoblar</Text>

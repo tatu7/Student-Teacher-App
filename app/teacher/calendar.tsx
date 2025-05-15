@@ -280,30 +280,6 @@ export default function CalendarScreen() {
 		);
 	};
 
-	// Render a task item
-	const renderTaskItem = ({ item }: { item: Task }) => (
-		<TouchableOpacity
-			style={styles.taskItem}
-			onPress={() => router.push(`/teacher/tasks/${item.id}`)}>
-			<View style={styles.taskHeader}>
-				<Text style={styles.taskTitle}>{item.title}</Text>
-				<Text style={styles.taskDueTime}>
-					{format(parseISO(item.due_date), "h:mm a")}
-				</Text>
-			</View>
-
-			<Text style={styles.taskGroup}>
-				Group: {item.group_name || "Unknown"}
-			</Text>
-
-			{item.description && (
-				<Text style={styles.taskDescription} numberOfLines={2}>
-					{item.description}
-				</Text>
-			)}
-		</TouchableOpacity>
-	);
-
 	// Render filter modal
 	const renderFilterModal = () => (
 		<Modal

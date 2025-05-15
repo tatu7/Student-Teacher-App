@@ -966,8 +966,8 @@ const styles = StyleSheet.create({
 		color: "white",
 	},
 	headerButton: {
-		width: 40,
-		height: 40,
+		width: 30,
+		height: 30,
 		justifyContent: "center",
 		alignItems: "center",
 		borderRadius: 20,
