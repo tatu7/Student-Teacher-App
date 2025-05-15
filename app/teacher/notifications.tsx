@@ -38,24 +38,24 @@ export default function NotificationsScreen() {
 						<MaterialIcons
 							name='assignment-turned-in'
 							size={24}
-							color='#3f51b5'
+							color='#4169E1'
 						/>
 					);
 				case "group_update":
-					return <Ionicons name='people' size={24} color='#3f51b5' />;
+					return <Ionicons name='people' size={24} color='#4169E1' />;
 				default:
-					return <Ionicons name='notifications' size={24} color='#3f51b5' />;
+					return <Ionicons name='notifications' size={24} color='#4169E1' />;
 			}
 		};
 
 		const getTitle = () => {
 			switch (item.type) {
 				case "submission_received":
-					return "New Submission";
+					return "Yangi Topshiriq";
 				case "group_update":
-					return "Group Update";
+					return "Guruh Yangilanishi";
 				default:
-					return "Notification";
+					return "Xabarnoma";
 			}
 		};
 
@@ -73,7 +73,7 @@ export default function NotificationsScreen() {
 			<TouchableOpacity
 				style={[
 					styles.notificationItem,
-					{ backgroundColor: item.is_read ? "white" : "#EEF1FF" },
+					{ backgroundColor: item.is_read ? "white" : "#EEF6FF" },
 				]}
 				onPress={() => markAsRead(item.id)}>
 				<View style={styles.iconContainer}>
@@ -88,7 +88,7 @@ export default function NotificationsScreen() {
 					</View>
 
 					<Text style={styles.messageText}>
-						{item.data?.message || "You have a new notification"}
+						{item.data?.message || "Sizda yangi xabarnoma mavjud"}
 					</Text>
 				</View>
 			</TouchableOpacity>
@@ -97,10 +97,10 @@ export default function NotificationsScreen() {
 
 	const renderEmptyComponent = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons name='notifications-outline' size={80} color='#ccc' />
-			<Text style={styles.emptyTitle}>No notifications yet</Text>
+			<Ionicons name='notifications-outline' size={80} color='#D0D7F0' />
+			<Text style={styles.emptyTitle}>Xabarnomalar yo'q</Text>
 			<Text style={styles.emptySubtitle}>
-				You'll see notifications about submissions and groups here
+				Bu yerda topshiriqlar va guruhlar haqidagi xabarlarni ko'rasiz
 			</Text>
 		</View>
 	);
@@ -108,7 +108,7 @@ export default function NotificationsScreen() {
 	return (
 		<SafeAreaView style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Notifications</Text>
+				<Text style={styles.headerTitle}>Xabarnomalar</Text>
 			</View>
 
 			{unreadCount > 0 && (
@@ -119,7 +119,9 @@ export default function NotificationsScreen() {
 							.filter((n) => !n.is_read)
 							.forEach((n) => markAsRead(n.id));
 					}}>
-					<Text style={styles.markAllReadText}>Mark all as read</Text>
+					<Text style={styles.markAllReadText}>
+						Barchasini o'qilgan deb belgilash
+					</Text>
 				</TouchableOpacity>
 			)}
 
@@ -136,7 +138,7 @@ export default function NotificationsScreen() {
 
 			{loading && notifications.length === 0 && (
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			)}
 		</SafeAreaView>
@@ -146,56 +148,54 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
 	},
 	header: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		backgroundColor: "white",
-		borderBottomWidth: 1,
-		borderBottomColor: "#e0e0e0",
+		backgroundColor: "#4169E1",
+		paddingTop: 50,
+		paddingBottom: 20,
+		paddingHorizontal: 20,
 	},
 	headerTitle: {
-		fontSize: 20,
-		fontWeight: "700",
-		color: "#333",
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "white",
 	},
 	markAllReadButton: {
 		alignSelf: "flex-end",
-		paddingVertical: 8,
+		paddingVertical: 10,
 		paddingHorizontal: 16,
-		marginTop: 8,
+		marginTop: 16,
 		marginRight: 16,
+		backgroundColor: "#EEF6FF",
+		borderRadius: 8,
 	},
 	markAllReadText: {
-		color: "#3f51b5",
+		color: "#4169E1",
 		fontWeight: "600",
 		fontSize: 14,
 	},
 	listContainer: {
 		flexGrow: 1,
 		paddingHorizontal: 16,
-		paddingBottom: 20,
+		paddingVertical: 16,
 	},
 	notificationItem: {
 		flexDirection: "row",
 		padding: 16,
-		borderRadius: 12,
-		marginTop: 12,
+		borderRadius: 16,
+		marginBottom: 12,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.05,
-		shadowRadius: 2,
+		shadowRadius: 5,
 		elevation: 2,
 	},
 	iconContainer: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: "#EEF1FE",
+		width: 48,
+		height: 48,
+		borderRadius: 24,
+		backgroundColor: "#EEF6FF",
 		justifyContent: "center",
 		alignItems: "center",
 		marginRight: 16,
@@ -204,10 +204,10 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		right: 0,
 		top: 0,
-		width: 12,
-		height: 12,
-		borderRadius: 6,
-		backgroundColor: "#f44336",
+		width: 10,
+		height: 10,
+		borderRadius: 5,
+		backgroundColor: "#FF5252",
 		borderWidth: 2,
 		borderColor: "white",
 	},
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 4,
+		marginBottom: 6,
 	},
 	notificationTitle: {
 		fontSize: 16,
@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		paddingHorizontal: 40,
 		paddingBottom: 40,
+		marginTop: 60,
 	},
 	emptyTitle: {
 		fontSize: 18,

@@ -946,19 +946,19 @@ const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
 		backgroundColor: "#4285F4",
-		marginTop: 32,
 	},
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
 	},
 	header: {
+		display: "flex",
 		flexDirection: "row",
 		justifyContent: "space-between",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 16,
-		backgroundColor: "#4285F4",
+		backgroundColor: "#4169E1",
+		paddingTop: 50,
+		paddingBottom: 20,
+		paddingHorizontal: 20,
 	},
 	headerTitle: {
 		fontSize: 24,

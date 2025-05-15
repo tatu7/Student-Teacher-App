@@ -362,17 +362,16 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#F5F7FA",
-		marginTop: 30,
 	},
 	header: {
 		backgroundColor: "#4169E1",
-		paddingTop: 10,
-		paddingBottom: 15,
-		paddingHorizontal: 16,
+		paddingTop: 50,
+		paddingBottom: 20,
+		paddingHorizontal: 20,
 	},
 	headerTitle: {
 		color: "white",
-		fontSize: 20,
+		fontSize: 24,
 		fontWeight: "bold",
 	},
 	loaderContainer: {
