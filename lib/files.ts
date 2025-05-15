@@ -73,7 +73,7 @@ export const pickDocument = async (): Promise<FileInfo | null> => {
 };
 
 /**
- * Upload a file to Supabase Storage
+ * Upload a file to Supabase Storage for tasks
  */
 export const uploadTaskFile = async (
   taskId: string,
@@ -106,7 +106,47 @@ export const uploadTaskFile = async (
     // Return the path to the uploaded file
     return data?.Key || filePath;
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('Error uploading task file:', error);
+    throw error;
+  }
+};
+
+/**
+ * Upload a file to Supabase Storage for submissions
+ */
+export const uploadSubmissionFile = async (
+  submissionId: string,
+  file: FileInfo,
+): Promise<string> => {
+  try {
+    // Create a unique filename
+    const timestamp = new Date().getTime();
+    const fileExtension = file.extension || file.name.split('.').pop() || '';
+    const fileName = `submission_${submissionId}_${timestamp}.${fileExtension}`;
+    const filePath = `${submissionId}/${fileName}`;
+
+    // Read the file as base64
+    const base64Content = await FileSystem.readAsStringAsync(file.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    // Upload to Supabase
+    const { data, error } = await supabase.storage
+      .from('submission_files')
+      .upload(filePath, decode(base64Content), {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      throw error;
+    }
+
+    // Return the path to the uploaded file
+    return data?.Key || filePath;
+  } catch (error) {
+    console.error('Error uploading submission file:', error);
     throw error;
   }
 };

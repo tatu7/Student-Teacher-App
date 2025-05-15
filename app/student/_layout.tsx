@@ -108,9 +108,9 @@ export default function StudentLayout() {
 			<Tabs.Screen
 				name='tasks'
 				options={{
-					title: "Vazifalar",
+					title: "Baholar",
 					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='clipboard-outline' size={size} color={color} />
+						<Ionicons name='star-outline' size={size} color={color} />
 					),
 				}}
 			/>
@@ -120,6 +120,15 @@ export default function StudentLayout() {
 					title: "Kalendar",
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name='calendar-outline' size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name='profile'
+				options={{
+					title: "Profil",
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name='person-outline' size={size} color={color} />
 					),
 				}}
 			/>
@@ -142,15 +151,6 @@ export default function StudentLayout() {
 								</View>
 							)}
 						</View>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name='profile'
-				options={{
-					title: "Profil",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name='person-outline' size={size} color={color} />
 					),
 				}}
 			/>

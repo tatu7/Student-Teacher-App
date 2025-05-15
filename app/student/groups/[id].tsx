@@ -141,7 +141,7 @@ export default function GroupDetailsScreen() {
 
 	const navigateToTaskDetails = (taskId: string, taskTitle: string) => {
 		router.push({
-			pathname: "/student/tasks/" as any,
+			pathname: "/student/tasks/[id]",
 			params: { id: taskId, name: taskTitle, groupId: id, groupName: name },
 		});
 	};
