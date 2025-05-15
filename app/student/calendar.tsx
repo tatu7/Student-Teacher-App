@@ -223,44 +223,21 @@ export default function StudentCalendarScreen() {
 	// Render calendar day cell
 	const renderDay = (day: Date) => {
 		const isSelected = isSameDay(day, selectedDate);
-
-		// Filter tasks due on this day
 		const dayTasks = tasks.filter((task) => {
 			const taskDate = parseISO(task.due_date);
 			return isSameDay(taskDate, day);
 		});
 
-		// Calculate background color based on task statuses
-		let dotColor = "#2196F3"; // Default blue
-		let hasUncompletedTask = false;
-		let hasOverdueTask = false;
-
-		for (const task of dayTasks) {
-			if (task.status === "overdue") {
-				hasOverdueTask = true;
-				break;
-			} else if (task.status === "pending") {
-				hasUncompletedTask = true;
-			}
-		}
-
-		if (hasOverdueTask) {
-			dotColor = "#F44336"; // Red for overdue
-		} else if (hasUncompletedTask) {
-			dotColor = "#FF9800"; // Orange for pending
-		} else if (dayTasks.length > 0) {
-			dotColor = "#4CAF50"; // Green for all completed
-		}
-
 		const hasTask = dayTasks.length > 0;
 
 		return (
 			<TouchableOpacity
-				key={day.toISOString()}
+				key={day.toString()}
 				style={[
 					styles.dayCell,
 					isToday(day) && styles.todayCell,
 					isSelected && styles.selectedDayCell,
+					hasTask && styles.hasTaskCell,
 				]}
 				onPress={() => handleDayPress(day)}>
 				<Text
@@ -268,72 +245,17 @@ export default function StudentCalendarScreen() {
 						styles.dayText,
 						isSelected && styles.selectedDayText,
 						isToday(day) && styles.todayText,
-						isBefore(day, new Date()) && !isToday(day) && styles.pastDayText,
 					]}>
 					{format(day, "d")}
 				</Text>
-
 				{hasTask && (
-					<View style={[styles.taskDot, { backgroundColor: dotColor }]}>
+					<View style={styles.taskDot}>
 						<Text style={styles.taskCount}>{dayTasks.length}</Text>
 					</View>
 				)}
 			</TouchableOpacity>
 		);
 	};
-
-	// Render a task item
-	const renderTaskItem = ({ item }: { item: Task }) => (
-		<TouchableOpacity
-			style={styles.taskItem}
-			// onPress={() => router.push(`/student/tasks/${item.id}`)}
-		>
-			<View
-				style={[
-					styles.taskStatusBar,
-					{ backgroundColor: getStatusColor(item.status, item.due_date) },
-				]}
-			/>
-
-			<View style={styles.taskContent}>
-				<View style={styles.taskHeader}>
-					<Text style={styles.taskTitle}>{item.title}</Text>
-					<Text
-						style={[
-							styles.taskDeadline,
-							{ color: getStatusColor(item.status, item.due_date) },
-						]}>
-						{getDeadlineText(item.due_date, item.status)}
-					</Text>
-				</View>
-
-				<Text style={styles.taskGroup}>{item.group_name}</Text>
-
-				<View style={styles.taskFooter}>
-					<Text style={styles.taskTime}>
-						{format(parseISO(item.due_date), "h:mm a")}
-					</Text>
-
-					<View
-						style={[
-							styles.statusBadge,
-							{
-								backgroundColor:
-									getStatusColor(item.status, item.due_date) + "20",
-							},
-						]}>
-						<Text
-							style={[
-								styles.statusText,
-								{ color: getStatusColor(item.status, item.due_date) },
-							]}>
-							{item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-						</Text>
-					</View>
-				</View>
-			</View>
-		</TouchableOpacity>
-	);
 
 	// Render weekday headers
 	const renderWeekdayHeaders = () => {
@@ -354,7 +276,7 @@ export default function StudentCalendarScreen() {
 			<SafeAreaView style={styles.container}>
 				<Stack.Screen options={{ title: "Calendar" }} />
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size='large' color='#3f51b5' />
+					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
 			</SafeAreaView>
 		);
@@ -364,6 +286,13 @@ export default function StudentCalendarScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
+			<Stack.Screen
+				options={{
+					headerShown: false,
+				}}
+			/>
+
+			{/* Header */}
 			<View style={styles.header}>
 				<Text style={styles.headerTitle}>Kalendar</Text>
 			</View>
@@ -372,7 +301,7 @@ export default function StudentCalendarScreen() {
 				{/* Month navigation */}
 				<View style={styles.monthNavigator}>
 					<TouchableOpacity onPress={handlePreviousMonth}>
-						<Ionicons name='chevron-back' size={24} color='#3f51b5' />
+						<Ionicons name='chevron-back' size={24} color='#4169E1' />
 					</TouchableOpacity>
 
 					<Text style={styles.monthTitle}>
@@ -380,39 +309,64 @@ export default function StudentCalendarScreen() {
 					</Text>
 
 					<TouchableOpacity onPress={handleNextMonth}>
-						<Ionicons name='chevron-forward' size={24} color='#3f51b5' />
+						<Ionicons name='chevron-forward' size={24} color='#4169E1' />
 					</TouchableOpacity>
 				</View>
 
 				{/* Weekday headers */}
-				{renderWeekdayHeaders()}
+				<View style={styles.weekdayHeader}>
+					<Text style={styles.weekdayText}>Sun</Text>
+					<Text style={styles.weekdayText}>Mon</Text>
+					<Text style={styles.weekdayText}>Tue</Text>
+					<Text style={styles.weekdayText}>Wed</Text>
+					<Text style={styles.weekdayText}>Thu</Text>
+					<Text style={styles.weekdayText}>Fri</Text>
+					<Text style={styles.weekdayText}>Sat</Text>
+				</View>
 
 				{/* Calendar grid */}
 				<View style={styles.calendarGrid}>
-					{calendarDays.map((day) => (
-						<React.Fragment key={day.toISOString()}>
-							{renderDay(day)}
-						</React.Fragment>
-					))}
+					{calendarDays.map((day) => renderDay(day))}
 				</View>
 			</View>
 
 			{/* Tasks for selected date */}
 			<View style={styles.selectedDateContainer}>
 				<Text style={styles.selectedDateTitle}>
-					Tasks for {format(selectedDate, "EEEE, MMMM d, yyyy")}
+					{format(selectedDate, "EEEE, d-MMMM, yyyy")} uchun vazifalar
 				</Text>
 
 				{tasksForSelectedDate.length > 0 ? (
 					<FlatList
 						data={tasksForSelectedDate}
-						renderItem={renderTaskItem}
+						renderItem={({ item }) => (
+							<View style={styles.taskItem}>
+								<View style={styles.taskIcon}>
+									<Ionicons
+										name='document-text-outline'
+										size={24}
+										color='#4169E1'
+									/>
+								</View>
+								<View style={styles.taskContent}>
+									<Text style={styles.taskTitle}>{item.title}</Text>
+									<Text style={styles.taskGroup}>
+										{item.group_name || "Guruh nomi"}
+									</Text>
+									{item.description && (
+										<Text style={styles.taskDescription} numberOfLines={1}>
+											{item.description}
+										</Text>
+									)}
+								</View>
+							</View>
+						)}
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={styles.tasksList}
 					/>
 				) : (
 					<View style={styles.noTasksContainer}>
-						<Text style={styles.noTasksText}>No tasks on this date</Text>
+						<Text style={styles.noTasksText}>Bu kunda vazifalar yo'q</Text>
 					</View>
 				)}
 			</View>
@@ -421,15 +375,15 @@ export default function StudentCalendarScreen() {
 			<View style={styles.legend}>
 				<View style={styles.legendItem}>
 					<View style={[styles.legendDot, { backgroundColor: "#4CAF50" }]} />
-					<Text style={styles.legendText}>Completed</Text>
+					<Text style={styles.legendText}>Bajarilgan</Text>
 				</View>
 				<View style={styles.legendItem}>
 					<View style={[styles.legendDot, { backgroundColor: "#FF9800" }]} />
-					<Text style={styles.legendText}>Pending</Text>
+					<Text style={styles.legendText}>Kutilmoqda</Text>
 				</View>
 				<View style={styles.legendItem}>
 					<View style={[styles.legendDot, { backgroundColor: "#F44336" }]} />
-					<Text style={styles.legendText}>Overdue</Text>
+					<Text style={styles.legendText}>Kechiktirilgan</Text>
 				</View>
 			</View>
 		</SafeAreaView>
@@ -439,7 +393,18 @@ export default function StudentCalendarScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f5f5f7",
+		backgroundColor: "#F5F7FA",
+	},
+	header: {
+		backgroundColor: "#4169E1",
+		paddingTop: 50,
+		paddingBottom: 20,
+		paddingHorizontal: 16,
+	},
+	headerTitle: {
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "white",
 	},
 	loadingContainer: {
 		flex: 1,
@@ -483,50 +448,53 @@ const styles = StyleSheet.create({
 	calendarGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		justifyContent: "flex-start",
+		justifyContent: "space-around",
 	},
 	dayCell: {
-		width: "14.28%",
+		width: 40,
 		height: 40,
 		justifyContent: "center",
 		alignItems: "center",
-		marginVertical: 2,
-		position: "relative",
+		marginVertical: 4,
+		borderRadius: 20,
 	},
 	dayText: {
 		fontSize: 14,
 		color: "#333",
 	},
-	pastDayText: {
-		color: "#aaa",
-	},
 	todayCell: {
-		backgroundColor: "#f0f0f0",
-		borderRadius: 20,
+		backgroundColor: "#EFF3FF",
 	},
 	todayText: {
 		fontWeight: "bold",
+		color: "#4169E1",
 	},
 	selectedDayCell: {
-		backgroundColor: "#3f51b5",
-		borderRadius: 20,
+		backgroundColor: "#4169E1",
 	},
 	selectedDayText: {
 		color: "white",
 		fontWeight: "bold",
 	},
+	hasTaskCell: {
+		position: "relative",
+	},
 	taskDot: {
 		position: "absolute",
-		bottom: 2,
+		top: -4,
+		right: -4,
+		backgroundColor: "#4169E1",
 		width: 16,
 		height: 16,
 		borderRadius: 8,
 		justifyContent: "center",
 		alignItems: "center",
+		borderWidth: 2,
+		borderColor: "white",
 	},
 	taskCount: {
 		color: "white",
-		fontSize: 10,
+		fontSize: 9,
 		fontWeight: "bold",
 	},
 	selectedDateContainer: {
@@ -534,79 +502,58 @@ const styles = StyleSheet.create({
 		marginHorizontal: 16,
 	},
 	selectedDateTitle: {
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: "600",
-		marginBottom: 12,
+		marginBottom: 16,
 		color: "#333",
 	},
 	tasksList: {
-		paddingBottom: 80,
+		paddingBottom: 20,
 	},
 	taskItem: {
 		flexDirection: "row",
 		backgroundColor: "white",
-		borderRadius: 8,
+		borderRadius: 12,
+		padding: 16,
 		marginBottom: 12,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.1,
 		shadowRadius: 2,
 		elevation: 2,
-		overflow: "hidden",
 	},
-	taskStatusBar: {
-		width: 5,
-		backgroundColor: "#2196F3",
+	taskIcon: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: "#EFF3FF",
+		justifyContent: "center",
+		alignItems: "center",
+		marginRight: 12,
 	},
 	taskContent: {
 		flex: 1,
-		padding: 16,
-	},
-	taskHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 6,
 	},
 	taskTitle: {
 		fontSize: 16,
-		fontWeight: "bold",
+		fontWeight: "600",
 		color: "#333",
-		flex: 1,
-		marginRight: 8,
-	},
-	taskDeadline: {
-		fontSize: 13,
-		fontWeight: "500",
+		marginBottom: 4,
 	},
 	taskGroup: {
 		fontSize: 14,
+		color: "#4169E1",
+		marginBottom: 4,
+	},
+	taskDescription: {
+		fontSize: 14,
 		color: "#666",
-		marginBottom: 10,
-	},
-	taskFooter: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-	},
-	taskTime: {
-		fontSize: 13,
-		color: "#666",
-	},
-	statusBadge: {
-		paddingVertical: 4,
-		paddingHorizontal: 8,
-		borderRadius: 4,
-	},
-	statusText: {
-		fontSize: 12,
-		fontWeight: "600",
 	},
 	noTasksContainer: {
-		flex: 1,
-		justifyContent: "center",
 		alignItems: "center",
 		paddingVertical: 30,
+		backgroundColor: "white",
+		borderRadius: 12,
 	},
 	noTasksText: {
 		fontSize: 16,
@@ -633,20 +580,5 @@ const styles = StyleSheet.create({
 	legendText: {
 		fontSize: 12,
 		color: "#666",
-	},
-	header: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		backgroundColor: "white",
-		borderBottomWidth: 1,
-		borderBottomColor: "#e0e0e0",
-	},
-	headerTitle: {
-		fontSize: 20,
-		fontWeight: "700",
-		color: "#333",
 	},
 });
