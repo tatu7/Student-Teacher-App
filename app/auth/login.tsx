@@ -11,10 +11,15 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
+	Dimensions,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import { UserRole } from "../../lib/supabase";
+
+const { width, height } = Dimensions.get("window");
+const isSmallDevice = width < 375;
 
 export default function LoginScreen() {
 	const [email, setEmail] = useState("");
@@ -22,7 +27,7 @@ export default function LoginScreen() {
 	const [loading, setLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 
-	const { signIn } = useAuth();
+	const { signIn, user } = useAuth();
 
 	const handleLogin = async () => {
 		// Input validation
@@ -47,6 +52,15 @@ export default function LoginScreen() {
 					"Login Failed",
 					error.message || "An error occurred during login"
 				);
+			} else {
+				// Get the current user role and navigate accordingly
+				if (user) {
+					if (user.role === UserRole.TEACHER) {
+						router.replace("/teacher/dashboard");
+					} else {
+						router.replace("/student/dashboard");
+					}
+				}
 			}
 		} catch (err) {
 			Alert.alert("Error", "An unexpected error occurred");
@@ -179,7 +193,7 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		padding: 20,
+		padding: width * 0.05,
 		justifyContent: "center",
 	},
 	contentContainer: {
@@ -188,8 +202,8 @@ const styles = StyleSheet.create({
 		alignSelf: "center",
 	},
 	welcomeTextContainer: {
-		marginBottom: 30,
-		marginTop: 20,
+		marginBottom: height * 0.035,
+		marginTop: height * 0.025,
 		alignItems: "center",
 	},
 	formContainer: {
@@ -197,27 +211,27 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	title: {
-		fontSize: 28,
+		fontSize: isSmallDevice ? 24 : 28,
 		fontWeight: "bold",
 		color: "#333",
-		marginBottom: 8,
+		marginBottom: height * 0.01,
 		textAlign: "center",
 	},
 	subtitle: {
-		fontSize: 18,
+		fontSize: isSmallDevice ? 16 : 18,
 		color: "#666",
-		marginBottom: 20,
+		marginBottom: height * 0.025,
 		textAlign: "center",
 	},
 	inputContainer: {
 		width: "100%",
-		marginBottom: 24,
+		marginBottom: height * 0.03,
 	},
 	inputLabel: {
-		fontSize: 16,
+		fontSize: isSmallDevice ? 14 : 16,
 		fontWeight: "500",
 		color: "#333",
-		marginBottom: 8,
+		marginBottom: height * 0.01,
 	},
 	inputWrapper: {
 		flexDirection: "row",
@@ -225,58 +239,58 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: "#ddd",
 		borderRadius: 8,
-		marginBottom: 16,
-		paddingHorizontal: 12,
+		marginBottom: height * 0.02,
+		paddingHorizontal: width * 0.03,
+		height: isSmallDevice ? 45 : 50,
 	},
 	inputIcon: {
-		marginRight: 10,
+		marginRight: width * 0.025,
 	},
 	eyeIcon: {
-		padding: 10,
+		padding: isSmallDevice ? 8 : 10,
 	},
 	input: {
 		flex: 1,
-		height: 50,
-		fontSize: 16,
+		height: "100%",
+		fontSize: isSmallDevice ? 14 : 16,
 	},
 	forgotPassword: {
 		alignSelf: "flex-end",
-		marginTop: 4,
-		marginBottom: 16,
+		marginTop: height * 0.005,
+		marginBottom: height * 0.02,
 	},
 	forgotPasswordText: {
 		color: "#3f51b5",
 		fontWeight: "500",
-		fontSize: 14,
+		fontSize: isSmallDevice ? 13 : 14,
 	},
 	button: {
 		backgroundColor: "#3f51b5",
-		height: 50,
+		height: isSmallDevice ? 45 : 50,
 		borderRadius: 8,
 		justifyContent: "center",
 		alignItems: "center",
-		marginBottom: 16,
+		marginBottom: height * 0.02,
 		width: "100%",
 	},
 	buttonText: {
 		color: "white",
 		fontWeight: "bold",
-		fontSize: 16,
+		fontSize: isSmallDevice ? 15 : 16,
 	},
 	footer: {
 		flexDirection: "row",
 		justifyContent: "center",
-		marginTop: 16,
+		marginTop: height * 0.02,
 		width: "100%",
 	},
 	footerText: {
 		color: "#666",
-		fontSize: 15,
+		fontSize: isSmallDevice ? 14 : 15,
 	},
 	link: {
 		color: "#3f51b5",
 		fontWeight: "bold",
-		fontSize: 15,
+		fontSize: isSmallDevice ? 14 : 15,
 	},
 });
- 

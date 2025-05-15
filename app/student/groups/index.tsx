@@ -59,6 +59,8 @@ export default function StudentGroupsScreen() {
 			if (!user) return;
 			setLoading(true);
 
+			console.log("Fetching groups for student:", user.id);
+
 			// Get groups where student is a member
 			const { data, error } = await supabase
 				.from("group_students")
@@ -75,6 +77,13 @@ export default function StudentGroupsScreen() {
 				`
 				)
 				.eq("student_id", user.id);
+
+			console.log(
+				"Group students data:",
+				data ? data.length : 0,
+				"Error:",
+				error
+			);
 
 			if (error) throw error;
 
@@ -271,12 +280,22 @@ export default function StudentGroupsScreen() {
 		const displayTasks = item.expanded ? groupTasks.slice(0, 3) : [];
 		const hasMoreTasks = groupTasks.length > 3;
 
+		console.log(
+			"Rendering group item:",
+			item.id,
+			item.name,
+			"Tasks:",
+			groupTasks.length
+		);
+
 		return (
 			<View style={styles.groupSection}>
 				<TouchableOpacity
 					style={styles.groupCard}
-					// onPress={() => navigateToGroupDetails(item.id, item.name)}
-				>
+					onPress={() => {
+						console.log("Group card pressed:", item.id, item.name);
+						navigateToGroupDetails(item.id, item.name);
+					}}>
 					<View style={styles.groupContent}>
 						<View style={styles.groupIconContainer}>
 							<Ionicons name='people' size={28} color='#4169E1' />
@@ -486,6 +505,7 @@ export default function StudentGroupsScreen() {
 					group_id: groupIdInput.trim(),
 					student_id: user?.id,
 					student_email: userEmail,
+					status: "active",
 				});
 
 			if (joinError) {

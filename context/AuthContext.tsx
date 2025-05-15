@@ -532,7 +532,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 			if (error) return { error };
 
-			// User role is fetched by the auth state change listener
+			if (authUser) {
+				// Fetch the user's role
+				const { data, error: profileError } = await supabase
+					.from("user_profiles")
+					.select("role")
+					.eq("id", authUser.id)
+					.single();
+
+				if (profileError) {
+					console.error("Error fetching user profile:", profileError);
+					return { error: profileError };
+				}
+
+				if (data) {
+					// Set user data with role
+					setUser({
+						id: authUser.id,
+						email: authUser.email || "",
+						role: data.role as UserRole,
+					});
+
+					// Navigate based on role
+					if (data.role === UserRole.TEACHER) {
+						router.replace("/teacher/dashboard");
+					} else {
+						router.replace("/student/dashboard");
+					}
+				}
+			}
+
 			return { error: null };
 		} catch (error) {
 			return { error };

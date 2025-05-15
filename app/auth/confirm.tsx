@@ -8,6 +8,9 @@ import {
 	Image,
 	SafeAreaView,
 	Alert,
+	Dimensions,
+	Platform,
+	ScrollView,
 } from "react-native";
 import { Stack, useLocalSearchParams, router } from "expo-router";
 import { supabase } from "../../lib/supabase";
@@ -18,8 +21,19 @@ export default function ConfirmEmailScreen() {
 	const [loading, setLoading] = useState(true);
 	const [message, setMessage] = useState("");
 	const [success, setSuccess] = useState(false);
+	const [screenWidth, setScreenWidth] = useState(
+		Dimensions.get("window").width
+	);
 	const params = useLocalSearchParams();
 	const { signIn } = useAuth();
+
+	// Listen for screen dimension changes
+	useEffect(() => {
+		const subscription = Dimensions.addEventListener("change", ({ window }) => {
+			setScreenWidth(window.width);
+		});
+		return () => subscription?.remove();
+	}, []);
 
 	// Set flag to prevent auto-navigation on mount
 	useEffect(() => {
@@ -213,39 +227,93 @@ export default function ConfirmEmailScreen() {
 		}
 	};
 
+	// Calculate responsive font and spacing values
+	const getResponsiveSize = (
+		baseSize: number,
+		minSize: number,
+		breakpoint: number = 380
+	): number => {
+		return screenWidth < breakpoint ? minSize : baseSize;
+	};
+
 	return (
 		<SafeAreaView style={styles.container}>
 			<Stack.Screen
 				options={{ title: "Email Confirmation", headerShown: true }}
 			/>
 
-			<View style={styles.content}>
-				<Image
-					source={require("../../assets/images/logo.png")}
-					style={styles.logo}
-					resizeMode='contain'
-				/>
+			<ScrollView
+				contentContainerStyle={styles.scrollContainer}
+				showsVerticalScrollIndicator={false}>
+				<View style={[styles.content, { padding: getResponsiveSize(24, 16) }]}>
+					<Image
+						source={require("../../assets/images/logo.png")}
+						style={[
+							styles.logo,
+							{
+								width: getResponsiveSize(120, 100),
+								height: getResponsiveSize(120, 100),
+								marginBottom: getResponsiveSize(24, 16),
+							},
+						]}
+						resizeMode='contain'
+					/>
 
-				<Text style={styles.title}>Email Confirmation</Text>
+					<Text
+						style={[
+							styles.title,
+							{
+								fontSize: getResponsiveSize(24, 20),
+								marginBottom: getResponsiveSize(24, 16),
+							},
+						]}>
+						Email Confirmation
+					</Text>
 
-				{loading ? (
-					<ActivityIndicator size='large' color='#3f51b5' />
-				) : (
-					<>
-						<View
-							style={[
-								styles.messageContainer,
-								success ? styles.successContainer : styles.errorContainer,
-							]}>
-							<Text style={styles.message}>{message}</Text>
-						</View>
+					{loading ? (
+						<ActivityIndicator
+							size={screenWidth < 380 ? "small" : "large"}
+							color='#3f51b5'
+						/>
+					) : (
+						<>
+							<View
+								style={[
+									styles.messageContainer,
+									success ? styles.successContainer : styles.errorContainer,
+									{ padding: getResponsiveSize(16, 12) },
+								]}>
+								<Text
+									style={[
+										styles.message,
+										{ fontSize: getResponsiveSize(16, 14) },
+									]}>
+									{message}
+								</Text>
+							</View>
 
-						<TouchableOpacity style={styles.button} onPress={goToLogin}>
-							<Text style={styles.buttonText}>Go to Login</Text>
-						</TouchableOpacity>
-					</>
-				)}
-			</View>
+							<TouchableOpacity
+								style={[
+									styles.button,
+									{
+										paddingVertical: getResponsiveSize(16, 14),
+										paddingHorizontal: getResponsiveSize(24, 16),
+										borderRadius: getResponsiveSize(12, 8),
+									},
+								]}
+								onPress={goToLogin}>
+								<Text
+									style={[
+										styles.buttonText,
+										{ fontSize: getResponsiveSize(16, 14) },
+									]}>
+									Go to Login
+								</Text>
+							</TouchableOpacity>
+						</>
+					)}
+				</View>
+			</ScrollView>
 		</SafeAreaView>
 	);
 }
@@ -254,6 +322,10 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f9f9f9",
+	},
+	scrollContainer: {
+		flexGrow: 1,
+		minHeight: Dimensions.get("window").height * 0.9,
 	},
 	content: {
 		flex: 1,
@@ -301,6 +373,17 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		width: "100%",
 		alignItems: "center",
+		...Platform.select({
+			ios: {
+				shadowColor: "rgba(0,0,0,0.2)",
+				shadowOffset: { height: 2, width: 0 },
+				shadowOpacity: 0.8,
+				shadowRadius: 2,
+			},
+			android: {
+				elevation: 3,
+			},
+		}),
 	},
 	buttonText: {
 		color: "white",

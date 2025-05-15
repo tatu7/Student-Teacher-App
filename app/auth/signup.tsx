@@ -11,6 +11,7 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
+	Dimensions,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -21,6 +22,9 @@ import {
 } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
+
+const { width, height } = Dimensions.get("window");
+const isSmallDevice = width < 375;
 
 export default function SignupScreen() {
 	const [name, setName] = useState("");
