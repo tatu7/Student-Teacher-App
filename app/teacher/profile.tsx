@@ -318,74 +318,78 @@ export default function ProfileScreen() {
 				<Text style={styles.headerTitle}>Profile</Text>
 			</View>
 
-			<View style={styles.profileCard}>
-				{renderProfileImage()}
-				<Text style={styles.profileName}>{profile?.name || "Karim"}</Text>
-				<Text style={styles.profileRole}>Teacher</Text>
-			</View>
+			<ScrollView
+				style={styles.scrollContainer}
+				showsVerticalScrollIndicator={false}>
+				<View style={styles.profileCard}>
+					{renderProfileImage()}
+					<Text style={styles.profileName}>{profile?.name || "Karim"}</Text>
+					<Text style={styles.profileRole}>Teacher</Text>
+				</View>
 
-			<View style={styles.infoSection}>
-				<Text style={styles.sectionTitle}>Shaxsiy ma'lumotlar</Text>
+				<View style={styles.infoSection}>
+					<Text style={styles.sectionTitle}>Shaxsiy ma'lumotlar</Text>
 
-				<View style={styles.infoRow}>
-					<Ionicons
-						name='person-outline'
-						size={24}
-						color='#777'
-						style={styles.infoIcon}
-					/>
-					<View style={styles.infoContent}>
-						<Text style={styles.infoLabel}>Ism va familya</Text>
-						<Text style={styles.infoValue}>{profile?.name || "Karim"}</Text>
+					<View style={styles.infoRow}>
+						<Ionicons
+							name='person-outline'
+							size={24}
+							color='#777'
+							style={styles.infoIcon}
+						/>
+						<View style={styles.infoContent}>
+							<Text style={styles.infoLabel}>Ism va familya</Text>
+							<Text style={styles.infoValue}>{profile?.name || "Karim"}</Text>
+						</View>
+					</View>
+
+					<View style={styles.divider} />
+
+					<View style={styles.infoRow}>
+						<Ionicons
+							name='mail-outline'
+							size={24}
+							color='#777'
+							style={styles.infoIcon}
+						/>
+						<View style={styles.infoContent}>
+							<Text style={styles.infoLabel}>Email</Text>
+							<Text style={styles.infoValue}>
+								{profile?.email || "karim@gmail.com"}
+							</Text>
+						</View>
+					</View>
+
+					<View style={styles.divider} />
+
+					<View style={styles.infoRow}>
+						<Ionicons
+							name='book-outline'
+							size={24}
+							color='#777'
+							style={styles.infoIcon}
+						/>
+						<View style={styles.infoContent}>
+							<Text style={styles.infoLabel}>Holati</Text>
+							<Text style={styles.infoValue}>Teacher</Text>
+						</View>
 					</View>
 				</View>
 
-				<View style={styles.divider} />
+				<View style={styles.actionSection}>
+					<Text style={styles.sectionTitle}>Ilova sozlamalari</Text>
 
-				<View style={styles.infoRow}>
-					<Ionicons
-						name='mail-outline'
-						size={24}
-						color='#777'
-						style={styles.infoIcon}
-					/>
-					<View style={styles.infoContent}>
-						<Text style={styles.infoLabel}>Email</Text>
-						<Text style={styles.infoValue}>
-							{profile?.email || "karim@gmail.com"}
-						</Text>
-					</View>
+					<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+						<Ionicons
+							name='log-out-outline'
+							size={24}
+							color='#F44336'
+							style={styles.logoutIcon}
+						/>
+						<Text style={styles.logoutText}>Chiqish</Text>
+					</TouchableOpacity>
 				</View>
-
-				<View style={styles.divider} />
-
-				<View style={styles.infoRow}>
-					<Ionicons
-						name='book-outline'
-						size={24}
-						color='#777'
-						style={styles.infoIcon}
-					/>
-					<View style={styles.infoContent}>
-						<Text style={styles.infoLabel}>Holati</Text>
-						<Text style={styles.infoValue}>Teacher</Text>
-					</View>
-				</View>
-			</View>
-
-			<View style={styles.actionSection}>
-				<Text style={styles.sectionTitle}>Ilova sozlamalari</Text>
-
-				<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-					<Ionicons
-						name='log-out-outline'
-						size={24}
-						color='#F44336'
-						style={styles.logoutIcon}
-					/>
-					<Text style={styles.logoutText}>Chiqish</Text>
-				</TouchableOpacity>
-			</View>
+			</ScrollView>
 		</SafeAreaView>
 	);
 }
@@ -394,6 +398,9 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f5f5f7",
+	},
+	scrollContainer: {
+		flex: 1,
 	},
 	loaderContainer: {
 		flex: 1,
