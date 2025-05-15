@@ -33,7 +33,10 @@ export default function StudentLayout() {
 					setCurrentTitle("My Groups");
 					break;
 				case "tasks":
-					setCurrentTitle("Tasks");
+					setCurrentTitle("Vazifalar");
+					break;
+				case "grades":
+					setCurrentTitle("Baholar");
 					break;
 				case "calendar":
 					setCurrentTitle("Calendar");
@@ -105,8 +108,9 @@ export default function StudentLayout() {
 					),
 				}}
 			/>
+
 			<Tabs.Screen
-				name='tasks'
+				name='grades'
 				options={{
 					title: "Baholar",
 					tabBarIcon: ({ color, size }) => (
@@ -152,6 +156,12 @@ export default function StudentLayout() {
 							)}
 						</View>
 					),
+				}}
+			/>
+			<Tabs.Screen
+				name='tasks'
+				options={{
+					href: null,
 				}}
 			/>
 		</Tabs>
