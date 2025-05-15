@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Student Teacher",
+    "name": "Solo Study",
     "slug": "student-teacher-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "studentteacher",
+    "scheme": "StudentTeacher",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -46,8 +46,7 @@
           "sounds": [],
           "mode": "production"
         }
-      ],
-      "expo-secure-store"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
