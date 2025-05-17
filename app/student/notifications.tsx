@@ -138,11 +138,6 @@ export default function NotificationsScreen() {
 
 	const renderEmptyComponent = () => (
 		<View style={styles.emptyContainer}>
-			<Image
-				source={require("../../assets/empty-notification.png")}
-				style={[styles.emptyImage, isSmallScreen && styles.smallEmptyImage]}
-				onError={() => {}}
-			/>
 			<Text
 				style={[styles.emptyTitle, isSmallScreen && styles.smallEmptyTitle]}>
 				Hozircha xabarlar yo'q
@@ -358,7 +353,7 @@ const styles = StyleSheet.create({
 	emptyTitle: {
 		fontSize: 20,
 		fontWeight: "bold",
-		color: "#333",
+		color: "#fff",
 		marginBottom: 8,
 	},
 	smallEmptyTitle: {
@@ -367,7 +362,7 @@ const styles = StyleSheet.create({
 	},
 	emptySubtitle: {
 		fontSize: 16,
-		color: "#666",
+		color: "#fff",
 		textAlign: "center",
 		lineHeight: 22,
 	},

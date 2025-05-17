@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
 	emptyText: {
 		fontSize: 18,
 		fontWeight: "bold",
-		color: "#333",
+		color: "blue",
 		marginTop: 16,
 	},
 	smallEmptyText: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
 	},
 	emptySubtext: {
 		fontSize: 14,
-		color: "#666",
+		color: "blue",
 		textAlign: "center",
 		marginTop: 8,
 	},
