@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { icons } from "../constants/icons";
+import CustomBackground from "@/components/CustomBackground";
 
 const { width, height } = Dimensions.get("window");
 const isSmallDevice = width < 375;
@@ -23,45 +25,44 @@ export default function OnboardingScreen() {
 			<ScrollView
 				contentContainerStyle={styles.scrollContent}
 				showsVerticalScrollIndicator={false}>
-				<View style={styles.content}>
-					<View style={styles.logoContainer}>
-						<Ionicons
-							name='book'
-							size={isSmallDevice ? 48 : 64}
-							color='#4169e1'
-						/>
-						<Text style={styles.appName}>Solo Study</Text>
+				<CustomBackground image={icons.bg3}>
+					<View style={styles.cardContainer}>
+						<View style={styles.card}>
+							<View style={styles.logoContainer}>
+								<Ionicons
+									name='book'
+									size={isSmallDevice ? 48 : 64}
+									color='#4169e1'
+								/>
+								<Text style={styles.appName}>Solo Study</Text>
+							</View>
+
+							<View style={styles.textContainer}>
+								<Text style={styles.headerText}>
+									O'rganing, O'rgating, Rivojlaning
+								</Text>
+
+								<Text style={styles.descriptionText}>
+									Ta'lim vazifalarini boshqarish va o'quvchi rivojini
+									kuzatishning samarali usuli
+								</Text>
+							</View>
+
+							<View style={styles.buttonContainer}>
+								<TouchableOpacity
+									style={styles.primaryButton}
+									onPress={() => router.push("/auth/login")}>
+									<Text style={styles.primaryButtonText}>Boshladik</Text>
+								</TouchableOpacity>
+							</View>
+
+							<Text style={styles.footerText}>
+								Samarali ta'lim uchun o'quvchilar va o'qituvchilarni
+								birlashtiramiz
+							</Text>
+						</View>
 					</View>
-
-					<View style={styles.textContainer}>
-						<Text style={styles.headerText}>
-							O'rganing, O'rgating, Rivojlaning
-						</Text>
-
-						<Text style={styles.descriptionText}>
-							Ta'lim vazifalarini boshqarish va o'quvchi rivojini kuzatishning
-							samarali usuli
-						</Text>
-					</View>
-
-					<View style={styles.buttonContainer}>
-						<TouchableOpacity
-							style={styles.primaryButton}
-							onPress={() => router.push("/auth/login")}>
-							<Text style={styles.primaryButtonText}>Boshladik</Text>
-						</TouchableOpacity>
-
-						<TouchableOpacity
-							style={styles.secondaryButton}
-							onPress={() => router.push("/auth/signup")}>
-							<Text style={styles.secondaryButtonText}>Ro'yxatdan o'tish</Text>
-						</TouchableOpacity>
-					</View>
-
-					<Text style={styles.footerText}>
-						Samarali ta'lim uchun o'quvchilar va o'qituvchilarni birlashtiramiz
-					</Text>
-				</View>
+				</CustomBackground>
 			</ScrollView>
 		</SafeAreaView>
 	);
@@ -75,13 +76,28 @@ const styles = StyleSheet.create({
 	scrollContent: {
 		flexGrow: 1,
 	},
-	content: {
+	cardContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		paddingHorizontal: width * 0.06, // Responsive padding
+		paddingHorizontal: width * 0.06,
 		paddingVertical: height * 0.04,
-		minHeight: height * 0.9, // Ensure content takes most of the screen height
+		minHeight: height * 0.9,
+	},
+	card: {
+		backgroundColor: "rgba(255, 255, 255, 0.95)",
+		borderRadius: 20,
+		padding: width * 0.06,
+		width: "100%",
+		maxWidth: 500,
+		shadowColor: "#000",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 5,
 	},
 	logoContainer: {
 		alignItems: "center",
@@ -118,9 +134,17 @@ const styles = StyleSheet.create({
 	primaryButton: {
 		backgroundColor: "#4169e1",
 		paddingVertical: height * 0.02,
-		borderRadius: 8,
+		borderRadius: 12,
 		alignItems: "center",
 		marginBottom: height * 0.02,
+		shadowColor: "#4169e1",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 3,
 	},
 	primaryButtonText: {
 		color: "white",
@@ -130,7 +154,7 @@ const styles = StyleSheet.create({
 	secondaryButton: {
 		backgroundColor: "white",
 		paddingVertical: height * 0.02,
-		borderRadius: 8,
+		borderRadius: 12,
 		alignItems: "center",
 		borderWidth: 1,
 		borderColor: "#4169e1",
@@ -144,6 +168,6 @@ const styles = StyleSheet.create({
 		fontSize: isSmallDevice ? 12 : 14,
 		color: "#888",
 		textAlign: "center",
-		paddingHorizontal: width * 0.08,
+		paddingHorizontal: width * 0.04,
 	},
 });

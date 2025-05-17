@@ -19,6 +19,8 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types for profile data
 type Profile = {
@@ -360,164 +362,168 @@ export default function StudentProfileScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text
-					style={[
-						styles.headerTitle,
-						isSmallScreen && styles.smallHeaderTitle,
-					]}>
-					Profil
-				</Text>
-			</View>
-
-			<ScrollView
-				style={styles.scrollContainer}
-				showsVerticalScrollIndicator={false}>
-				<View
-					style={[
-						styles.profileCard,
-						isSmallScreen && styles.smallProfileCard,
-					]}>
-					{renderProfileImage()}
+			<CustomBackground image={icons.bg6} overlayColor='rgba(0,0,0,0.4)'>
+				<View style={styles.header}>
 					<Text
 						style={[
-							styles.profileName,
-							isSmallScreen && styles.smallProfileName,
+							styles.headerTitle,
+							isSmallScreen && styles.smallHeaderTitle,
 						]}>
-						{profile?.name || "O'quvchi"}
-					</Text>
-					<Text
-						style={[
-							styles.profileRole,
-							isSmallScreen && styles.smallProfileRole,
-						]}>
-						Student
+						Profil
 					</Text>
 				</View>
 
-				<View
-					style={[
-						styles.infoSection,
-						isSmallScreen && styles.smallInfoSection,
-					]}>
-					<Text
+				<ScrollView
+					style={styles.scrollContainer}
+					showsVerticalScrollIndicator={false}>
+					<View
 						style={[
-							styles.sectionTitle,
-							isSmallScreen && styles.smallSectionTitle,
+							styles.profileCard,
+							isSmallScreen && styles.smallProfileCard,
 						]}>
-						Shaxsiy ma'lumotlar
-					</Text>
-
-					<View style={styles.infoRow}>
-						<Ionicons
-							name='person-outline'
-							size={isSmallScreen ? 20 : 24}
-							color='#777'
-							style={styles.infoIcon}
-						/>
-						<View style={styles.infoContent}>
-							<Text
-								style={[
-									styles.infoLabel,
-									isSmallScreen && styles.smallInfoLabel,
-								]}>
-								Ism va familya
-							</Text>
-							<Text
-								style={[
-									styles.infoValue,
-									isSmallScreen && styles.smallInfoValue,
-								]}>
-								{profile?.name || "O'quvchi"}
-							</Text>
-						</View>
-					</View>
-
-					<View style={styles.divider} />
-
-					<View style={styles.infoRow}>
-						<Ionicons
-							name='mail-outline'
-							size={isSmallScreen ? 20 : 24}
-							color='#777'
-							style={styles.infoIcon}
-						/>
-						<View style={styles.infoContent}>
-							<Text
-								style={[
-									styles.infoLabel,
-									isSmallScreen && styles.smallInfoLabel,
-								]}>
-								Email
-							</Text>
-							<Text
-								style={[
-									styles.infoValue,
-									isSmallScreen && styles.smallInfoValue,
-								]}>
-								{profile?.email || "student@gmail.com"}
-							</Text>
-						</View>
-					</View>
-
-					<View style={styles.divider} />
-
-					<View style={styles.infoRow}>
-						<Ionicons
-							name='book-outline'
-							size={isSmallScreen ? 20 : 24}
-							color='#777'
-							style={styles.infoIcon}
-						/>
-						<View style={styles.infoContent}>
-							<Text
-								style={[
-									styles.infoLabel,
-									isSmallScreen && styles.smallInfoLabel,
-								]}>
-								Holati
-							</Text>
-							<Text
-								style={[
-									styles.infoValue,
-									isSmallScreen && styles.smallInfoValue,
-								]}>
-								Student
-							</Text>
-						</View>
-					</View>
-				</View>
-
-				<View
-					style={[
-						styles.actionSection,
-						isSmallScreen && styles.smallActionSection,
-					]}>
-					<Text
-						style={[
-							styles.sectionTitle,
-							isSmallScreen && styles.smallSectionTitle,
-						]}>
-						Ilova sozlamalari
-					</Text>
-
-					<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-						<Ionicons
-							name='log-out-outline'
-							size={isSmallScreen ? 20 : 24}
-							color='#F44336'
-							style={styles.logoutIcon}
-						/>
+						{renderProfileImage()}
 						<Text
 							style={[
-								styles.logoutText,
-								isSmallScreen && styles.smallLogoutText,
+								styles.profileName,
+								isSmallScreen && styles.smallProfileName,
 							]}>
-							Chiqish
+							{profile?.name || "O'quvchi"}
 						</Text>
-					</TouchableOpacity>
-				</View>
-			</ScrollView>
+						<Text
+							style={[
+								styles.profileRole,
+								isSmallScreen && styles.smallProfileRole,
+							]}>
+							Student
+						</Text>
+					</View>
+
+					<View
+						style={[
+							styles.infoSection,
+							isSmallScreen && styles.smallInfoSection,
+						]}>
+						<Text
+							style={[
+								styles.sectionTitle,
+								isSmallScreen && styles.smallSectionTitle,
+							]}>
+							Shaxsiy ma'lumotlar
+						</Text>
+
+						<View style={styles.infoRow}>
+							<Ionicons
+								name='person-outline'
+								size={isSmallScreen ? 20 : 24}
+								color='#777'
+								style={styles.infoIcon}
+							/>
+							<View style={styles.infoContent}>
+								<Text
+									style={[
+										styles.infoLabel,
+										isSmallScreen && styles.smallInfoLabel,
+									]}>
+									Ism va familya
+								</Text>
+								<Text
+									style={[
+										styles.infoValue,
+										isSmallScreen && styles.smallInfoValue,
+									]}>
+									{profile?.name || "O'quvchi"}
+								</Text>
+							</View>
+						</View>
+
+						<View style={styles.divider} />
+
+						<View style={styles.infoRow}>
+							<Ionicons
+								name='mail-outline'
+								size={isSmallScreen ? 20 : 24}
+								color='#777'
+								style={styles.infoIcon}
+							/>
+							<View style={styles.infoContent}>
+								<Text
+									style={[
+										styles.infoLabel,
+										isSmallScreen && styles.smallInfoLabel,
+									]}>
+									Email
+								</Text>
+								<Text
+									style={[
+										styles.infoValue,
+										isSmallScreen && styles.smallInfoValue,
+									]}>
+									{profile?.email || "student@gmail.com"}
+								</Text>
+							</View>
+						</View>
+
+						<View style={styles.divider} />
+
+						<View style={styles.infoRow}>
+							<Ionicons
+								name='book-outline'
+								size={isSmallScreen ? 20 : 24}
+								color='#777'
+								style={styles.infoIcon}
+							/>
+							<View style={styles.infoContent}>
+								<Text
+									style={[
+										styles.infoLabel,
+										isSmallScreen && styles.smallInfoLabel,
+									]}>
+									Holati
+								</Text>
+								<Text
+									style={[
+										styles.infoValue,
+										isSmallScreen && styles.smallInfoValue,
+									]}>
+									Student
+								</Text>
+							</View>
+						</View>
+					</View>
+
+					<View
+						style={[
+							styles.actionSection,
+							isSmallScreen && styles.smallActionSection,
+						]}>
+						<Text
+							style={[
+								styles.sectionTitle,
+								isSmallScreen && styles.smallSectionTitle,
+							]}>
+							Ilova sozlamalari
+						</Text>
+
+						<TouchableOpacity
+							style={styles.logoutButton}
+							onPress={handleLogout}>
+							<Ionicons
+								name='log-out-outline'
+								size={isSmallScreen ? 20 : 24}
+								color='#F44336'
+								style={styles.logoutIcon}
+							/>
+							<Text
+								style={[
+									styles.logoutText,
+									isSmallScreen && styles.smallLogoutText,
+								]}>
+								Chiqish
+							</Text>
+						</TouchableOpacity>
+					</View>
+				</ScrollView>
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

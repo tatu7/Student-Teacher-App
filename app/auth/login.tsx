@@ -17,6 +17,8 @@ import { Stack, router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { UserRole } from "../../lib/supabase";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 const { width, height } = Dimensions.get("window");
 const isSmallDevice = width < 375;
@@ -79,7 +81,7 @@ export default function LoginScreen() {
 						<TouchableOpacity
 							style={styles.backButton}
 							onPress={() => router.push("/onboarding")}>
-							<Ionicons name='arrow-back' size={24} color='#333' />
+							<Ionicons name='arrow-back' size={24} color='#4169e1' />
 						</TouchableOpacity>
 					),
 				}}
@@ -88,91 +90,100 @@ export default function LoginScreen() {
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : "height"}
 				style={styles.keyboardAvoidView}>
-				<ScrollView
-					contentContainerStyle={styles.scrollContent}
-					showsVerticalScrollIndicator={false}>
-					<View style={styles.contentContainer}>
-						<View style={styles.welcomeTextContainer}>
-							<Text style={styles.title}>Xush kelibsiz!</Text>
-							<Text style={styles.subtitle}>Hisobingizga kiring</Text>
-						</View>
-
-						<View style={styles.formContainer}>
-							<View style={styles.inputContainer}>
-								<Text style={styles.inputLabel}>Email</Text>
-								<View style={styles.inputWrapper}>
-									<Ionicons
-										name='mail-outline'
-										size={22}
-										color='#888'
-										style={styles.inputIcon}
-									/>
-									<TextInput
-										style={styles.input}
-										placeholder='Email kiriting'
-										value={email}
-										onChangeText={setEmail}
-										autoCapitalize='none'
-										keyboardType='email-address'
-									/>
+				<CustomBackground image={icons.bg1}>
+					<ScrollView
+						contentContainerStyle={styles.scrollContent}
+						showsVerticalScrollIndicator={false}>
+						<View style={styles.cardContainer}>
+							<View style={styles.card}>
+								<View style={styles.welcomeTextContainer}>
+									<Text style={styles.title}>Xush kelibsiz!</Text>
+									<Text style={styles.subtitle}>Hisobingizga kiring</Text>
 								</View>
 
-								<Text style={styles.inputLabel}>Password</Text>
-								<View style={styles.inputWrapper}>
-									<Ionicons
-										name='lock-closed-outline'
-										size={22}
-										color='#888'
-										style={styles.inputIcon}
-									/>
-									<TextInput
-										style={styles.input}
-										placeholder='Parolni kiriting'
-										value={password}
-										onChangeText={setPassword}
-										secureTextEntry={!showPassword}
-									/>
-									<TouchableOpacity
-										style={styles.eyeIcon}
-										onPress={() => setShowPassword(!showPassword)}>
-										<Ionicons
-											name={showPassword ? "eye-off-outline" : "eye-outline"}
-											size={22}
-											color='#888'
-										/>
-									</TouchableOpacity>
-								</View>
+								<View style={styles.formContainer}>
+									<View style={styles.inputContainer}>
+										<Text style={styles.inputLabel}>Email</Text>
+										<View style={styles.inputWrapper}>
+											<Ionicons
+												name='mail-outline'
+												size={22}
+												color='#666'
+												style={styles.inputIcon}
+											/>
+											<TextInput
+												style={styles.input}
+												placeholder='Email kiriting'
+												value={email}
+												onChangeText={setEmail}
+												autoCapitalize='none'
+												keyboardType='email-address'
+												placeholderTextColor='#999'
+											/>
+										</View>
 
-								<View style={styles.forgotPassword}>
+										<Text style={styles.inputLabel}>Password</Text>
+										<View style={styles.inputWrapper}>
+											<Ionicons
+												name='lock-closed-outline'
+												size={22}
+												color='#666'
+												style={styles.inputIcon}
+											/>
+											<TextInput
+												style={styles.input}
+												placeholder='Parolni kiriting'
+												value={password}
+												onChangeText={setPassword}
+												secureTextEntry={!showPassword}
+												placeholderTextColor='#999'
+											/>
+											<TouchableOpacity
+												style={styles.eyeIcon}
+												onPress={() => setShowPassword(!showPassword)}>
+												<Ionicons
+													name={
+														showPassword ? "eye-off-outline" : "eye-outline"
+													}
+													size={22}
+													color='#666'
+												/>
+											</TouchableOpacity>
+										</View>
+
+										<View style={styles.forgotPassword}>
+											<TouchableOpacity
+												onPress={() => router.push("/auth/forgot-password")}>
+												<Text style={styles.forgotPasswordText}>
+													Parolni unutdingizmi?
+												</Text>
+											</TouchableOpacity>
+										</View>
+									</View>
+
 									<TouchableOpacity
-										onPress={() => router.push("/auth/forgot-password")}>
-										<Text style={styles.forgotPasswordText}>
-											Parolni unutdingizmi?
-										</Text>
+										style={[styles.button, loading && styles.buttonDisabled]}
+										onPress={handleLogin}
+										disabled={loading}>
+										{loading ? (
+											<ActivityIndicator color='#fff' size='small' />
+										) : (
+											<Text style={styles.buttonText}>Kirish</Text>
+										)}
 									</TouchableOpacity>
+
+									<View style={styles.footer}>
+										<Text style={styles.footerText}>Hisobingiz yo'qmi? </Text>
+										<TouchableOpacity
+											onPress={() => router.push("/auth/signup")}>
+											<Text style={styles.link}>Ro'yxatdan o'ting</Text>
+										</TouchableOpacity>
+									</View>
 								</View>
 							</View>
-
-							<TouchableOpacity
-								style={styles.button}
-								onPress={handleLogin}
-								disabled={loading}>
-								{loading ? (
-									<ActivityIndicator color='#fff' size='small' />
-								) : (
-									<Text style={styles.buttonText}>Kirish</Text>
-								)}
-							</TouchableOpacity>
-
-							<View style={styles.footer}>
-								<Text style={styles.footerText}>Hisobingiz yo'qmi? </Text>
-								<TouchableOpacity onPress={() => router.push("/auth/signup")}>
-									<Text style={styles.link}>Ro'yxatdan o'ting</Text>
-								</TouchableOpacity>
-							</View>
 						</View>
-					</View>
-				</ScrollView>
+					</ScrollView>
+				</CustomBackground>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
 	);
@@ -193,17 +204,31 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		padding: width * 0.05,
 		justifyContent: "center",
 	},
-	contentContainer: {
+	cardContainer: {
+		padding: width * 0.05,
+		justifyContent: "center",
+		alignItems: "center",
+		minHeight: height * 0.9,
+	},
+	card: {
+		backgroundColor: "rgba(255, 255, 255, 0.95)",
+		borderRadius: 20,
+		padding: width * 0.06,
 		width: "100%",
 		maxWidth: 400,
-		alignSelf: "center",
+		shadowColor: "#000",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 5,
 	},
 	welcomeTextContainer: {
 		marginBottom: height * 0.035,
-		marginTop: height * 0.025,
 		alignItems: "center",
 	},
 	formContainer: {
@@ -236,9 +261,10 @@ const styles = StyleSheet.create({
 	inputWrapper: {
 		flexDirection: "row",
 		alignItems: "center",
+		backgroundColor: "#f5f5f5",
 		borderWidth: 1,
 		borderColor: "#ddd",
-		borderRadius: 8,
+		borderRadius: 12,
 		marginBottom: height * 0.02,
 		paddingHorizontal: width * 0.03,
 		height: isSmallDevice ? 45 : 50,
@@ -253,6 +279,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		height: "100%",
 		fontSize: isSmallDevice ? 14 : 16,
+		color: "#333",
 	},
 	forgotPassword: {
 		alignSelf: "flex-end",
@@ -260,18 +287,29 @@ const styles = StyleSheet.create({
 		marginBottom: height * 0.02,
 	},
 	forgotPasswordText: {
-		color: "#3f51b5",
+		color: "#4169e1",
 		fontWeight: "500",
 		fontSize: isSmallDevice ? 13 : 14,
 	},
 	button: {
-		backgroundColor: "#3f51b5",
+		backgroundColor: "#4169e1",
 		height: isSmallDevice ? 45 : 50,
-		borderRadius: 8,
+		borderRadius: 12,
 		justifyContent: "center",
 		alignItems: "center",
 		marginBottom: height * 0.02,
 		width: "100%",
+		shadowColor: "#4169e1",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 3,
+	},
+	buttonDisabled: {
+		opacity: 0.7,
 	},
 	buttonText: {
 		color: "white",
@@ -289,7 +327,7 @@ const styles = StyleSheet.create({
 		fontSize: isSmallDevice ? 14 : 15,
 	},
 	link: {
-		color: "#3f51b5",
+		color: "#4169e1",
 		fontWeight: "bold",
 		fontSize: isSmallDevice ? 14 : 15,
 	},

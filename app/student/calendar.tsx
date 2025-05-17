@@ -29,6 +29,8 @@ import {
 	isWithinInterval,
 	differenceInCalendarDays,
 } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Task = {
@@ -310,129 +312,131 @@ export default function StudentCalendarScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					headerShown: false,
-				}}
-			/>
+			<CustomBackground image={icons.bg2} overlayColor='rgba(0,0,0,0.4)'>
+				<Stack.Screen
+					options={{
+						headerShown: false,
+					}}
+				/>
 
-			{/* Header */}
-			<View style={styles.header}>
-				<Text
-					style={[
-						styles.headerTitle,
-						isSmallScreen && styles.smallHeaderTitle,
-					]}>
-					Kalendar
-				</Text>
-			</View>
-
-			<View style={styles.calendarContainer}>
-				{/* Month navigation */}
-				<View style={styles.monthNavigator}>
-					<TouchableOpacity onPress={handlePreviousMonth}>
-						<Ionicons
-							name='chevron-back'
-							size={isSmallScreen ? 20 : 24}
-							color='#4169E1'
-						/>
-					</TouchableOpacity>
-
+				{/* Header */}
+				<View style={styles.header}>
 					<Text
 						style={[
-							styles.monthTitle,
-							isSmallScreen && styles.smallMonthTitle,
+							styles.headerTitle,
+							isSmallScreen && styles.smallHeaderTitle,
 						]}>
-						{format(selectedMonth, "MMMM yyyy")}
+						Kalendar
 					</Text>
-
-					<TouchableOpacity onPress={handleNextMonth}>
-						<Ionicons
-							name='chevron-forward'
-							size={isSmallScreen ? 20 : 24}
-							color='#4169E1'
-						/>
-					</TouchableOpacity>
 				</View>
 
-				{/* Weekday headers */}
-				{renderWeekdayHeaders()}
+				<View style={styles.calendarContainer}>
+					{/* Month navigation */}
+					<View style={styles.monthNavigator}>
+						<TouchableOpacity onPress={handlePreviousMonth}>
+							<Ionicons
+								name='chevron-back'
+								size={isSmallScreen ? 20 : 24}
+								color='#4169E1'
+							/>
+						</TouchableOpacity>
 
-				{/* Calendar grid */}
-				<View style={styles.calendarGrid}>
-					{calendarDays.map((day) => renderDay(day))}
-				</View>
-			</View>
-
-			{/* Tasks for selected date */}
-			<View style={styles.selectedDateContainer}>
-				<Text
-					style={[
-						styles.selectedDateTitle,
-						isSmallScreen && styles.smallSelectedDateTitle,
-					]}>
-					{format(selectedDate, "EEEE, d-MMMM, yyyy")} uchun vazifalar
-				</Text>
-
-				{tasksForSelectedDate.length > 0 ? (
-					<FlatList
-						data={tasksForSelectedDate}
-						renderItem={({ item }) => (
-							<View style={styles.taskItem}>
-								<View
-									style={[
-										styles.taskIcon,
-										isSmallScreen && styles.smallTaskIcon,
-									]}>
-									<Ionicons
-										name='document-text-outline'
-										size={isSmallScreen ? 20 : 24}
-										color='#4169E1'
-									/>
-								</View>
-								<View style={styles.taskContent}>
-									<Text
-										style={[
-											styles.taskTitle,
-											isSmallScreen && styles.smallTaskTitle,
-										]}>
-										{item.title}
-									</Text>
-									<Text
-										style={[
-											styles.taskGroup,
-											isSmallScreen && styles.smallTaskGroup,
-										]}>
-										{item.group_name || "Guruh nomi"}
-									</Text>
-									{item.description && (
-										<Text
-											style={[
-												styles.taskDescription,
-												isSmallScreen && styles.smallTaskDescription,
-											]}
-											numberOfLines={1}>
-											{item.description}
-										</Text>
-									)}
-								</View>
-							</View>
-						)}
-						keyExtractor={(item) => item.id}
-						contentContainerStyle={styles.tasksList}
-					/>
-				) : (
-					<View style={styles.noTasksContainer}>
 						<Text
 							style={[
-								styles.noTasksText,
-								isSmallScreen && styles.smallNoTasksText,
+								styles.monthTitle,
+								isSmallScreen && styles.smallMonthTitle,
 							]}>
-							Bu kunda vazifalar yo'q
+							{format(selectedMonth, "MMMM yyyy")}
 						</Text>
+
+						<TouchableOpacity onPress={handleNextMonth}>
+							<Ionicons
+								name='chevron-forward'
+								size={isSmallScreen ? 20 : 24}
+								color='#4169E1'
+							/>
+						</TouchableOpacity>
 					</View>
-				)}
-			</View>
+
+					{/* Weekday headers */}
+					{renderWeekdayHeaders()}
+
+					{/* Calendar grid */}
+					<View style={styles.calendarGrid}>
+						{calendarDays.map((day) => renderDay(day))}
+					</View>
+				</View>
+
+				{/* Tasks for selected date */}
+				<View style={styles.selectedDateContainer}>
+					<Text
+						style={[
+							styles.selectedDateTitle,
+							isSmallScreen && styles.smallSelectedDateTitle,
+						]}>
+						{format(selectedDate, "EEEE, d-MMMM, yyyy")} uchun vazifalar
+					</Text>
+
+					{tasksForSelectedDate.length > 0 ? (
+						<FlatList
+							data={tasksForSelectedDate}
+							renderItem={({ item }) => (
+								<View style={styles.taskItem}>
+									<View
+										style={[
+											styles.taskIcon,
+											isSmallScreen && styles.smallTaskIcon,
+										]}>
+										<Ionicons
+											name='document-text-outline'
+											size={isSmallScreen ? 20 : 24}
+											color='#4169E1'
+										/>
+									</View>
+									<View style={styles.taskContent}>
+										<Text
+											style={[
+												styles.taskTitle,
+												isSmallScreen && styles.smallTaskTitle,
+											]}>
+											{item.title}
+										</Text>
+										<Text
+											style={[
+												styles.taskGroup,
+												isSmallScreen && styles.smallTaskGroup,
+											]}>
+											{item.group_name || "Guruh nomi"}
+										</Text>
+										{item.description && (
+											<Text
+												style={[
+													styles.taskDescription,
+													isSmallScreen && styles.smallTaskDescription,
+												]}
+												numberOfLines={1}>
+												{item.description}
+											</Text>
+										)}
+									</View>
+								</View>
+							)}
+							keyExtractor={(item) => item.id}
+							contentContainerStyle={styles.tasksList}
+						/>
+					) : (
+						<View style={styles.noTasksContainer}>
+							<Text
+								style={[
+									styles.noTasksText,
+									isSmallScreen && styles.smallNoTasksText,
+								]}>
+								Bu kunda vazifalar yo'q
+							</Text>
+						</View>
+					)}
+				</View>
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

@@ -17,6 +17,8 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format, isBefore } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Task = {
@@ -259,510 +261,512 @@ export default function StudentDashboard() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<ScrollView
-				style={styles.scrollView}
-				showsVerticalScrollIndicator={false}>
-				{/* Header Section */}
-				<View
-					style={[
-						styles.headerSection,
-						{
-							paddingTop: getResponsiveSize(60, 40, 30),
-							paddingBottom: getResponsiveSize(30, 20, 15),
-							paddingHorizontal: getResponsiveSize(20, 16, 12),
-							borderBottomLeftRadius: getResponsiveSize(30, 20, 15),
-							borderBottomRightRadius: getResponsiveSize(30, 20, 15),
-						},
-					]}>
-					<Text
-						style={[
-							styles.welcomeText,
-							{
-								fontSize: getResponsiveSize(24, 20, 18),
-								marginBottom: getResponsiveSize(4, 3, 2),
-							},
-						]}>
-						Salom, {userName}
-					</Text>
-					<Text
-						style={[
-							styles.roleText,
-							{
-								fontSize: getResponsiveSize(16, 14, 12),
-							},
-						]}>
-						Student
-					</Text>
-				</View>
-
-				{/* Stats Cards */}
-				<View
-					style={[
-						styles.statsContainer,
-						{
-							paddingHorizontal: getResponsiveSize(16, 12, 8),
-							marginTop: getResponsiveSize(-30, -25, -20),
-						},
-					]}>
+			<CustomBackground image={icons.bg6}>
+				<ScrollView
+					style={styles.scrollView}
+					showsVerticalScrollIndicator={false}>
+					{/* Header Section */}
 					<View
 						style={[
-							styles.statCard,
+							styles.headerSection,
 							{
-								padding: getResponsiveSize(16, 12, 10),
-								borderRadius: getResponsiveSize(16, 12, 10),
+								paddingTop: getResponsiveSize(60, 40, 30),
+								paddingBottom: getResponsiveSize(30, 20, 15),
+								paddingHorizontal: getResponsiveSize(20, 16, 12),
+								borderBottomLeftRadius: getResponsiveSize(30, 20, 15),
+								borderBottomRightRadius: getResponsiveSize(30, 20, 15),
 							},
 						]}>
-						<View
-							style={[
-								styles.statIconContainer,
-								styles.blueIcon,
-								{
-									width: getResponsiveSize(48, 40, 36),
-									height: getResponsiveSize(48, 40, 36),
-									borderRadius: getResponsiveSize(24, 20, 18),
-									marginBottom: getResponsiveSize(8, 6, 4),
-								},
-							]}>
-							<Ionicons
-								name='book-outline'
-								size={getResponsiveSize(24, 20, 18)}
-								color='#4169E1'
-							/>
-						</View>
 						<Text
 							style={[
-								styles.statValue,
-								{ fontSize: getResponsiveSize(24, 20, 18) },
+								styles.welcomeText,
+								{
+									fontSize: getResponsiveSize(24, 20, 18),
+									marginBottom: getResponsiveSize(4, 3, 2),
+								},
 							]}>
-							{stats.groupCount}
+							Salom, {userName}
 						</Text>
 						<Text
 							style={[
-								styles.statLabel,
-								{ fontSize: getResponsiveSize(12, 10, 9) },
+								styles.roleText,
+								{
+									fontSize: getResponsiveSize(16, 14, 12),
+								},
 							]}>
-							Darslar
+							Student
 						</Text>
 					</View>
 
+					{/* Stats Cards */}
 					<View
 						style={[
-							styles.statCard,
+							styles.statsContainer,
 							{
-								padding: getResponsiveSize(16, 12, 10),
-								borderRadius: getResponsiveSize(16, 12, 10),
+								paddingHorizontal: getResponsiveSize(16, 12, 8),
+								marginTop: getResponsiveSize(-30, -25, -20),
 							},
 						]}>
 						<View
 							style={[
-								styles.statIconContainer,
-								styles.purpleIcon,
+								styles.statCard,
 								{
-									width: getResponsiveSize(48, 40, 36),
-									height: getResponsiveSize(48, 40, 36),
-									borderRadius: getResponsiveSize(24, 20, 18),
-									marginBottom: getResponsiveSize(8, 6, 4),
-								},
-							]}>
-							<Ionicons
-								name='time-outline'
-								size={getResponsiveSize(24, 20, 18)}
-								color='#9966CC'
-							/>
-						</View>
-						<Text
-							style={[
-								styles.statValue,
-								{ fontSize: getResponsiveSize(24, 20, 18) },
-							]}>
-							{stats.pendingTasks}
-						</Text>
-						<Text
-							style={[
-								styles.statLabel,
-								{ fontSize: getResponsiveSize(12, 10, 9) },
-							]}>
-							{isSmallScreen ? "Vazifalar" : "Yaqin vazifalar"}
-						</Text>
-					</View>
-
-					<View
-						style={[
-							styles.statCard,
-							{
-								padding: getResponsiveSize(16, 12, 10),
-								borderRadius: getResponsiveSize(16, 12, 10),
-							},
-						]}>
-						<View
-							style={[
-								styles.statIconContainer,
-								styles.greenIcon,
-								{
-									width: getResponsiveSize(48, 40, 36),
-									height: getResponsiveSize(48, 40, 36),
-									borderRadius: getResponsiveSize(24, 20, 18),
-									marginBottom: getResponsiveSize(8, 6, 4),
-								},
-							]}>
-							<Ionicons
-								name='checkmark-circle-outline'
-								size={getResponsiveSize(24, 20, 18)}
-								color='#4CAF50'
-							/>
-						</View>
-						<Text
-							style={[
-								styles.statValue,
-								{ fontSize: getResponsiveSize(24, 20, 18) },
-							]}>
-							{stats.completedTasks}
-						</Text>
-						<Text
-							style={[
-								styles.statLabel,
-								{ fontSize: getResponsiveSize(12, 10, 9) },
-							]}>
-							Bajarilgan
-						</Text>
-					</View>
-				</View>
-
-				{/* Upcoming Tasks Section */}
-				<View
-					style={[
-						styles.tasksSection,
-						{
-							padding: getResponsiveSize(20, 16, 12),
-							marginTop: getResponsiveSize(10, 8, 6),
-						},
-					]}>
-					<Text
-						style={[
-							styles.sectionTitle,
-							{
-								fontSize: getResponsiveSize(18, 16, 14),
-								marginBottom: getResponsiveSize(16, 12, 10),
-							},
-						]}>
-						Yaqinlashgan Vazifalar
-					</Text>
-
-					{upcomingTasks.length > 0 ? (
-						upcomingTasks.map((task) => (
-							<TouchableOpacity
-								key={task.id}
-								style={[
-									styles.taskCard,
-									{
-										padding: getResponsiveSize(16, 14, 12),
-										marginBottom: getResponsiveSize(16, 12, 10),
-										borderRadius: getResponsiveSize(16, 12, 10),
-									},
-								]}
-								onPress={() => navigateToTask(task.id)}>
-								<View
-									style={[
-										styles.taskHeader,
-										{ marginBottom: getResponsiveSize(12, 10, 8) },
-									]}>
-									<Text
-										style={[
-											styles.taskTitle,
-											{
-												fontSize: getResponsiveSize(18, 16, 14),
-												marginBottom: getResponsiveSize(4, 3, 2),
-											},
-										]}>
-										{task.title}
-									</Text>
-									<Text
-										style={[
-											styles.taskGroup,
-											{
-												fontSize: getResponsiveSize(14, 12, 11),
-												marginBottom: getResponsiveSize(2, 2, 1),
-											},
-										]}>
-										{task.group_name}
-									</Text>
-									<Text
-										style={[
-											styles.taskSubtitle,
-											{ fontSize: getResponsiveSize(14, 12, 11) },
-										]}>
-										task{task.title.toLowerCase().includes("task") ? "" : "2"}
-									</Text>
-								</View>
-
-								<View
-									style={[
-										styles.taskDate,
-										{ marginBottom: getResponsiveSize(10, 8, 6) },
-									]}>
-									<Ionicons
-										name='calendar-outline'
-										size={getResponsiveSize(18, 16, 14)}
-										color='#666'
-									/>
-									<Text
-										style={[
-											styles.dateText,
-											{
-												fontSize: getResponsiveSize(14, 12, 11),
-												marginLeft: getResponsiveSize(6, 4, 3),
-											},
-										]}>
-										Muddat: {formatDate(task.due_date)}
-									</Text>
-								</View>
-
-								{task.status === "overdue" ? (
-									<View style={styles.warningContainer}>
-										<Ionicons
-											name='time-outline'
-											size={getResponsiveSize(16, 14, 12)}
-											color='#FF9800'
-										/>
-										<Text
-											style={[
-												styles.warningText,
-												{
-													fontSize: getResponsiveSize(14, 12, 11),
-													marginLeft: getResponsiveSize(6, 4, 3),
-												},
-											]}>
-											Muddat tugadi
-										</Text>
-									</View>
-								) : (
-									<View style={styles.warningContainer}>
-										<Ionicons
-											name='time-outline'
-											size={getResponsiveSize(16, 14, 12)}
-											color='#FF9800'
-										/>
-										<Text
-											style={[
-												styles.warningText,
-												{
-													fontSize: getResponsiveSize(14, 12, 11),
-													marginLeft: getResponsiveSize(6, 4, 3),
-												},
-											]}>
-											{isSmallScreen
-												? "Muddat yaqin"
-												: "Tez orada muddati tugaydi"}
-										</Text>
-									</View>
-								)}
-							</TouchableOpacity>
-						))
-					) : (
-						<View
-							style={[
-								styles.emptyStateContainer,
-								{
-									padding: getResponsiveSize(30, 20, 15),
+									padding: getResponsiveSize(16, 12, 10),
 									borderRadius: getResponsiveSize(16, 12, 10),
 								},
 							]}>
-							<Ionicons
-								name='calendar-outline'
-								size={getResponsiveSize(48, 40, 32)}
-								color='#DDD'
-							/>
-							<Text
+							<View
 								style={[
-									styles.emptyStateText,
+									styles.statIconContainer,
+									styles.blueIcon,
 									{
-										marginTop: getResponsiveSize(10, 8, 6),
-										fontSize: getResponsiveSize(16, 14, 12),
+										width: getResponsiveSize(48, 40, 36),
+										height: getResponsiveSize(48, 40, 36),
+										borderRadius: getResponsiveSize(24, 20, 18),
+										marginBottom: getResponsiveSize(8, 6, 4),
 									},
 								]}>
-								Hech qanday vazifa topilmadi
+								<Ionicons
+									name='book-outline'
+									size={getResponsiveSize(24, 20, 18)}
+									color='#4169E1'
+								/>
+							</View>
+							<Text
+								style={[
+									styles.statValue,
+									{ fontSize: getResponsiveSize(24, 20, 18) },
+								]}>
+								{stats.groupCount}
+							</Text>
+							<Text
+								style={[
+									styles.statLabel,
+									{ fontSize: getResponsiveSize(12, 10, 9) },
+								]}>
+								Darslar
 							</Text>
 						</View>
-					)}
-				</View>
 
-				{/* Recent Activity Section */}
-				<View
-					style={[
-						styles.tasksSection,
-						{
-							padding: getResponsiveSize(20, 16, 12),
-							marginTop: 0,
-						},
-					]}>
-					<Text
-						style={[
-							styles.sectionTitle,
-							{
-								fontSize: getResponsiveSize(18, 16, 14),
-								marginBottom: getResponsiveSize(16, 12, 10),
-							},
-						]}>
-						So'nggi faollik
-					</Text>
-
-					{submittedTasks.length > 0 ? (
-						submittedTasks.map((submission) => (
-							<TouchableOpacity
-								key={submission.id}
-								style={[
-									styles.activityCard,
-									{
-										padding: getResponsiveSize(16, 14, 12),
-										marginBottom: getResponsiveSize(16, 12, 10),
-										borderRadius: getResponsiveSize(16, 12, 10),
-									},
-								]}
-								onPress={() => navigateToTask(submission.task_id)}>
-								<View
-									style={[
-										styles.taskHeader,
-										{ marginBottom: getResponsiveSize(12, 10, 8) },
-									]}>
-									<Text
-										style={[
-											styles.taskTitle,
-											{
-												fontSize: getResponsiveSize(18, 16, 14),
-												marginBottom: getResponsiveSize(4, 3, 2),
-											},
-										]}>
-										{submission.task_title}
-									</Text>
-									<Text
-										style={[
-											styles.taskGroup,
-											{
-												fontSize: getResponsiveSize(14, 12, 11),
-												marginBottom: getResponsiveSize(2, 2, 1),
-											},
-										]}>
-										{submission.group_name}
-									</Text>
-									<Text
-										style={[
-											styles.taskSubtitle,
-											{ fontSize: getResponsiveSize(14, 12, 11) },
-										]}>
-										{submission.task_title.toLowerCase().includes("task")
-											? submission.task_title
-											: " erne javob"}
-									</Text>
-								</View>
-
-								<View
-									style={[
-										styles.taskDate,
-										{ marginBottom: getResponsiveSize(10, 8, 6) },
-									]}>
-									<Ionicons
-										name='calendar-outline'
-										size={getResponsiveSize(18, 16, 14)}
-										color='#666'
-									/>
-									<Text
-										style={[
-											styles.dateText,
-											{
-												fontSize: getResponsiveSize(14, 12, 11),
-												marginLeft: getResponsiveSize(6, 4, 3),
-											},
-										]}>
-										{formatDate(submission.submitted_at)}
-									</Text>
-								</View>
-
-								{submission.rating !== null &&
-								submission.rating !== undefined ? (
-									<View
-										style={[
-											styles.fileDownloadContainer,
-											{
-												padding: getResponsiveSize(8, 6, 4),
-												borderRadius: getResponsiveSize(8, 6, 4),
-											},
-										]}>
-										<Ionicons
-											name='document-text-outline'
-											size={getResponsiveSize(16, 14, 12)}
-											color='#4169E1'
-										/>
-										<Text
-											style={[
-												styles.fileDownloadText,
-												{
-													fontSize: getResponsiveSize(14, 12, 11),
-													marginLeft: getResponsiveSize(6, 4, 3),
-												},
-											]}>
-											{isSmallScreen
-												? "Faylni ko'rish"
-												: "Yuborilgan faylni ko'rish"}
-										</Text>
-									</View>
-								) : (
-									<View
-										style={[
-											styles.fileDownloadContainer,
-											{
-												padding: getResponsiveSize(8, 6, 4),
-												borderRadius: getResponsiveSize(8, 6, 4),
-											},
-										]}>
-										<Ionicons
-											name='document-text-outline'
-											size={getResponsiveSize(16, 14, 12)}
-											color='#4169E1'
-										/>
-										<Text
-											style={[
-												styles.fileDownloadText,
-												{
-													fontSize: getResponsiveSize(14, 12, 11),
-													marginLeft: getResponsiveSize(6, 4, 3),
-												},
-											]}>
-											{isSmallScreen
-												? "Faylni ko'rish"
-												: "Yuborilgan faylni ko'rish"}
-										</Text>
-									</View>
-								)}
-							</TouchableOpacity>
-						))
-					) : (
 						<View
 							style={[
-								styles.emptyStateContainer,
+								styles.statCard,
 								{
-									padding: getResponsiveSize(30, 20, 15),
+									padding: getResponsiveSize(16, 12, 10),
 									borderRadius: getResponsiveSize(16, 12, 10),
 								},
 							]}>
-							<Ionicons
-								name='document-text-outline'
-								size={getResponsiveSize(48, 40, 32)}
-								color='#DDD'
-							/>
-							<Text
+							<View
 								style={[
-									styles.emptyStateText,
+									styles.statIconContainer,
+									styles.purpleIcon,
 									{
-										marginTop: getResponsiveSize(10, 8, 6),
-										fontSize: getResponsiveSize(16, 14, 12),
+										width: getResponsiveSize(48, 40, 36),
+										height: getResponsiveSize(48, 40, 36),
+										borderRadius: getResponsiveSize(24, 20, 18),
+										marginBottom: getResponsiveSize(8, 6, 4),
 									},
 								]}>
-								Hech qanday yuborilgan vazifa topilmadi
+								<Ionicons
+									name='time-outline'
+									size={getResponsiveSize(24, 20, 18)}
+									color='#9966CC'
+								/>
+							</View>
+							<Text
+								style={[
+									styles.statValue,
+									{ fontSize: getResponsiveSize(24, 20, 18) },
+								]}>
+								{stats.pendingTasks}
+							</Text>
+							<Text
+								style={[
+									styles.statLabel,
+									{ fontSize: getResponsiveSize(12, 10, 9) },
+								]}>
+								{isSmallScreen ? "Vazifalar" : "Yaqin vazifalar"}
 							</Text>
 						</View>
-					)}
-				</View>
-			</ScrollView>
+
+						<View
+							style={[
+								styles.statCard,
+								{
+									padding: getResponsiveSize(16, 12, 10),
+									borderRadius: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							<View
+								style={[
+									styles.statIconContainer,
+									styles.greenIcon,
+									{
+										width: getResponsiveSize(48, 40, 36),
+										height: getResponsiveSize(48, 40, 36),
+										borderRadius: getResponsiveSize(24, 20, 18),
+										marginBottom: getResponsiveSize(8, 6, 4),
+									},
+								]}>
+								<Ionicons
+									name='checkmark-circle-outline'
+									size={getResponsiveSize(24, 20, 18)}
+									color='#4CAF50'
+								/>
+							</View>
+							<Text
+								style={[
+									styles.statValue,
+									{ fontSize: getResponsiveSize(24, 20, 18) },
+								]}>
+								{stats.completedTasks}
+							</Text>
+							<Text
+								style={[
+									styles.statLabel,
+									{ fontSize: getResponsiveSize(12, 10, 9) },
+								]}>
+								Bajarilgan
+							</Text>
+						</View>
+					</View>
+
+					{/* Upcoming Tasks Section */}
+					<View
+						style={[
+							styles.tasksSection,
+							{
+								padding: getResponsiveSize(20, 16, 12),
+								marginTop: getResponsiveSize(10, 8, 6),
+							},
+						]}>
+						<Text
+							style={[
+								styles.sectionTitle,
+								{
+									fontSize: getResponsiveSize(18, 16, 14),
+									marginBottom: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							Yaqinlashgan Vazifalar
+						</Text>
+
+						{upcomingTasks.length > 0 ? (
+							upcomingTasks.map((task) => (
+								<TouchableOpacity
+									key={task.id}
+									style={[
+										styles.taskCard,
+										{
+											padding: getResponsiveSize(16, 14, 12),
+											marginBottom: getResponsiveSize(16, 12, 10),
+											borderRadius: getResponsiveSize(16, 12, 10),
+										},
+									]}
+									onPress={() => navigateToTask(task.id)}>
+									<View
+										style={[
+											styles.taskHeader,
+											{ marginBottom: getResponsiveSize(12, 10, 8) },
+										]}>
+										<Text
+											style={[
+												styles.taskTitle,
+												{
+													fontSize: getResponsiveSize(18, 16, 14),
+													marginBottom: getResponsiveSize(4, 3, 2),
+												},
+											]}>
+											{task.title}
+										</Text>
+										<Text
+											style={[
+												styles.taskGroup,
+												{
+													fontSize: getResponsiveSize(14, 12, 11),
+													marginBottom: getResponsiveSize(2, 2, 1),
+												},
+											]}>
+											{task.group_name}
+										</Text>
+										<Text
+											style={[
+												styles.taskSubtitle,
+												{ fontSize: getResponsiveSize(14, 12, 11) },
+											]}>
+											task{task.title.toLowerCase().includes("task") ? "" : "2"}
+										</Text>
+									</View>
+
+									<View
+										style={[
+											styles.taskDate,
+											{ marginBottom: getResponsiveSize(10, 8, 6) },
+										]}>
+										<Ionicons
+											name='calendar-outline'
+											size={getResponsiveSize(18, 16, 14)}
+											color='#666'
+										/>
+										<Text
+											style={[
+												styles.dateText,
+												{
+													fontSize: getResponsiveSize(14, 12, 11),
+													marginLeft: getResponsiveSize(6, 4, 3),
+												},
+											]}>
+											Muddat: {formatDate(task.due_date)}
+										</Text>
+									</View>
+
+									{task.status === "overdue" ? (
+										<View style={styles.warningContainer}>
+											<Ionicons
+												name='time-outline'
+												size={getResponsiveSize(16, 14, 12)}
+												color='#FF9800'
+											/>
+											<Text
+												style={[
+													styles.warningText,
+													{
+														fontSize: getResponsiveSize(14, 12, 11),
+														marginLeft: getResponsiveSize(6, 4, 3),
+													},
+												]}>
+												Muddat tugadi
+											</Text>
+										</View>
+									) : (
+										<View style={styles.warningContainer}>
+											<Ionicons
+												name='time-outline'
+												size={getResponsiveSize(16, 14, 12)}
+												color='#FF9800'
+											/>
+											<Text
+												style={[
+													styles.warningText,
+													{
+														fontSize: getResponsiveSize(14, 12, 11),
+														marginLeft: getResponsiveSize(6, 4, 3),
+													},
+												]}>
+												{isSmallScreen
+													? "Muddat yaqin"
+													: "Tez orada muddati tugaydi"}
+											</Text>
+										</View>
+									)}
+								</TouchableOpacity>
+							))
+						) : (
+							<View
+								style={[
+									styles.emptyStateContainer,
+									{
+										padding: getResponsiveSize(30, 20, 15),
+										borderRadius: getResponsiveSize(16, 12, 10),
+									},
+								]}>
+								<Ionicons
+									name='calendar-outline'
+									size={getResponsiveSize(48, 40, 32)}
+									color='#DDD'
+								/>
+								<Text
+									style={[
+										styles.emptyStateText,
+										{
+											marginTop: getResponsiveSize(10, 8, 6),
+											fontSize: getResponsiveSize(16, 14, 12),
+										},
+									]}>
+									Hech qanday vazifa topilmadi
+								</Text>
+							</View>
+						)}
+					</View>
+
+					{/* Recent Activity Section */}
+					<View
+						style={[
+							styles.tasksSection,
+							{
+								padding: getResponsiveSize(20, 16, 12),
+								marginTop: 0,
+							},
+						]}>
+						<Text
+							style={[
+								styles.sectionTitle,
+								{
+									fontSize: getResponsiveSize(18, 16, 14),
+									marginBottom: getResponsiveSize(16, 12, 10),
+								},
+							]}>
+							So'nggi faollik
+						</Text>
+
+						{submittedTasks.length > 0 ? (
+							submittedTasks.map((submission) => (
+								<TouchableOpacity
+									key={submission.id}
+									style={[
+										styles.activityCard,
+										{
+											padding: getResponsiveSize(16, 14, 12),
+											marginBottom: getResponsiveSize(16, 12, 10),
+											borderRadius: getResponsiveSize(16, 12, 10),
+										},
+									]}
+									onPress={() => navigateToTask(submission.task_id)}>
+									<View
+										style={[
+											styles.taskHeader,
+											{ marginBottom: getResponsiveSize(12, 10, 8) },
+										]}>
+										<Text
+											style={[
+												styles.taskTitle,
+												{
+													fontSize: getResponsiveSize(18, 16, 14),
+													marginBottom: getResponsiveSize(4, 3, 2),
+												},
+											]}>
+											{submission.task_title}
+										</Text>
+										<Text
+											style={[
+												styles.taskGroup,
+												{
+													fontSize: getResponsiveSize(14, 12, 11),
+													marginBottom: getResponsiveSize(2, 2, 1),
+												},
+											]}>
+											{submission.group_name}
+										</Text>
+										<Text
+											style={[
+												styles.taskSubtitle,
+												{ fontSize: getResponsiveSize(14, 12, 11) },
+											]}>
+											{submission.task_title.toLowerCase().includes("task")
+												? submission.task_title
+												: " erne javob"}
+										</Text>
+									</View>
+
+									<View
+										style={[
+											styles.taskDate,
+											{ marginBottom: getResponsiveSize(10, 8, 6) },
+										]}>
+										<Ionicons
+											name='calendar-outline'
+											size={getResponsiveSize(18, 16, 14)}
+											color='#666'
+										/>
+										<Text
+											style={[
+												styles.dateText,
+												{
+													fontSize: getResponsiveSize(14, 12, 11),
+													marginLeft: getResponsiveSize(6, 4, 3),
+												},
+											]}>
+											{formatDate(submission.submitted_at)}
+										</Text>
+									</View>
+
+									{submission.rating !== null &&
+									submission.rating !== undefined ? (
+										<View
+											style={[
+												styles.fileDownloadContainer,
+												{
+													padding: getResponsiveSize(8, 6, 4),
+													borderRadius: getResponsiveSize(8, 6, 4),
+												},
+											]}>
+											<Ionicons
+												name='document-text-outline'
+												size={getResponsiveSize(16, 14, 12)}
+												color='#4169E1'
+											/>
+											<Text
+												style={[
+													styles.fileDownloadText,
+													{
+														fontSize: getResponsiveSize(14, 12, 11),
+														marginLeft: getResponsiveSize(6, 4, 3),
+													},
+												]}>
+												{isSmallScreen
+													? "Faylni ko'rish"
+													: "Yuborilgan faylni ko'rish"}
+											</Text>
+										</View>
+									) : (
+										<View
+											style={[
+												styles.fileDownloadContainer,
+												{
+													padding: getResponsiveSize(8, 6, 4),
+													borderRadius: getResponsiveSize(8, 6, 4),
+												},
+											]}>
+											<Ionicons
+												name='document-text-outline'
+												size={getResponsiveSize(16, 14, 12)}
+												color='#4169E1'
+											/>
+											<Text
+												style={[
+													styles.fileDownloadText,
+													{
+														fontSize: getResponsiveSize(14, 12, 11),
+														marginLeft: getResponsiveSize(6, 4, 3),
+													},
+												]}>
+												{isSmallScreen
+													? "Faylni ko'rish"
+													: "Yuborilgan faylni ko'rish"}
+											</Text>
+										</View>
+									)}
+								</TouchableOpacity>
+							))
+						) : (
+							<View
+								style={[
+									styles.emptyStateContainer,
+									{
+										padding: getResponsiveSize(30, 20, 15),
+										borderRadius: getResponsiveSize(16, 12, 10),
+									},
+								]}>
+								<Ionicons
+									name='document-text-outline'
+									size={getResponsiveSize(48, 40, 32)}
+									color='#DDD'
+								/>
+								<Text
+									style={[
+										styles.emptyStateText,
+										{
+											marginTop: getResponsiveSize(10, 8, 6),
+											fontSize: getResponsiveSize(16, 14, 12),
+										},
+									]}>
+									Hech qanday yuborilgan vazifa topilmadi
+								</Text>
+							</View>
+						)}
+					</View>
+				</ScrollView>
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

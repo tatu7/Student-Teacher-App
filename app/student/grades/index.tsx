@@ -16,6 +16,8 @@ import { Stack, router } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type GradedTask = {
@@ -226,31 +228,32 @@ export default function StudentGradesScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text
-					style={[
-						styles.headerTitle,
-						isSmallScreen && styles.smallHeaderTitle,
-					]}>
-					Baholar
-				</Text>
-			</View>
-
-			{loading ? (
-				<View style={styles.loaderContainer}>
-					<ActivityIndicator size='large' color='#4169E1' />
+			<CustomBackground image={icons.bg4} overlayColor='rgba(0,0,0,0.2)'>
+				<View style={styles.header}>
+					<Text
+						style={[
+							styles.headerTitle,
+							isSmallScreen && styles.smallHeaderTitle,
+						]}>
+						Baholar
+					</Text>
 				</View>
-			) : (
-				<FlatList
-					data={gradedTasks}
-					renderItem={renderGradedTaskItem}
-					keyExtractor={(item) => item.submission_id}
-					contentContainerStyle={styles.listContent}
-					ListEmptyComponent={renderEmptyList}
-					refreshing={loading}
-					onRefresh={fetchGradedTasks}
-				/>
-			)}
+				{loading ? (
+					<View style={styles.loaderContainer}>
+						<ActivityIndicator size='large' color='#4169E1' />
+					</View>
+				) : (
+					<FlatList
+						data={gradedTasks}
+						renderItem={renderGradedTaskItem}
+						keyExtractor={(item) => item.submission_id}
+						contentContainerStyle={styles.listContent}
+						ListEmptyComponent={renderEmptyList}
+						refreshing={loading}
+						onRefresh={fetchGradedTasks}
+					/>
+				)}
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

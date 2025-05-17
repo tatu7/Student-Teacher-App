@@ -227,79 +227,87 @@ export default function ConfirmEmailScreen() {
 	return (
 		<SafeAreaView style={styles.container}>
 			<Stack.Screen
-				options={{ title: "Email Confirmation", headerShown: true }}
+				options={{
+					title: "Email Confirmation",
+					headerShown: true,
+					headerTitleStyle: styles.headerTitle,
+					headerStyle: {
+						backgroundColor: "#fff",
+					},
+				}}
 			/>
 
 			<ScrollView
 				contentContainerStyle={styles.scrollContainer}
 				showsVerticalScrollIndicator={false}>
-				<View style={[styles.content, { padding: getResponsiveSize(24, 16) }]}>
-					<Image
-						source={require("../../assets/images/logo.png")}
-						style={[
-							styles.logo,
-							{
-								width: getResponsiveSize(120, 100),
-								height: getResponsiveSize(120, 100),
-								marginBottom: getResponsiveSize(24, 16),
-							},
-						]}
-						resizeMode='contain'
-					/>
-
-					<Text
-						style={[
-							styles.title,
-							{
-								fontSize: getResponsiveSize(24, 20),
-								marginBottom: getResponsiveSize(24, 16),
-							},
-						]}>
-						Email Confirmation
-					</Text>
-
-					{loading ? (
-						<ActivityIndicator
-							size={screenWidth < 380 ? "small" : "large"}
-							color='#3f51b5'
+				<View style={styles.cardContainer}>
+					<View style={styles.card}>
+						<Image
+							source={require("../../assets/images/logo.png")}
+							style={[
+								styles.logo,
+								{
+									width: getResponsiveSize(120, 100),
+									height: getResponsiveSize(120, 100),
+									marginBottom: getResponsiveSize(24, 16),
+								},
+							]}
+							resizeMode='contain'
 						/>
-					) : (
-						<>
-							<View
-								style={[
-									styles.messageContainer,
-									success ? styles.successContainer : styles.errorContainer,
-									{ padding: getResponsiveSize(16, 12) },
-								]}>
-								<Text
-									style={[
-										styles.message,
-										{ fontSize: getResponsiveSize(16, 14) },
-									]}>
-									{message}
-								</Text>
-							</View>
 
-							<TouchableOpacity
-								style={[
-									styles.button,
-									{
-										paddingVertical: getResponsiveSize(16, 14),
-										paddingHorizontal: getResponsiveSize(24, 16),
-										borderRadius: getResponsiveSize(12, 8),
-									},
-								]}
-								onPress={goToLogin}>
-								<Text
+						<Text
+							style={[
+								styles.title,
+								{
+									fontSize: getResponsiveSize(24, 20),
+									marginBottom: getResponsiveSize(20, 16),
+								},
+							]}>
+							Email Confirmation
+						</Text>
+
+						{loading ? (
+							<ActivityIndicator
+								size={screenWidth < 380 ? "small" : "large"}
+								color='#4169e1'
+							/>
+						) : (
+							<>
+								<View
 									style={[
-										styles.buttonText,
-										{ fontSize: getResponsiveSize(16, 14) },
+										styles.messageContainer,
+										success ? styles.successContainer : styles.errorContainer,
+										{ padding: getResponsiveSize(16, 12) },
 									]}>
-									Go to Login
-								</Text>
-							</TouchableOpacity>
-						</>
-					)}
+									<Text
+										style={[
+											styles.message,
+											{ fontSize: getResponsiveSize(16, 14) },
+										]}>
+										{message}
+									</Text>
+								</View>
+
+								<TouchableOpacity
+									style={[
+										styles.button,
+										{
+											paddingVertical: getResponsiveSize(16, 14),
+											paddingHorizontal: getResponsiveSize(24, 16),
+										},
+									]}
+									onPress={goToLogin}>
+									<Text
+										style={[
+											styles.buttonText,
+											{ fontSize: getResponsiveSize(16, 14) },
+										]}>
+										Go to Login
+									</Text>
+								</TouchableOpacity>
+							</>
+						)}
+					</View>
 				</View>
 			</ScrollView>
 		</SafeAreaView>
@@ -309,17 +317,39 @@ export default function ConfirmEmailScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f9f9f9",
+		backgroundColor: "#fff",
+	},
+	headerTitle: {
+		fontSize: 18,
+		fontWeight: "600",
+		color: "#333",
 	},
 	scrollContainer: {
 		flexGrow: 1,
 		minHeight: Dimensions.get("window").height * 0.9,
 	},
-	content: {
-		flex: 1,
+	cardContainer: {
+		padding: 20,
+		justifyContent: "center",
+		alignItems: "center",
+		minHeight: Dimensions.get("window").height * 0.9,
+	},
+	card: {
+		backgroundColor: "rgba(255, 255, 255, 0.95)",
+		borderRadius: 20,
+		padding: 24,
+		width: "100%",
+		maxWidth: 400,
 		alignItems: "center",
 		justifyContent: "center",
-		padding: 24,
+		shadowColor: "#000",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 5,
 	},
 	logo: {
 		width: 120,
@@ -330,13 +360,13 @@ const styles = StyleSheet.create({
 		fontSize: 24,
 		fontWeight: "bold",
 		color: "#333",
-		marginBottom: 24,
+		marginBottom: 20,
 		textAlign: "center",
 	},
 	messageContainer: {
 		borderRadius: 12,
 		padding: 16,
-		marginBottom: 24,
+		marginBottom: 20,
 		width: "100%",
 	},
 	successContainer: {
@@ -355,23 +385,20 @@ const styles = StyleSheet.create({
 		color: "#333",
 	},
 	button: {
-		backgroundColor: "#3f51b5",
+		backgroundColor: "#4169e1",
 		paddingVertical: 16,
 		paddingHorizontal: 24,
 		borderRadius: 12,
 		width: "100%",
 		alignItems: "center",
-		...Platform.select({
-			ios: {
-				shadowColor: "rgba(0,0,0,0.2)",
-				shadowOffset: { height: 2, width: 0 },
-				shadowOpacity: 0.8,
-				shadowRadius: 2,
-			},
-			android: {
-				elevation: 3,
-			},
-		}),
+		shadowColor: "#4169e1",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 3,
 	},
 	buttonText: {
 		color: "white",

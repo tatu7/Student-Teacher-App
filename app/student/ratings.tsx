@@ -15,6 +15,8 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 type Group = {
 	id: string;
@@ -399,40 +401,42 @@ export default function RatingsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text
-					style={[
-						styles.headerTitle,
-						isSmallScreen && styles.smallHeaderTitle,
-					]}>
-					Reyting
-				</Text>
-			</View>
-
-			{state.groups.length > 0 && renderGroupTabs()}
-
-			{state.loading && state.students.length === 0 ? (
-				<View style={styles.loadingContainer}>
-					<ActivityIndicator size='large' color='#4169E1' />
+			<CustomBackground image={icons.bg5} overlayColor='rgba(0,0,0,0.4)'>
+				<View style={styles.header}>
+					<Text
+						style={[
+							styles.headerTitle,
+							isSmallScreen && styles.smallHeaderTitle,
+						]}>
+						Reyting
+					</Text>
 				</View>
-			) : (
-				<FlatList
-					data={state.students}
-					renderItem={renderStudentItem}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={[
-						styles.listContainer,
-						isSmallScreen && styles.smallListContainer,
-					]}
-					ListEmptyComponent={renderEmptyList}
-					refreshControl={
-						<RefreshControl
-							refreshing={state.refreshing}
-							onRefresh={handleRefresh}
-						/>
-					}
-				/>
-			)}
+
+				{state.groups.length > 0 && renderGroupTabs()}
+
+				{state.loading && state.students.length === 0 ? (
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size='large' color='#4169E1' />
+					</View>
+				) : (
+					<FlatList
+						data={state.students}
+						renderItem={renderStudentItem}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={[
+							styles.listContainer,
+							isSmallScreen && styles.smallListContainer,
+						]}
+						ListEmptyComponent={renderEmptyList}
+						refreshControl={
+							<RefreshControl
+								refreshing={state.refreshing}
+								onRefresh={handleRefresh}
+							/>
+						}
+					/>
+				)}
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

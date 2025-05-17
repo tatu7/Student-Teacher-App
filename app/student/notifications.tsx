@@ -14,6 +14,8 @@ import {
 import { useNotifications } from "../../context/NotificationsContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 type NotificationItem = {
 	id: string;
@@ -157,56 +159,58 @@ export default function NotificationsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={styles.header}>
-				<Text
-					style={[
-						styles.headerTitle,
-						isSmallScreen && styles.smallHeaderTitle,
-					]}>
-					Xabarlar
-				</Text>
-			</View>
-
-			{unreadCount > 0 && (
-				<TouchableOpacity
-					style={[
-						styles.markAllReadButton,
-						isSmallScreen && styles.smallMarkAllReadButton,
-					]}
-					onPress={() => {
-						notifications
-							.filter((n) => !n.is_read)
-							.forEach((n) => markAsRead(n.id));
-					}}>
+			<CustomBackground image={icons.bg6} overlayColor='rgba(0,0,0,0.4)'>
+				<View style={styles.header}>
 					<Text
 						style={[
-							styles.markAllReadText,
-							isSmallScreen && styles.smallMarkAllReadText,
+							styles.headerTitle,
+							isSmallScreen && styles.smallHeaderTitle,
 						]}>
-						Barchasini o'qilgan deb belgilash
+						Xabarlar
 					</Text>
-				</TouchableOpacity>
-			)}
-
-			<FlatList
-				data={notifications}
-				renderItem={renderNotificationItem}
-				keyExtractor={(item) => item.id}
-				contentContainerStyle={[
-					styles.listContainer,
-					isSmallScreen && styles.smallListContainer,
-				]}
-				refreshControl={
-					<RefreshControl refreshing={loading} onRefresh={refresh} />
-				}
-				ListEmptyComponent={!loading ? renderEmptyComponent : null}
-			/>
-
-			{loading && notifications.length === 0 && (
-				<View style={styles.loadingContainer}>
-					<ActivityIndicator size='large' color='#4169E1' />
 				</View>
-			)}
+
+				{unreadCount > 0 && (
+					<TouchableOpacity
+						style={[
+							styles.markAllReadButton,
+							isSmallScreen && styles.smallMarkAllReadButton,
+						]}
+						onPress={() => {
+							notifications
+								.filter((n) => !n.is_read)
+								.forEach((n) => markAsRead(n.id));
+						}}>
+						<Text
+							style={[
+								styles.markAllReadText,
+								isSmallScreen && styles.smallMarkAllReadText,
+							]}>
+							Barchasini o'qilgan deb belgilash
+						</Text>
+					</TouchableOpacity>
+				)}
+
+				<FlatList
+					data={notifications}
+					renderItem={renderNotificationItem}
+					keyExtractor={(item) => item.id}
+					contentContainerStyle={[
+						styles.listContainer,
+						isSmallScreen && styles.smallListContainer,
+					]}
+					refreshControl={
+						<RefreshControl refreshing={loading} onRefresh={refresh} />
+					}
+					ListEmptyComponent={!loading ? renderEmptyComponent : null}
+				/>
+
+				{loading && notifications.length === 0 && (
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size='large' color='#4169E1' />
+					</View>
+				)}
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

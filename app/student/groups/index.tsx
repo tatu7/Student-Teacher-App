@@ -20,6 +20,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import { format } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Group = {
@@ -745,193 +747,195 @@ export default function StudentGroupsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Stack.Screen
-				options={{
-					headerShown: false,
-				}}
-			/>
+			<CustomBackground image={icons.bg5} overlayColor='rgba(0,0,0,0.2)'>
+				<Stack.Screen
+					options={{
+						headerShown: false,
+					}}
+				/>
 
-			<View
-				style={[
-					styles.header,
-					{
-						paddingTop: getResponsiveSize(50, 40, 35),
-						paddingBottom: getResponsiveSize(20, 16, 14),
-						paddingHorizontal: getResponsiveSize(20, 16, 14),
-					},
-				]}>
-				<Text
+				<View
 					style={[
-						styles.headerTitle,
+						styles.header,
 						{
-							fontSize: getResponsiveSize(24, 20, 18),
+							paddingTop: getResponsiveSize(50, 40, 35),
+							paddingBottom: getResponsiveSize(20, 16, 14),
+							paddingHorizontal: getResponsiveSize(20, 16, 14),
 						},
 					]}>
-					Mening guruhlarim
-				</Text>
-				<TouchableOpacity
-					style={[
-						styles.headerButton,
-						{
-							width: getResponsiveSize(36, 32, 30),
-							height: getResponsiveSize(36, 32, 30),
-							borderRadius: getResponsiveSize(18, 16, 15),
-						},
-					]}
-					onPress={openJoinModal}>
-					<Ionicons
-						name='add'
-						size={getResponsiveSize(24, 20, 18)}
-						color='white'
-					/>
-				</TouchableOpacity>
-			</View>
-
-			{loading ? (
-				<View style={styles.loaderContainer}>
-					<ActivityIndicator
-						size={isSmallScreen ? "small" : "large"}
-						color='#4169E1'
-					/>
+					<Text
+						style={[
+							styles.headerTitle,
+							{
+								fontSize: getResponsiveSize(24, 20, 18),
+							},
+						]}>
+						Mening guruhlarim
+					</Text>
+					<TouchableOpacity
+						style={[
+							styles.headerButton,
+							{
+								width: getResponsiveSize(36, 32, 30),
+								height: getResponsiveSize(36, 32, 30),
+								borderRadius: getResponsiveSize(18, 16, 15),
+							},
+						]}
+						onPress={openJoinModal}>
+						<Ionicons
+							name='add'
+							size={getResponsiveSize(24, 20, 18)}
+							color='white'
+						/>
+					</TouchableOpacity>
 				</View>
-			) : (
-				<FlatList
-					data={groups}
-					renderItem={renderGroupItem}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={[
-						styles.listContent,
-						{
-							padding: getResponsiveSize(16, 14, 12),
-						},
-					]}
-					ListEmptyComponent={renderEmptyList}
-					refreshing={loading}
-					onRefresh={fetchGroups}
-				/>
-			)}
 
-			{/* Join Group Modal */}
-			<Modal
-				animationType='slide'
-				transparent={true}
-				visible={joinModalVisible}
-				onRequestClose={closeJoinModal}>
-				<TouchableWithoutFeedback onPress={closeJoinModal}>
-					<View style={styles.modalOverlay}>
-						<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-							<View
-								style={[
-									styles.modalContent,
-									{
-										borderRadius: getResponsiveSize(20, 16, 14),
-										padding: getResponsiveSize(20, 16, 14),
-										width: isSmallScreen ? "90%" : "85%",
-									},
-								]}>
-								<Text
-									style={[
-										styles.modalTitle,
-										{
-											fontSize: getResponsiveSize(22, 20, 18),
-											marginBottom: getResponsiveSize(20, 16, 14),
-										},
-									]}>
-									Guruhga Qo'shilish
-								</Text>
+				{loading ? (
+					<View style={styles.loaderContainer}>
+						<ActivityIndicator
+							size={isSmallScreen ? "small" : "large"}
+							color='#4169E1'
+						/>
+					</View>
+				) : (
+					<FlatList
+						data={groups}
+						renderItem={renderGroupItem}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={[
+							styles.listContent,
+							{
+								padding: getResponsiveSize(16, 14, 12),
+							},
+						]}
+						ListEmptyComponent={renderEmptyList}
+						refreshing={loading}
+						onRefresh={fetchGroups}
+					/>
+				)}
 
+				{/* Join Group Modal */}
+				<Modal
+					animationType='slide'
+					transparent={true}
+					visible={joinModalVisible}
+					onRequestClose={closeJoinModal}>
+					<TouchableWithoutFeedback onPress={closeJoinModal}>
+						<View style={styles.modalOverlay}>
+							<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 								<View
 									style={[
-										styles.inputGroup,
+										styles.modalContent,
 										{
-											marginBottom: getResponsiveSize(20, 16, 14),
+											borderRadius: getResponsiveSize(20, 16, 14),
+											padding: getResponsiveSize(20, 16, 14),
+											width: isSmallScreen ? "90%" : "85%",
 										},
 									]}>
 									<Text
 										style={[
-											styles.inputLabel,
+											styles.modalTitle,
 											{
-												fontSize: getResponsiveSize(16, 14, 13),
-												marginBottom: getResponsiveSize(8, 6, 5),
+												fontSize: getResponsiveSize(22, 20, 18),
+												marginBottom: getResponsiveSize(20, 16, 14),
 											},
 										]}>
-										Guruh ID
+										Guruhga Qo'shilish
 									</Text>
-									<TextInput
-										style={[
-											styles.input,
-											{
-												borderRadius: getResponsiveSize(8, 6, 5),
-												padding: getResponsiveSize(12, 10, 8),
-												fontSize: getResponsiveSize(16, 14, 13),
-											},
-										]}
-										placeholder="O'qituvchi bergan guruh ID sini kiriting"
-										value={groupIdInput}
-										onChangeText={setGroupIdInput}
-										autoCapitalize='none'
-									/>
-								</View>
 
-								<View
-									style={[
-										styles.modalButtons,
-										{
-											marginTop: getResponsiveSize(16, 14, 12),
-										},
-									]}>
-									<TouchableOpacity
+									<View
 										style={[
-											styles.cancelButton,
+											styles.inputGroup,
 											{
-												borderRadius: getResponsiveSize(8, 6, 5),
-												padding: getResponsiveSize(12, 10, 8),
-												marginRight: getResponsiveSize(8, 6, 4),
+												marginBottom: getResponsiveSize(20, 16, 14),
 											},
-										]}
-										onPress={closeJoinModal}>
+										]}>
 										<Text
 											style={[
-												styles.cancelButtonText,
+												styles.inputLabel,
 												{
 													fontSize: getResponsiveSize(16, 14, 13),
+													marginBottom: getResponsiveSize(8, 6, 5),
 												},
 											]}>
-											Bekor qilish
+											Guruh ID
 										</Text>
-									</TouchableOpacity>
+										<TextInput
+											style={[
+												styles.input,
+												{
+													borderRadius: getResponsiveSize(8, 6, 5),
+													padding: getResponsiveSize(12, 10, 8),
+													fontSize: getResponsiveSize(16, 14, 13),
+												},
+											]}
+											placeholder="O'qituvchi bergan guruh ID sini kiriting"
+											value={groupIdInput}
+											onChangeText={setGroupIdInput}
+											autoCapitalize='none'
+										/>
+									</View>
 
-									<TouchableOpacity
+									<View
 										style={[
-											styles.joinButton,
+											styles.modalButtons,
 											{
-												borderRadius: getResponsiveSize(8, 6, 5),
-												padding: getResponsiveSize(12, 10, 8),
-												marginLeft: getResponsiveSize(8, 6, 4),
+												marginTop: getResponsiveSize(16, 14, 12),
 											},
-										]}
-										onPress={handleJoinGroup}
-										disabled={joiningGroup}>
-										{joiningGroup ? (
-											<ActivityIndicator size='small' color='#fff' />
-										) : (
+										]}>
+										<TouchableOpacity
+											style={[
+												styles.cancelButton,
+												{
+													borderRadius: getResponsiveSize(8, 6, 5),
+													padding: getResponsiveSize(12, 10, 8),
+													marginRight: getResponsiveSize(8, 6, 4),
+												},
+											]}
+											onPress={closeJoinModal}>
 											<Text
 												style={[
-													styles.joinButtonText,
+													styles.cancelButtonText,
 													{
 														fontSize: getResponsiveSize(16, 14, 13),
 													},
 												]}>
-												Qo'shilish
+												Bekor qilish
 											</Text>
-										)}
-									</TouchableOpacity>
+										</TouchableOpacity>
+
+										<TouchableOpacity
+											style={[
+												styles.joinButton,
+												{
+													borderRadius: getResponsiveSize(8, 6, 5),
+													padding: getResponsiveSize(12, 10, 8),
+													marginLeft: getResponsiveSize(8, 6, 4),
+												},
+											]}
+											onPress={handleJoinGroup}
+											disabled={joiningGroup}>
+											{joiningGroup ? (
+												<ActivityIndicator size='small' color='#fff' />
+											) : (
+												<Text
+													style={[
+														styles.joinButtonText,
+														{
+															fontSize: getResponsiveSize(16, 14, 13),
+														},
+													]}>
+													Qo'shilish
+												</Text>
+											)}
+										</TouchableOpacity>
+									</View>
 								</View>
-							</View>
-						</TouchableWithoutFeedback>
-					</View>
-				</TouchableWithoutFeedback>
-			</Modal>
+							</TouchableWithoutFeedback>
+						</View>
+					</TouchableWithoutFeedback>
+				</Modal>
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

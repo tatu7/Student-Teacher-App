@@ -22,6 +22,8 @@ import {
 } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 const { width, height } = Dimensions.get("window");
 const isSmallDevice = width < 375;
@@ -227,7 +229,7 @@ export default function SignupScreen() {
 						contentContainerStyle={styles.scrollContent}
 						keyboardShouldPersistTaps='handled'>
 						<View style={styles.formContainer}>
-							<Text style={styles.title}>Verify Your Email</Text>
+							<Text style={styles.title}>Emailni tasdiqlang</Text>
 
 							<View style={styles.successMessageContainer}>
 								<Ionicons
@@ -237,12 +239,12 @@ export default function SignupScreen() {
 									style={styles.emailIcon}
 								/>
 								<Text style={styles.successMessage}>
-									We've sent a confirmation email to:
+									Emailingizga tasdiqlash xatini yubordik:
 								</Text>
 								<Text style={styles.emailText}>{email}</Text>
 								<Text style={styles.instructionsText}>
-									Please check your email and click the confirmation link to
-									activate your account.
+									Emailingizni tekshiring va tasdiqlash havolasini bosing
+									hisobingizni aktivlashtiring.
 								</Text>
 							</View>
 
@@ -254,7 +256,7 @@ export default function SignupScreen() {
 									<ActivityIndicator color='#3f51b5' size='small' />
 								) : (
 									<Text style={styles.resendButtonText}>
-										Didn't receive the email? Resend
+										Emailingiz kelmadi? Yana yuborish
 									</Text>
 								)}
 							</TouchableOpacity>
@@ -262,7 +264,7 @@ export default function SignupScreen() {
 							<TouchableOpacity
 								style={styles.button}
 								onPress={() => router.push("/auth/login")}>
-								<Text style={styles.buttonText}>Go to Login</Text>
+								<Text style={styles.buttonText}>Kirish</Text>
 							</TouchableOpacity>
 						</View>
 					</ScrollView>
@@ -281,7 +283,7 @@ export default function SignupScreen() {
 						<TouchableOpacity
 							style={styles.backButton}
 							onPress={() => router.push("/onboarding")}>
-							<Ionicons name='arrow-back' size={24} color='#333' />
+							<Ionicons name='arrow-back' size={24} color='#4169e1' />
 						</TouchableOpacity>
 					),
 				}}
@@ -290,160 +292,179 @@ export default function SignupScreen() {
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : "height"}
 				style={styles.keyboardAvoidView}>
-				<ScrollView
-					contentContainerStyle={styles.scrollContent}
-					showsVerticalScrollIndicator={false}>
-					<View style={styles.welcomeTextContainer}>
-						<Text style={styles.title}>Hisob yaratish</Text>
-						<Text style={styles.subtitle}>Hamkor t'alimga qo'shiling</Text>
-					</View>
+				<CustomBackground image={icons.bg4}>
+					<ScrollView
+						contentContainerStyle={styles.scrollContent}
+						showsVerticalScrollIndicator={false}>
+						<View style={styles.cardContainer}>
+							<View style={styles.card}>
+								<View style={styles.welcomeTextContainer}>
+									<Text style={styles.title}>Hisob yaratish</Text>
+									<Text style={styles.subtitle}>
+										Hamkor t'alimga qo'shiling
+									</Text>
+								</View>
 
-					<View style={styles.formContainer}>
-						<View style={styles.inputContainer}>
-							<Text style={styles.inputLabel}>Ismingiz</Text>
-							<View style={styles.inputWrapper}>
-								<Ionicons
-									name='person-outline'
-									size={22}
-									color='#888'
-									style={styles.inputIcon}
-								/>
-								<TextInput
-									style={styles.input}
-									placeholder='Ismingizni kiriting'
-									value={name}
-									onChangeText={setName}
-								/>
-							</View>
+								<View style={styles.formContainer}>
+									<View style={styles.inputContainer}>
+										<Text style={styles.inputLabel}>Ismingiz</Text>
+										<View style={styles.inputWrapper}>
+											<Ionicons
+												name='person-outline'
+												size={22}
+												color='#666'
+												style={styles.inputIcon}
+											/>
+											<TextInput
+												style={styles.input}
+												placeholder='Ismingizni kiriting'
+												value={name}
+												onChangeText={setName}
+												placeholderTextColor='#999'
+											/>
+										</View>
 
-							<Text style={styles.inputLabel}>Email</Text>
-							<View style={styles.inputWrapper}>
-								<Ionicons
-									name='mail-outline'
-									size={22}
-									color='#888'
-									style={styles.inputIcon}
-								/>
-								<TextInput
-									style={styles.input}
-									placeholder='Email kiriting'
-									value={email}
-									onChangeText={setEmail}
-									autoCapitalize='none'
-									keyboardType='email-address'
-								/>
-							</View>
+										<Text style={styles.inputLabel}>Email</Text>
+										<View style={styles.inputWrapper}>
+											<Ionicons
+												name='mail-outline'
+												size={22}
+												color='#666'
+												style={styles.inputIcon}
+											/>
+											<TextInput
+												style={styles.input}
+												placeholder='Email kiriting'
+												value={email}
+												onChangeText={setEmail}
+												autoCapitalize='none'
+												keyboardType='email-address'
+												placeholderTextColor='#999'
+											/>
+										</View>
 
-							<Text style={styles.inputLabel}>Parol</Text>
-							<View style={styles.inputWrapper}>
-								<Ionicons
-									name='lock-closed-outline'
-									size={22}
-									color='#888'
-									style={styles.inputIcon}
-								/>
-								<TextInput
-									style={styles.input}
-									placeholder='Parolni kiriting'
-									value={password}
-									onChangeText={setPassword}
-									secureTextEntry={!showPassword}
-								/>
-								<TouchableOpacity
-									style={styles.eyeIcon}
-									onPress={() => setShowPassword(!showPassword)}>
-									<Ionicons
-										name={showPassword ? "eye-off-outline" : "eye-outline"}
-										size={22}
-										color='#888'
-									/>
-								</TouchableOpacity>
-							</View>
+										<Text style={styles.inputLabel}>Parol</Text>
+										<View style={styles.inputWrapper}>
+											<Ionicons
+												name='lock-closed-outline'
+												size={22}
+												color='#666'
+												style={styles.inputIcon}
+											/>
+											<TextInput
+												style={styles.input}
+												placeholder='Parolni kiriting'
+												value={password}
+												onChangeText={setPassword}
+												secureTextEntry={!showPassword}
+												placeholderTextColor='#999'
+											/>
+											<TouchableOpacity
+												style={styles.eyeIcon}
+												onPress={() => setShowPassword(!showPassword)}>
+												<Ionicons
+													name={
+														showPassword ? "eye-off-outline" : "eye-outline"
+													}
+													size={22}
+													color='#666'
+												/>
+											</TouchableOpacity>
+										</View>
 
-							<Text style={styles.inputLabel}>Parolni tasdiqlang</Text>
-							<View style={styles.inputWrapper}>
-								<Ionicons
-									name='lock-closed-outline'
-									size={22}
-									color='#888'
-									style={styles.inputIcon}
-								/>
-								<TextInput
-									style={styles.input}
-									placeholder='Parolni qayta kiriting'
-									value={confirmPassword}
-									onChangeText={setConfirmPassword}
-									secureTextEntry={!showConfirmPassword}
-								/>
-								<TouchableOpacity
-									style={styles.eyeIcon}
-									onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-									<Ionicons
-										name={
-											showConfirmPassword ? "eye-off-outline" : "eye-outline"
-										}
-										size={22}
-										color='#888'
-									/>
-								</TouchableOpacity>
+										<Text style={styles.inputLabel}>Parolni tasdiqlang</Text>
+										<View style={styles.inputWrapper}>
+											<Ionicons
+												name='lock-closed-outline'
+												size={22}
+												color='#666'
+												style={styles.inputIcon}
+											/>
+											<TextInput
+												style={styles.input}
+												placeholder='Parolni qayta kiriting'
+												value={confirmPassword}
+												onChangeText={setConfirmPassword}
+												secureTextEntry={!showConfirmPassword}
+												placeholderTextColor='#999'
+											/>
+											<TouchableOpacity
+												style={styles.eyeIcon}
+												onPress={() =>
+													setShowConfirmPassword(!showConfirmPassword)
+												}>
+												<Ionicons
+													name={
+														showConfirmPassword
+															? "eye-off-outline"
+															: "eye-outline"
+													}
+													size={22}
+													color='#666'
+												/>
+											</TouchableOpacity>
+										</View>
+									</View>
+
+									<Text style={styles.inputLabel}>Men:</Text>
+									<View style={styles.roleContainer}>
+										<TouchableOpacity
+											style={[
+												styles.roleButton,
+												selectedRole === UserRole.STUDENT &&
+													styles.selectedRoleButton,
+											]}
+											onPress={() => setSelectedRole(UserRole.STUDENT)}>
+											<Text
+												style={[
+													styles.roleButtonText,
+													selectedRole === UserRole.STUDENT &&
+														styles.selectedRoleButtonText,
+												]}>
+												O'quvchi
+											</Text>
+										</TouchableOpacity>
+										<TouchableOpacity
+											style={[
+												styles.roleButton,
+												selectedRole === UserRole.TEACHER &&
+													styles.selectedRoleButton,
+											]}
+											onPress={() => setSelectedRole(UserRole.TEACHER)}>
+											<Text
+												style={[
+													styles.roleButtonText,
+													selectedRole === UserRole.TEACHER &&
+														styles.selectedRoleButtonText,
+												]}>
+												O'qituvchi
+											</Text>
+										</TouchableOpacity>
+									</View>
+
+									<TouchableOpacity
+										style={[styles.button, loading && styles.buttonDisabled]}
+										onPress={handleSignup}
+										disabled={loading}>
+										{loading ? (
+											<ActivityIndicator color='#fff' size='small' />
+										) : (
+											<Text style={styles.buttonText}>Hisob yaratish</Text>
+										)}
+									</TouchableOpacity>
+
+									<View style={styles.footer}>
+										<Text style={styles.footerText}>Hisobingiz bormi? </Text>
+										<TouchableOpacity
+											onPress={() => router.push("/auth/login")}>
+											<Text style={styles.link}>Kirish</Text>
+										</TouchableOpacity>
+									</View>
+								</View>
 							</View>
 						</View>
-
-						<Text style={styles.inputLabel}>Men:</Text>
-						<View style={styles.roleContainer}>
-							<TouchableOpacity
-								style={[
-									styles.roleButton,
-									selectedRole === UserRole.STUDENT &&
-										styles.selectedRoleButton,
-								]}
-								onPress={() => setSelectedRole(UserRole.STUDENT)}>
-								<Text
-									style={[
-										styles.roleButtonText,
-										selectedRole === UserRole.STUDENT &&
-											styles.selectedRoleButtonText,
-									]}>
-									O'quvchi
-								</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[
-									styles.roleButton,
-									selectedRole === UserRole.TEACHER &&
-										styles.selectedRoleButton,
-								]}
-								onPress={() => setSelectedRole(UserRole.TEACHER)}>
-								<Text
-									style={[
-										styles.roleButtonText,
-										selectedRole === UserRole.TEACHER &&
-											styles.selectedRoleButtonText,
-									]}>
-									O'qituvchi
-								</Text>
-							</TouchableOpacity>
-						</View>
-
-						<TouchableOpacity
-							style={styles.button}
-							onPress={handleSignup}
-							disabled={loading}>
-							{loading ? (
-								<ActivityIndicator color='#fff' size='small' />
-							) : (
-								<Text style={styles.buttonText}>Hisob yaratish</Text>
-							)}
-						</TouchableOpacity>
-
-						<View style={styles.footer}>
-							<Text style={styles.footerText}>Hisobingiz bormi? </Text>
-							<TouchableOpacity onPress={() => router.push("/auth/login")}>
-								<Text style={styles.link}>Kirish</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
-				</ScrollView>
+					</ScrollView>
+				</CustomBackground>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
 	);
@@ -453,10 +474,12 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#fff",
+		paddingHorizontal: width * 0.04,
 	},
 	headerTitle: {
 		fontSize: 18,
 		fontWeight: "600",
+		color: "#333",
 	},
 	backButton: {
 		padding: 8,
@@ -467,60 +490,66 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		padding: 20,
-		paddingTop: 30,
+		justifyContent: "center",
+	},
+	cardContainer: {
+		padding: width * 0.05,
+		justifyContent: "center",
+		alignItems: "center",
+		minHeight: height * 0.9,
+	},
+	card: {
+		backgroundColor: "rgba(255, 255, 255, 0.95)",
+		borderRadius: 20,
+		padding: width * 0.06,
+		width: "100%",
+		maxWidth: 500,
+		shadowColor: "#000",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 5,
 	},
 	welcomeTextContainer: {
-		marginBottom: 20,
-		marginTop: 10,
-	},
-	logoContainer: {
+		marginBottom: height * 0.03,
 		alignItems: "center",
-		marginBottom: 40,
 	},
-	appName: {
-		fontSize: 28,
+	title: {
+		fontSize: isSmallDevice ? 24 : 28,
 		fontWeight: "bold",
-		color: "#3f51b5",
-		marginBottom: 8,
+		color: "#333",
+		textAlign: "center",
 	},
-	appTagline: {
-		fontSize: 16,
+	subtitle: {
+		fontSize: isSmallDevice ? 16 : 18,
 		color: "#666",
 		textAlign: "center",
 	},
 	formContainer: {
 		width: "100%",
 	},
-	title: {
-		fontSize: 24,
-		fontWeight: "bold",
-		color: "#333",
-		marginBottom: 8,
-	},
-	subtitle: {
-		fontSize: 16,
-		color: "#666",
-		marginBottom: 24,
-	},
 	inputContainer: {
 		width: "100%",
-		marginBottom: 24,
 	},
 	inputLabel: {
 		fontSize: 16,
 		fontWeight: "500",
 		color: "#333",
-		marginBottom: 8,
+		marginBottom: 4,
 	},
 	inputWrapper: {
 		flexDirection: "row",
 		alignItems: "center",
+		backgroundColor: "#f5f5f5",
 		borderWidth: 1,
 		borderColor: "#ddd",
-		borderRadius: 8,
-		marginBottom: 16,
+		borderRadius: 12,
+		marginBottom: 10,
 		paddingHorizontal: 12,
+		height: isSmallDevice ? 45 : 50,
 	},
 	inputIcon: {
 		marginRight: 10,
@@ -532,39 +561,52 @@ const styles = StyleSheet.create({
 		flex: 1,
 		height: 50,
 		fontSize: 16,
+		color: "#333",
 	},
 	roleContainer: {
 		flexDirection: "row",
-		marginBottom: 24,
+		marginBottom: 14,
+		gap: 12,
 	},
 	roleButton: {
 		flex: 1,
 		height: 48,
 		borderWidth: 1,
 		borderColor: "#ddd",
-		borderRadius: 8,
+		borderRadius: 12,
 		justifyContent: "center",
 		alignItems: "center",
-		marginRight: 8,
+		backgroundColor: "#f5f5f5",
 	},
 	selectedRoleButton: {
-		borderColor: "#3f51b5",
-		backgroundColor: "#eef0ff",
+		borderColor: "#4169e1",
+		backgroundColor: "#EEF2FF",
 	},
 	roleButtonText: {
 		fontWeight: "500",
-		color: "#333",
+		color: "#666",
 	},
 	selectedRoleButtonText: {
-		color: "#3f51b5",
+		color: "#4169e1",
 	},
 	button: {
-		backgroundColor: "#3f51b5",
-		height: 50,
-		borderRadius: 8,
+		backgroundColor: "#4169e1",
+		height: isSmallDevice ? 45 : 50,
+		borderRadius: 12,
 		justifyContent: "center",
 		alignItems: "center",
 		marginBottom: 16,
+		shadowColor: "#4169e1",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 3,
+	},
+	buttonDisabled: {
+		opacity: 0.7,
 	},
 	buttonText: {
 		color: "white",
@@ -581,7 +623,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 	},
 	link: {
-		color: "#3f51b5",
+		color: "#4169e1",
 		fontWeight: "bold",
 		fontSize: 15,
 	},
@@ -595,14 +637,14 @@ const styles = StyleSheet.create({
 	},
 	successMessage: {
 		fontSize: 16,
-		color: "#666",
+		color: "#333",
 		textAlign: "center",
 		marginBottom: 10,
 	},
 	emailText: {
 		fontSize: 18,
 		fontWeight: "bold",
-		color: "#3f51b5",
+		color: "#4169e1",
 		marginBottom: 20,
 	},
 	instructionsText: {
@@ -614,14 +656,14 @@ const styles = StyleSheet.create({
 	resendButton: {
 		backgroundColor: "transparent",
 		padding: 16,
-		borderRadius: 8,
+		borderRadius: 12,
 		alignItems: "center",
 		marginBottom: 16,
 		borderWidth: 1,
-		borderColor: "#3f51b5",
+		borderColor: "#4169e1",
 	},
 	resendButtonText: {
-		color: "#3f51b5",
+		color: "#4169e1",
 		fontWeight: "bold",
 		fontSize: 14,
 	},
