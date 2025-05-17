@@ -15,18 +15,24 @@ import { Stack, useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
+import { createNotification, NotificationType } from "../../../lib/supabase";
+import { format } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Submission = {
 	id: string;
-	task_id: string;
 	student_id: string;
 	student_name: string;
+	task_id: string;
+	task_title: string;
 	content: string;
 	attachment_url: string | null;
-	rating: number | null;
-	feedback: string | null;
 	submitted_at: string;
+	feedback?: string;
+	rating?: number;
+	status: "pending" | "graded";
 };
 
 export default function SubmissionDetailScreen() {
@@ -41,6 +47,7 @@ export default function SubmissionDetailScreen() {
 	const [feedback, setFeedback] = useState("");
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 
 	useEffect(() => {
 		fetchSubmission();
@@ -50,59 +57,43 @@ export default function SubmissionDetailScreen() {
 		try {
 			setLoading(true);
 
+			// Fetch submission with task and student details
 			const { data, error } = await supabase
 				.from("submissions")
 				.select(
 					`
-          id,
-          task_id,
-          student_id,
-          content,
-          attachment_url,
-          rating,
-          feedback,
-          submitted_at
-        `
+					*,
+					tasks:task_id(title),
+					students:student_id(name)
+				`
 				)
 				.eq("id", submissionId)
 				.single();
 
 			if (error) throw error;
 
-			// Get student profile
-			const { data: profileData, error: profileError } = await supabase
-				.from("user_profiles")
-				.select("id, name, display_name")
-				.eq("id", data.student_id)
-				.single();
+			if (data) {
+				setSubmission({
+					id: data.id,
+					student_id: data.student_id,
+					student_name: data.students?.name || "Unknown",
+					task_id: data.task_id,
+					task_title: data.tasks?.title || "Unknown Task",
+					content: data.content,
+					attachment_url: data.attachment_url,
+					submitted_at: data.submitted_at,
+					feedback: data.feedback,
+					rating: data.rating,
+					status: data.status || "pending",
+				});
 
-			let studentFullName = studentName;
-			if (!profileError && profileData) {
-				studentFullName =
-					profileData.display_name || profileData.name || studentName;
+				// Set initial feedback and rating
+				setFeedback(data.feedback || "");
+				setRating(data.rating || 0);
 			}
-
-			const formattedSubmission = {
-				id: data.id,
-				task_id: data.task_id,
-				student_id: data.student_id,
-				student_name: studentFullName,
-				content: data.content || "",
-				attachment_url: data.attachment_url,
-				rating: data.rating,
-				feedback: data.feedback || "",
-				submitted_at: data.submitted_at,
-			};
-
-			setSubmission(formattedSubmission);
-			setRating(formattedSubmission.rating);
-			setFeedback(formattedSubmission.feedback || "");
 		} catch (error) {
 			console.error("Error fetching submission:", error);
-			Alert.alert(
-				"Xatolik",
-				"Javob ma'lumotlarini yuklashda muammo yuzaga keldi"
-			);
+			Alert.alert("Xato", "Ma'lumotlarni yuklashda xatolik yuz berdi");
 		} finally {
 			setLoading(false);
 		}
@@ -158,6 +149,43 @@ export default function SubmissionDetailScreen() {
 		if (submission?.attachment_url) {
 			// Handle opening the attachment
 			Alert.alert("Ilova", "Ilovani ko'rish funksiyasi ishlab chiqilmoqda");
+		}
+	};
+
+	const handleSubmit = async () => {
+		if (!user || !submission) return;
+
+		try {
+			setSubmitting(true);
+
+			// Update submission with feedback and rating
+			const { error: submissionError } = await supabase
+				.from("submissions")
+				.update({
+					feedback,
+					rating,
+					status: "graded",
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", submission.id);
+
+			if (submissionError) throw submissionError;
+
+			// Send notification to student
+			await createNotification(
+				submission.student_id,
+				"Vazifa baholandi",
+				`"${submission.task_title}" vazifangiz baholandi. Baho: ${rating}/5`,
+				NotificationType.SUBMISSION_GRADED,
+				submission.id
+			);
+
+			router.back();
+		} catch (error) {
+			console.error("Error updating submission:", error);
+			Alert.alert("Xato", "Bahoni saqlashda xatolik yuz berdi");
+		} finally {
+			setSubmitting(false);
 		}
 	};
 
@@ -247,9 +275,9 @@ export default function SubmissionDetailScreen() {
 				{/* Save Button */}
 				<TouchableOpacity
 					style={styles.saveButton}
-					onPress={handleSaveRating}
-					disabled={saving}>
-					{saving ? (
+					onPress={handleSubmit}
+					disabled={submitting}>
+					{submitting ? (
 						<ActivityIndicator color='#fff' size='small' />
 					) : (
 						<Text style={styles.saveButtonText}>Saqlash</Text>

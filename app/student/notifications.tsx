@@ -1,209 +1,176 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	StyleSheet,
 	View,
 	Text,
-	FlatList,
 	TouchableOpacity,
+	FlatList,
 	ActivityIndicator,
-	RefreshControl,
-	Image,
 	SafeAreaView,
-	useWindowDimensions,
+	RefreshControl,
 } from "react-native";
-import { useNotifications } from "../../context/NotificationsContext";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { formatDistanceToNow } from "date-fns";
+import { Stack } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import {
+	getUserNotifications,
+	markNotificationAsRead,
+	markAllNotificationsAsRead,
+	NotificationType,
+} from "../../lib/supabase";
+import { format } from "date-fns";
 import CustomBackground from "@/components/CustomBackground";
 import { icons } from "@/constants/icons";
 
-type NotificationItem = {
+type Notification = {
 	id: string;
-	user_id: string;
-	type: string;
-	data: {
-		message?: string;
-		[key: string]: any;
-	};
+	title: string;
+	message: string;
+	type: NotificationType;
 	is_read: boolean;
 	created_at: string;
+	related_id?: string;
 };
 
-export default function NotificationsScreen() {
-	const { notifications, loading, markAsRead, refresh, unreadCount } =
-		useNotifications();
-	const { width } = useWindowDimensions();
-	const isSmallScreen = width < 375;
+export default function StudentNotificationsScreen() {
+	const { user } = useAuth();
+	const [notifications, setNotifications] = useState<Notification[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
 
-	const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
-		const getIcon = () => {
-			const iconSize = isSmallScreen ? 20 : 24;
+	const fetchNotifications = async () => {
+		if (!user) return;
 
-			switch (item.type) {
-				case "task_assigned":
-					return (
-						<MaterialIcons name='assignment' size={iconSize} color='#4169E1' />
-					);
-				case "group_invitation":
-					return <Ionicons name='people' size={iconSize} color='#4169E1' />;
-				default:
-					return (
-						<Ionicons name='notifications' size={iconSize} color='#4169E1' />
-					);
-			}
-		};
+		try {
+			const { data, error } = await getUserNotifications(user.id);
+			if (error) throw error;
+			setNotifications(data || []);
+		} catch (error) {
+			console.error("Error fetching notifications:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
 
-		const getTitle = () => {
-			switch (item.type) {
-				case "task_assigned":
-					return "Yangi vazifa qo'shildi";
-				case "group_invitation":
-					return "Guruh taklifi";
-				default:
-					return "Xabar";
-			}
-		};
+	useEffect(() => {
+		fetchNotifications();
+	}, [user]);
 
-		const getTime = () => {
-			try {
-				return formatDistanceToNow(new Date(item.created_at), {
-					addSuffix: true,
-				});
-			} catch (e) {
-				return "";
-			}
-		};
+	const onRefresh = async () => {
+		setRefreshing(true);
+		await fetchNotifications();
+		setRefreshing(false);
+	};
 
-		const iconContainerSize = isSmallScreen ? 36 : 44;
-		const dotSize = isSmallScreen ? 10 : 12;
+	const handleMarkAsRead = async (notificationId: string) => {
+		try {
+			await markNotificationAsRead(notificationId);
+			setNotifications((prev) =>
+				prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+			);
+		} catch (error) {
+			console.error("Error marking notification as read:", error);
+		}
+	};
+
+	const handleMarkAllAsRead = async () => {
+		if (!user) return;
+
+		try {
+			await markAllNotificationsAsRead(user.id);
+			setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+		} catch (error) {
+			console.error("Error marking all notifications as read:", error);
+		}
+	};
+
+	const getNotificationIcon = (type: NotificationType) => {
+		switch (type) {
+			case NotificationType.SUBMISSION_GRADED:
+				return {
+					name: "checkmark-circle-outline",
+					color: "#4CAF50",
+				};
+			default:
+				return {
+					name: "notifications-outline",
+					color: "#666",
+				};
+		}
+	};
+
+	const renderNotificationItem = ({ item }: { item: Notification }) => {
+		const icon = getNotificationIcon(item.type);
 
 		return (
 			<TouchableOpacity
 				style={[
 					styles.notificationItem,
-					{ backgroundColor: item.is_read ? "white" : "#EEF1FF" },
-					isSmallScreen && styles.smallNotificationItem,
+					!item.is_read && styles.unreadNotification,
 				]}
-				onPress={() => markAsRead(item.id)}>
-				<View
-					style={[
-						styles.iconContainer,
-						{
-							width: iconContainerSize,
-							height: iconContainerSize,
-							borderRadius: iconContainerSize / 2,
-						},
-					]}>
-					{getIcon()}
-					{!item.is_read && (
-						<View
-							style={[
-								styles.unreadDot,
-								{
-									width: dotSize,
-									height: dotSize,
-									borderRadius: dotSize / 2,
-								},
-							]}
-						/>
-					)}
+				onPress={() => handleMarkAsRead(item.id)}>
+				<View style={styles.notificationIcon}>
+					<Ionicons name={icon.name as any} size={24} color={icon.color} />
 				</View>
-
-				<View style={styles.contentContainer}>
-					<View style={styles.headerRow}>
-						<Text
-							style={[
-								styles.notificationTitle,
-								isSmallScreen && styles.smallNotificationTitle,
-							]}>
-							{getTitle()}
-						</Text>
-						<Text
-							style={[styles.timeText, isSmallScreen && styles.smallTimeText]}>
-							{getTime()}
-						</Text>
-					</View>
-
-					<Text
-						style={[
-							styles.messageText,
-							isSmallScreen && styles.smallMessageText,
-						]}>
-						{item.data?.message || "Sizda yangi xabar bor"}
+				<View style={styles.notificationContent}>
+					<Text style={styles.notificationTitle}>{item.type}</Text>
+					<Text style={styles.notificationMessage}>{item.message}</Text>
+					<Text style={styles.notificationTime}>
+						{format(new Date(item.created_at), "MMM d, yyyy HH:mm")}
 					</Text>
 				</View>
+				{!item.is_read && <View style={styles.unreadDot} />}
 			</TouchableOpacity>
 		);
 	};
 
-	const renderEmptyComponent = () => (
+	const renderEmptyState = () => (
 		<View style={styles.emptyContainer}>
-			<Text
-				style={[styles.emptyTitle, isSmallScreen && styles.smallEmptyTitle]}>
-				Hozircha xabarlar yo'q
-			</Text>
-			<Text
-				style={[
-					styles.emptySubtitle,
-					isSmallScreen && styles.smallEmptySubtitle,
-				]}>
-				Bu yerda topshiriqlar va guruhlar haqidagi xabarlarni ko'rasiz
-			</Text>
+			<Ionicons name='notifications-off-outline' size={60} color='#DDD' />
+			<Text style={styles.emptyText}>Hech qanday bildirishnoma yo'q</Text>
 		</View>
 	);
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<CustomBackground image={icons.bg6} overlayColor='rgba(0,0,0,0.4)'>
-				<View style={styles.header}>
-					<Text
-						style={[
-							styles.headerTitle,
-							isSmallScreen && styles.smallHeaderTitle,
-						]}>
-						Xabarlar
-					</Text>
-				</View>
-
-				{unreadCount > 0 && (
-					<TouchableOpacity
-						style={[
-							styles.markAllReadButton,
-							isSmallScreen && styles.smallMarkAllReadButton,
-						]}
-						onPress={() => {
-							notifications
-								.filter((n) => !n.is_read)
-								.forEach((n) => markAsRead(n.id));
-						}}>
-						<Text
-							style={[
-								styles.markAllReadText,
-								isSmallScreen && styles.smallMarkAllReadText,
-							]}>
-							Barchasini o'qilgan deb belgilash
-						</Text>
-					</TouchableOpacity>
-				)}
-
-				<FlatList
-					data={notifications}
-					renderItem={renderNotificationItem}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={[
-						styles.listContainer,
-						isSmallScreen && styles.smallListContainer,
-					]}
-					refreshControl={
-						<RefreshControl refreshing={loading} onRefresh={refresh} />
-					}
-					ListEmptyComponent={!loading ? renderEmptyComponent : null}
+			<CustomBackground image={icons.bg6}>
+				<Stack.Screen
+					options={{
+						title: "Bildirishnomalar",
+						headerTitleStyle: {
+							color: "#fff",
+						},
+						headerStyle: {
+							backgroundColor: "transparent",
+						},
+						headerRight: () =>
+							notifications.some((n) => !n.is_read) ? (
+								<TouchableOpacity
+									style={styles.markAllButton}
+									onPress={handleMarkAllAsRead}>
+									<Text style={styles.markAllText}>
+										Hammasini o'qilgan deb belgilash
+									</Text>
+								</TouchableOpacity>
+							) : null,
+					}}
 				/>
 
-				{loading && notifications.length === 0 && (
+				{loading ? (
 					<View style={styles.loadingContainer}>
 						<ActivityIndicator size='large' color='#4169E1' />
 					</View>
+				) : (
+					<FlatList
+						data={notifications}
+						renderItem={renderNotificationItem}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={styles.listContent}
+						ListEmptyComponent={renderEmptyState}
+						refreshControl={
+							<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+						}
+					/>
 				)}
 			</CustomBackground>
 		</SafeAreaView>
@@ -214,160 +181,85 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#F5F7FA",
+		marginTop: 32,
 	},
-	header: {
-		backgroundColor: "#4169E1",
-		paddingTop: 50,
-		paddingBottom: 20,
-		paddingHorizontal: 16,
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
 	},
-	headerTitle: {
-		fontSize: 24,
-		fontWeight: "bold",
-		color: "white",
-	},
-	smallHeaderTitle: {
-		fontSize: 20,
-	},
-	markAllReadButton: {
-		alignSelf: "flex-end",
-		paddingVertical: 8,
-		paddingHorizontal: 16,
-		marginTop: 8,
-		marginRight: 16,
-	},
-	smallMarkAllReadButton: {
-		paddingVertical: 6,
-		paddingHorizontal: 12,
-		marginTop: 6,
-		marginRight: 12,
-	},
-	markAllReadText: {
-		color: "#4169E1",
-		fontWeight: "600",
-		fontSize: 14,
-	},
-	smallMarkAllReadText: {
-		fontSize: 12,
-	},
-	listContainer: {
+	listContent: {
+		padding: 16,
 		flexGrow: 1,
-		paddingHorizontal: 16,
-		paddingBottom: 20,
-	},
-	smallListContainer: {
-		paddingHorizontal: 12,
-		paddingBottom: 16,
 	},
 	notificationItem: {
 		flexDirection: "row",
-		padding: 16,
+		backgroundColor: "white",
 		borderRadius: 12,
-		marginTop: 12,
+		padding: 16,
+		marginBottom: 12,
+		alignItems: "center",
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.05,
-		shadowRadius: 2,
+		shadowRadius: 3,
 		elevation: 2,
 	},
-	smallNotificationItem: {
-		padding: 12,
-		borderRadius: 10,
-		marginTop: 8,
+	unreadNotification: {
+		backgroundColor: "#F8F9FF",
 	},
-	iconContainer: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: "#EEF1FE",
+	notificationIcon: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: "#F0F3FF",
 		justifyContent: "center",
 		alignItems: "center",
-		marginRight: 16,
+		marginRight: 12,
 	},
-	unreadDot: {
-		position: "absolute",
-		right: 0,
-		top: 0,
-		width: 12,
-		height: 12,
-		borderRadius: 6,
-		backgroundColor: "#f44336",
-		borderWidth: 2,
-		borderColor: "white",
-	},
-	contentContainer: {
+	notificationContent: {
 		flex: 1,
-	},
-	headerRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 4,
 	},
 	notificationTitle: {
 		fontSize: 16,
 		fontWeight: "600",
 		color: "#333",
+		marginBottom: 4,
 	},
-	smallNotificationTitle: {
+	notificationMessage: {
 		fontSize: 14,
+		color: "#666",
+		marginBottom: 6,
 	},
-	timeText: {
+	notificationTime: {
 		fontSize: 12,
 		color: "#999",
 	},
-	smallTimeText: {
-		fontSize: 10,
-	},
-	messageText: {
-		fontSize: 14,
-		color: "#666",
-		lineHeight: 20,
-	},
-	smallMessageText: {
-		fontSize: 12,
-		lineHeight: 16,
-	},
-	loadingContainer: {
-		...StyleSheet.absoluteFillObject,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "rgba(255,255,255,0.7)",
+	unreadDot: {
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: "#4169E1",
+		marginLeft: 8,
 	},
 	emptyContainer: {
-		alignItems: "center",
+		flex: 1,
 		justifyContent: "center",
-		paddingTop: 80,
-		paddingHorizontal: 32,
+		alignItems: "center",
+		padding: 20,
+		marginTop: 100,
 	},
-	emptyImage: {
-		width: 150,
-		height: 150,
-		marginBottom: 20,
-	},
-	smallEmptyImage: {
-		width: 120,
-		height: 120,
-		marginBottom: 16,
-	},
-	emptyTitle: {
-		fontSize: 20,
-		fontWeight: "bold",
-		color: "#fff",
-		marginBottom: 8,
-	},
-	smallEmptyTitle: {
-		fontSize: 18,
-		marginBottom: 6,
-	},
-	emptySubtitle: {
+	emptyText: {
 		fontSize: 16,
-		color: "#fff",
+		color: "#666",
+		marginTop: 12,
 		textAlign: "center",
-		lineHeight: 22,
 	},
-	smallEmptySubtitle: {
+	markAllButton: {
+		marginRight: 16,
+	},
+	markAllText: {
+		color: "#fff",
 		fontSize: 14,
-		lineHeight: 18,
 	},
 });

@@ -1,205 +1,181 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	StyleSheet,
 	View,
 	Text,
-	FlatList,
 	TouchableOpacity,
+	FlatList,
 	ActivityIndicator,
-	RefreshControl,
-	Image,
 	SafeAreaView,
-	useWindowDimensions,
+	RefreshControl,
 } from "react-native";
-import { useNotifications } from "../../context/NotificationsContext";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { formatDistanceToNow } from "date-fns";
-import { icons } from "@/constants/icons";
+import { Stack } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import {
+	getUserNotifications,
+	markNotificationAsRead,
+	markAllNotificationsAsRead,
+	NotificationType,
+} from "../../lib/supabase";
+import { format } from "date-fns";
 import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
-type NotificationItem = {
+type Notification = {
 	id: string;
-	user_id: string;
-	type: string;
-	data: {
-		message?: string;
-		[key: string]: any;
-	};
+	title: string;
+	message: string;
+	type: NotificationType;
 	is_read: boolean;
 	created_at: string;
+	related_id?: string;
 };
 
-export default function NotificationsScreen() {
-	const { notifications, loading, markAsRead, refresh, unreadCount } =
-		useNotifications();
-	const { width } = useWindowDimensions();
-	const isSmallScreen = width < 375;
-	const isVerySmallScreen = width < 320;
+export default function TeacherNotificationsScreen() {
+	const { user } = useAuth();
+	const [notifications, setNotifications] = useState<Notification[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
 
-	const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
-		const getIcon = () => {
-			const iconSize = isSmallScreen ? 20 : 24;
+	const fetchNotifications = async () => {
+		if (!user) return;
 
-			switch (item.type) {
-				case "submission_received":
-					return (
-						<MaterialIcons
-							name='assignment-turned-in'
-							size={iconSize}
-							color='#4169E1'
-						/>
-					);
-				case "group_update":
-					return <Ionicons name='people' size={iconSize} color='#4169E1' />;
-				default:
-					return (
-						<Ionicons name='notifications' size={iconSize} color='#4169E1' />
-					);
-			}
-		};
+		try {
+			const { data, error } = await getUserNotifications(user.id);
+			if (error) throw error;
+			setNotifications(data || []);
+		} catch (error) {
+			console.error("Error fetching notifications:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
 
-		const getTitle = () => {
-			switch (item.type) {
-				case "submission_received":
-					return "Yangi Topshiriq";
-				case "group_update":
-					return "Guruh Yangilanishi";
-				default:
-					return "Xabarnoma";
-			}
-		};
+	useEffect(() => {
+		fetchNotifications();
+	}, [user]);
 
-		const getTime = () => {
-			try {
-				return formatDistanceToNow(new Date(item.created_at), {
-					addSuffix: true,
-				});
-			} catch (e) {
-				return "";
-			}
-		};
+	const onRefresh = async () => {
+		setRefreshing(true);
+		await fetchNotifications();
+		setRefreshing(false);
+	};
+
+	const handleMarkAsRead = async (notificationId: string) => {
+		try {
+			await markNotificationAsRead(notificationId);
+			setNotifications((prev) =>
+				prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+			);
+		} catch (error) {
+			console.error("Error marking notification as read:", error);
+		}
+	};
+
+	const handleMarkAllAsRead = async () => {
+		if (!user) return;
+
+		try {
+			await markAllNotificationsAsRead(user.id);
+			setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+		} catch (error) {
+			console.error("Error marking all notifications as read:", error);
+		}
+	};
+
+	const getNotificationIcon = (type: NotificationType) => {
+		switch (type) {
+			case NotificationType.NEW_SUBMISSION:
+				return {
+					name: "document-text-outline",
+					color: "#4169E1",
+				};
+			case NotificationType.SUBMISSION_GRADED:
+				return {
+					name: "checkmark-circle-outline",
+					color: "#4CAF50",
+				};
+			default:
+				return {
+					name: "notifications-outline",
+					color: "#666",
+				};
+		}
+	};
+
+	const renderNotificationItem = ({ item }: { item: Notification }) => {
+		const icon = getNotificationIcon(item.type);
 
 		return (
 			<TouchableOpacity
 				style={[
 					styles.notificationItem,
-					{ backgroundColor: item.is_read ? "white" : "#EEF6FF" },
-					isSmallScreen && styles.notificationItemSmall,
+					!item.is_read && styles.unreadNotification,
 				]}
-				onPress={() => markAsRead(item.id)}>
-				<View
-					style={[
-						styles.iconContainer,
-						isSmallScreen && styles.iconContainerSmall,
-					]}>
-					{getIcon()}
-					{!item.is_read && (
-						<View
-							style={[styles.unreadDot, isSmallScreen && styles.unreadDotSmall]}
-						/>
-					)}
+				onPress={() => handleMarkAsRead(item.id)}>
+				<View style={styles.notificationIcon}>
+					<Ionicons name={icon.name as any} size={24} color={icon.color} />
 				</View>
-
-				<View style={styles.contentContainer}>
-					<View style={styles.headerRow}>
-						<Text
-							style={[
-								styles.notificationTitle,
-								isSmallScreen && styles.notificationTitleSmall,
-							]}>
-							{getTitle()}
-						</Text>
-						<Text
-							style={[styles.timeText, isSmallScreen && styles.timeTextSmall]}>
-							{getTime()}
-						</Text>
-					</View>
-
-					<Text
-						style={[
-							styles.messageText,
-							isSmallScreen && styles.messageTextSmall,
-						]}>
-						{item.data?.message || "Sizda yangi xabarnoma mavjud"}
+				<View style={styles.notificationContent}>
+					<Text style={styles.notificationTitle}>{item.type}</Text>
+					<Text style={styles.notificationMessage}>{item.message}</Text>
+					<Text style={styles.notificationTime}>
+						{format(new Date(item.created_at), "MMM d, yyyy HH:mm")}
 					</Text>
 				</View>
+				{!item.is_read && <View style={styles.unreadDot} />}
 			</TouchableOpacity>
 		);
 	};
 
-	const renderEmptyComponent = () => (
+	const renderEmptyState = () => (
 		<View style={styles.emptyContainer}>
-			<Ionicons
-				name='notifications-outline'
-				size={isSmallScreen ? 60 : 80}
-				color='#D0D7F0'
-			/>
-			<Text
-				style={[styles.emptyTitle, isSmallScreen && styles.emptyTitleSmall]}>
-				Xabarnomalar yo'q
-			</Text>
-			<Text
-				style={[
-					styles.emptySubtitle,
-					isSmallScreen && styles.emptySubtitleSmall,
-				]}>
-				Bu yerda topshiriqlar va guruhlar haqidagi xabarlarni ko'rasiz
-			</Text>
+			<Ionicons name='notifications-off-outline' size={60} color='#DDD' />
+			<Text style={styles.emptyText}>Hech qanday bildirishnoma yo'q</Text>
 		</View>
 	);
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<CustomBackground image={icons.bg6}>
-				<View style={[styles.header, isSmallScreen && styles.headerSmall]}>
-					<Text
-						style={[
-							styles.headerTitle,
-							isSmallScreen && styles.headerTitleSmall,
-						]}>
-						Xabarnomalar
-					</Text>
-				</View>
-
-				{unreadCount > 0 && (
-					<TouchableOpacity
-						style={[
-							styles.markAllReadButton,
-							isSmallScreen && styles.markAllReadButtonSmall,
-						]}
-						onPress={() => {
-							notifications
-								.filter((n) => !n.is_read)
-								.forEach((n) => markAsRead(n.id));
-						}}>
-						<Text
-							style={[
-								styles.markAllReadText,
-								isSmallScreen && styles.markAllReadTextSmall,
-							]}>
-							Barchasini o'qilgan deb belgilash
-						</Text>
-					</TouchableOpacity>
-				)}
-
-				<FlatList
-					data={notifications}
-					renderItem={renderNotificationItem}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={[
-						styles.listContainer,
-						isSmallScreen && styles.listContainerSmall,
-					]}
-					refreshControl={
-						<RefreshControl refreshing={loading} onRefresh={refresh} />
-					}
-					ListEmptyComponent={!loading ? renderEmptyComponent : null}
+			<CustomBackground image={icons.bg4} overlayColor='rgba(0,0,0,0.4)'>
+				<Stack.Screen
+					options={{
+						title: "Bildirishnomalar",
+						headerTitleStyle: {
+							color: "#fff",
+						},
+						headerStyle: {
+							backgroundColor: "transparent",
+						},
+						headerRight: () =>
+							notifications.some((n) => !n.is_read) ? (
+								<TouchableOpacity
+									style={styles.markAllButton}
+									onPress={handleMarkAllAsRead}>
+									<Text style={styles.markAllText}>
+										Hammasini o'qilgan deb belgilash
+									</Text>
+								</TouchableOpacity>
+							) : null,
+					}}
 				/>
 
-				{loading && notifications.length === 0 && (
+				{loading ? (
 					<View style={styles.loadingContainer}>
 						<ActivityIndicator size='large' color='#4169E1' />
 					</View>
+				) : (
+					<FlatList
+						data={notifications}
+						renderItem={renderNotificationItem}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={styles.listContent}
+						ListEmptyComponent={renderEmptyState}
+						refreshControl={
+							<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+						}
+					/>
 				)}
 			</CustomBackground>
 		</SafeAreaView>
@@ -210,181 +186,85 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#F5F7FA",
+		marginTop: 40,
 	},
-	header: {
-		backgroundColor: "#4169E1",
-		paddingTop: 50,
-		paddingBottom: 20,
-		paddingHorizontal: 20,
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
 	},
-	headerSmall: {
-		paddingTop: 40,
-		paddingBottom: 16,
-		paddingHorizontal: 16,
-	},
-	headerTitle: {
-		fontSize: 24,
-		fontWeight: "bold",
-		color: "white",
-	},
-	headerTitleSmall: {
-		fontSize: 20,
-	},
-	markAllReadButton: {
-		alignSelf: "flex-end",
-		paddingVertical: 10,
-		paddingHorizontal: 16,
-		marginTop: 16,
-		marginRight: 16,
-		backgroundColor: "#EEF6FF",
-		borderRadius: 8,
-	},
-	markAllReadButtonSmall: {
-		paddingVertical: 8,
-		paddingHorizontal: 12,
-		marginTop: 12,
-		marginRight: 12,
-		borderRadius: 6,
-	},
-	markAllReadText: {
-		color: "#4169E1",
-		fontWeight: "600",
-		fontSize: 14,
-	},
-	markAllReadTextSmall: {
-		fontSize: 12,
-	},
-	listContainer: {
+	listContent: {
+		padding: 16,
 		flexGrow: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 16,
-	},
-	listContainerSmall: {
-		paddingHorizontal: 12,
-		paddingVertical: 12,
 	},
 	notificationItem: {
 		flexDirection: "row",
+		backgroundColor: "white",
+		borderRadius: 12,
 		padding: 16,
-		borderRadius: 16,
 		marginBottom: 12,
+		alignItems: "center",
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.05,
-		shadowRadius: 5,
+		shadowRadius: 3,
 		elevation: 2,
 	},
-	notificationItemSmall: {
-		padding: 12,
-		borderRadius: 12,
-		marginBottom: 10,
+	unreadNotification: {
+		backgroundColor: "#F8F9FF",
 	},
-	iconContainer: {
-		width: 48,
-		height: 48,
-		borderRadius: 24,
-		backgroundColor: "#EEF6FF",
-		justifyContent: "center",
-		alignItems: "center",
-		marginRight: 16,
-	},
-	iconContainerSmall: {
+	notificationIcon: {
 		width: 40,
 		height: 40,
 		borderRadius: 20,
+		backgroundColor: "#F0F3FF",
+		justifyContent: "center",
+		alignItems: "center",
 		marginRight: 12,
 	},
-	unreadDot: {
-		position: "absolute",
-		right: 0,
-		top: 0,
-		width: 10,
-		height: 10,
-		borderRadius: 5,
-		backgroundColor: "#FF5252",
-		borderWidth: 2,
-		borderColor: "white",
-	},
-	unreadDotSmall: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		borderWidth: 1.5,
-	},
-	contentContainer: {
+	notificationContent: {
 		flex: 1,
-	},
-	headerRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		marginBottom: 6,
 	},
 	notificationTitle: {
 		fontSize: 16,
 		fontWeight: "600",
 		color: "#333",
+		marginBottom: 4,
 	},
-	notificationTitleSmall: {
+	notificationMessage: {
 		fontSize: 14,
+		color: "#666",
+		marginBottom: 6,
 	},
-	timeText: {
+	notificationTime: {
 		fontSize: 12,
 		color: "#999",
 	},
-	timeTextSmall: {
-		fontSize: 10,
-	},
-	messageText: {
-		fontSize: 14,
-		color: "#666",
-		lineHeight: 20,
-	},
-	messageTextSmall: {
-		fontSize: 12,
-		lineHeight: 18,
+	unreadDot: {
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: "#4169E1",
+		marginLeft: 8,
 	},
 	emptyContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		paddingHorizontal: 40,
-		paddingBottom: 40,
-		marginTop: 60,
+		padding: 20,
+		marginTop: 100,
 	},
-	emptyTitle: {
-		fontSize: 18,
-		fontWeight: "600",
-		color: "#333",
-		marginTop: 16,
-	},
-	emptyTitleSmall: {
+	emptyText: {
 		fontSize: 16,
+		color: "#666",
 		marginTop: 12,
-	},
-	emptySubtitle: {
-		fontSize: 14,
-		color: "#000",
 		textAlign: "center",
-		marginTop: 8,
 	},
-	emptySubtitleSmall: {
-		fontSize: 12,
-		marginTop: 6,
+	markAllButton: {
+		marginRight: 16,
 	},
-	emptyImage: {
-		width: 120,
-		height: 120,
-		resizeMode: "contain",
-		marginBottom: 16,
-	},
-	loadingContainer: {
-		position: "absolute",
-		top: 0,
-		left: 0,
-		right: 0,
-		bottom: 0,
-		justifyContent: "center",
-		alignItems: "center",
+	markAllText: {
+		color: "#fff",
+		fontSize: 14,
 	},
 });

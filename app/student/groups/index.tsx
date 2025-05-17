@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../../../lib/supabase";
+import { supabase, notifyTeacherStudentJoined } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import { format } from "date-fns";
 import CustomBackground from "@/components/CustomBackground";
@@ -644,7 +644,7 @@ export default function StudentGroupsScreen() {
 			// First check if the group exists
 			const { data: groupData, error: groupError } = await supabase
 				.from("groups")
-				.select("id, name")
+				.select("id, name, teacher_id")
 				.eq("id", groupIdInput.trim())
 				.single();
 
@@ -719,6 +719,19 @@ export default function StudentGroupsScreen() {
 				Alert.alert("Xato", "Guruhga qo'shilishda xatolik yuz berdi");
 				setJoiningGroup(false);
 				return;
+			}
+
+			// Send notification to teacher
+			try {
+				await notifyTeacherStudentJoined({
+					teacherId: groupData.teacher_id,
+					studentName: user?.display_name || userEmail,
+					groupName: groupData.name,
+					groupId: groupData.id,
+				});
+			} catch (notifyError) {
+				console.error("Error sending notification:", notifyError);
+				// Don't block the join process if notification fails
 			}
 
 			// Close the modal and refresh the groups list

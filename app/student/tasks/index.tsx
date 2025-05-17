@@ -220,7 +220,7 @@ export default function StudentTasksScreen() {
 					</Text>
 					{item.status === "completed" && item.rating && (
 						<View style={styles.gradeContainer}>
-							<Text style={styles.gradeText}>{item.rating}/100</Text>
+							<Text style={styles.gradeText}>{item.rating}/10</Text>
 						</View>
 					)}
 				</View>

@@ -18,7 +18,12 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../../../lib/supabase";
+import {
+	supabase,
+	createNotification,
+	NotificationType,
+	notifyTaskAssigned,
+} from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import { format } from "date-fns";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -305,6 +310,33 @@ export default function GroupsScreen() {
 					);
 				} finally {
 					setFileUploading(false);
+				}
+			}
+
+			// Get all students in the group
+			const { data: students, error: studentsError } = await supabase
+				.from("group_students")
+				.select("student_id")
+				.eq("group_id", selectedGroup.id)
+				.eq("status", "active");
+
+			if (studentsError) {
+				console.error("Error fetching students:", studentsError);
+			} else if (students && students.length > 0) {
+				// Send notification to each student
+				try {
+					await Promise.all(
+						students.map((student) =>
+							notifyTaskAssigned({
+								studentId: student.student_id,
+								taskTitle: `"${selectedGroup.name}" guruhida: ${taskTitle}`,
+								taskId: taskData.id,
+							})
+						)
+					);
+				} catch (notifyError) {
+					console.error("Error sending notifications:", notifyError);
+					// Don't block task creation if notifications fail
 				}
 			}
 

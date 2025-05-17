@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../../../lib/supabase";
+import { supabase, notifyGroupInvitation } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function CreateGroupScreen() {
@@ -72,11 +72,34 @@ export default function CreateGroupScreen() {
 
 					if (studentsError) {
 						console.error("Error adding students:", studentsError);
-						// We don't throw here to avoid canceling the group creation
 						Alert.alert(
 							"Partial Success",
 							"Group created but there was an issue adding some students."
 						);
+					} else {
+						// Send notifications to all added students
+						try {
+							// Get user IDs for the emails
+							const { data: userProfiles } = await supabase
+								.from("user_profiles")
+								.select("id")
+								.in("email", emails);
+
+							if (userProfiles) {
+								await Promise.all(
+									userProfiles.map((profile) =>
+										notifyGroupInvitation({
+											studentId: profile.id,
+											groupName,
+											groupId: newGroupId,
+										})
+									)
+								);
+							}
+						} catch (notifyError) {
+							console.error("Error sending notifications:", notifyError);
+							// Don't block group creation if notifications fail
+						}
 					}
 				}
 			}

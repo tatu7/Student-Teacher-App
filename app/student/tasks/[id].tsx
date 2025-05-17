@@ -15,7 +15,11 @@ import {
 } from "react-native";
 import { Stack, useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
-import { supabase } from "../../../lib/supabase";
+import {
+	supabase,
+	createNotification,
+	NotificationType,
+} from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import {
 	pickDocument,
@@ -24,6 +28,9 @@ import {
 } from "../../../lib/files";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import { format } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Task = {
@@ -31,6 +38,10 @@ type Task = {
 	title: string;
 	description: string;
 	due_date: string;
+	group_id: string;
+	group_name: string;
+	teacher_id: string;
+	created_at: string;
 	status: "pending" | "completed" | "overdue";
 	has_files?: boolean;
 	file_info?: {
@@ -77,119 +88,53 @@ export default function TaskDetailsScreen() {
 		try {
 			setLoading(true);
 
-			if (!user || !id) return;
-
-			// Fetch task details with file info
+			// Fetch task details with group info
 			const { data: taskData, error: taskError } = await supabase
 				.from("tasks")
 				.select(
 					`
-          id,
-          title,
-          description,
-          due_date,
-          has_files
-        `
+					*,
+					groups:group_id(name, teacher_id)
+				`
 				)
 				.eq("id", id)
 				.single();
 
 			if (taskError) throw taskError;
 
-			// Fetch task file info if it has files
-			let fileInfo = null;
-			if (taskData.has_files) {
-				const { data: fileData, error: fileError } = await supabase
-					.from("task_files")
-					.select("file_name, file_path")
-					.eq("task_id", id)
-					.maybeSingle();
-
-				if (!fileError && fileData) {
-					fileInfo = {
-						name: fileData.file_name,
-						path: fileData.file_path,
-					};
-				}
-			}
-
-			// Fetch existing submission by this student
-			const { data: submissionData, error: submissionError } = await supabase
-				.from("submissions")
-				.select(
-					`
-          id,
-          content,
-          submitted_at,
-          updated_at,
-          feedback,
-          rating,
-          has_files,
-          file_path,
-          file_name,
-          file_type,
-          file_size
-        `
-				)
-				.eq("task_id", id)
-				.eq("student_id", user.id)
-				.maybeSingle();
-
-			if (submissionError && submissionError.code !== "PGRST116")
-				throw submissionError;
-
-			// Set submission file info from the submission record instead of separate table
-			let submissionFileInfo = null;
-			let hasSubmissionFiles = false;
-
-			if (
-				submissionData &&
-				submissionData.has_files &&
-				submissionData.file_path
-			) {
-				submissionFileInfo = {
-					name: submissionData.file_name,
-					path: submissionData.file_path,
-				};
-				hasSubmissionFiles = true;
-			}
-
 			if (taskData) {
-				const isCompleted = !!submissionData;
-				const isOverdue =
-					new Date(taskData.due_date) < new Date() && !isCompleted;
-
-				const status: "pending" | "completed" | "overdue" = isCompleted
-					? "completed"
-					: isOverdue
-					? "overdue"
-					: "pending";
-
-				setTask({
+				const task = {
 					id: taskData.id,
 					title: taskData.title,
-					description: taskData.description || "",
+					description: taskData.description,
 					due_date: taskData.due_date,
-					status,
+					group_id: taskData.group_id,
+					group_name: taskData.groups?.name || "Unknown Group",
+					teacher_id: taskData.groups?.teacher_id,
+					created_at: taskData.created_at,
+					status: taskData.status || "pending",
 					has_files: taskData.has_files,
-					file_info: fileInfo,
-				});
+					file_info: taskData.file_info,
+				};
 
-				if (submissionData) {
-					setSubmission({
-						...submissionData,
-						has_files: hasSubmissionFiles,
-						file_info: submissionFileInfo,
-					});
+				setTask(task);
+
+				// Check if student has already submitted
+				const { data: submissionData, error: submissionError } = await supabase
+					.from("submissions")
+					.select("*")
+					.eq("task_id", id)
+					.eq("student_id", user?.id)
+					.single();
+
+				if (!submissionError && submissionData) {
+					setSubmission(submissionData);
 					setSubmissionContent(submissionData.content || "");
 				}
 			}
 		} catch (error) {
 			console.error("Error fetching task details:", error);
-			Alert.alert(
-				"Xatolik",
-				"Vazifa ma'lumotlarini yuklashda xatolik yuz berdi"
-			);
+			Alert.alert("Xato", "Vazifa ma'lumotlarini yuklashda xatolik yuz berdi");
 		} finally {
 			setLoading(false);
 		}
@@ -263,104 +208,41 @@ export default function TaskDetailsScreen() {
 	};
 
 	const handleSubmit = async () => {
+		if (!user || !task) return;
+
 		try {
-			if (!user || !id) {
-				Alert.alert(
-					"Xatolik",
-					"Foydalanuvchi yoki vazifa ma'lumotlari mavjud emas"
-				);
-				return;
-			}
-
 			setSubmitting(true);
-			let submissionId = submission?.id;
-			let filePath = null;
 
-			if (submission) {
-				// Update existing submission
-				const { error } = await supabase
-					.from("submissions")
-					.update({
-						content: submissionContent,
-						updated_at: new Date().toISOString(),
-					})
-					.eq("id", submission.id);
-
-				if (error) throw error;
-			} else {
-				// Create new submission
-				const { data, error } = await supabase
-					.from("submissions")
-					.insert({
-						task_id: id,
+			// Create submission
+			const { data: submissionData, error: submissionError } = await supabase
+				.from("submissions")
+				.insert([
+					{
+						task_id: task.id,
 						student_id: user.id,
 						content: submissionContent,
+						status: "pending",
 						submitted_at: new Date().toISOString(),
-						updated_at: new Date().toISOString(),
-					})
-					.select();
+					},
+				])
+				.select()
+				.single();
 
-				if (error) throw error;
-				submissionId = data[0].id;
-			}
+			if (submissionError) throw submissionError;
 
-			// Upload file if selected
-			if (selectedFile && submissionId) {
-				setFileUploading(true);
-				try {
-					filePath = await uploadSubmissionFile(submissionId, selectedFile);
-
-					if (filePath) {
-						// Update the submission directly with file information instead of using submission_files table
-						const { error: updateError } = await supabase
-							.from("submissions")
-							.update({
-								file_path: filePath,
-								file_name: selectedFile.name,
-								file_type: selectedFile.type,
-								file_size: selectedFile.size,
-								has_files: true,
-							})
-							.eq("id", submissionId);
-
-						if (updateError) {
-							console.error(
-								"Error updating submission with file info:",
-								updateError
-							);
-							Alert.alert(
-								"Ogohlantirish",
-								`Javob saqlandi va fayl yuklandi, lekin fayl ma'lumotlarini saqlashda xatolik yuzaga keldi: ${
-									updateError.message || "Noma'lum xatolik"
-								}`
-							);
-						}
-					}
-				} catch (uploadError) {
-					console.error("Error uploading file:", uploadError);
-					Alert.alert(
-						"Ogohlantirish",
-						"Javob saqlandi, lekin faylni yuklashda muammo yuzaga keldi."
-					);
-				} finally {
-					setFileUploading(false);
-				}
-			} else if (!selectedFile && submission?.file_info) {
-				// If no new file selected but had a file before, preserve the existing file
-				// No action needed here as we're not updating the submission_files record
-			}
-
-			// Refresh task details
-			await fetchTaskDetails();
-			setSelectedFile(null);
-
-			Alert.alert(
-				"Muvaffaqiyat",
-				submission ? "Javobingiz yangilandi" : "Javobingiz yuborildi"
+			// Send notification to teacher
+			await createNotification(
+				task.teacher_id,
+				"Yangi javob yuborildi",
+				`${task.group_name} guruhidagi "${task.title}" vazifasiga yangi javob yuborildi`,
+				NotificationType.NEW_SUBMISSION,
+				submissionData.id
 			);
+
+			router.back();
 		} catch (error) {
-			console.error("Error submitting task:", error);
-			Alert.alert("Xatolik", "Javobni yuborishda xatolik yuz berdi");
+			console.error("Error submitting answer:", error);
+			Alert.alert("Xato", "Javobni yuborishda xatolik yuz berdi");
 		} finally {
 			setSubmitting(false);
 		}
@@ -512,7 +394,7 @@ export default function TaskDetailsScreen() {
 						{submission.rating ? (
 							<View style={styles.gradeContainer}>
 								<Text style={styles.gradeLabel}>Baho:</Text>
-								<Text style={styles.gradeValue}>{submission.rating}/100</Text>
+								<Text style={styles.gradeValue}>{submission.rating}/10</Text>
 							</View>
 						) : null}
 

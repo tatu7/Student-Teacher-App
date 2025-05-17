@@ -15,7 +15,11 @@ import {
 } from "react-native";
 import { Stack, useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
-import { supabase } from "../../../../lib/supabase";
+import {
+	supabase,
+	createNotification,
+	NotificationType,
+} from "../../../../lib/supabase";
 import { useAuth } from "../../../../context/AuthContext";
 import {
 	pickDocument,
@@ -276,6 +280,25 @@ export default function TaskDetailsScreen() {
 			let submissionId = submission?.id;
 			let filePath = null;
 
+			// Get task details to get teacher_id
+			const { data: taskDetails, error: taskError } = await supabase
+				.from("tasks")
+				.select(
+					`
+					id,
+					title,
+					group_id,
+					groups:group_id (
+						teacher_id,
+						name
+					)
+				`
+				)
+				.eq("id", id)
+				.single();
+
+			if (taskError) throw taskError;
+
 			if (submission) {
 				// Update existing submission
 				const { error } = await supabase
@@ -302,6 +325,22 @@ export default function TaskDetailsScreen() {
 
 				if (error) throw error;
 				submissionId = data[0].id;
+
+				// Send notification to teacher for new submission
+				if (taskDetails?.groups?.teacher_id) {
+					try {
+						await createNotification(
+							taskDetails.groups.teacher_id,
+							"Yangi javob yuborildi",
+							`${taskDetails.groups.name} guruhidagi "${taskDetails.title}" vazifasiga yangi javob yuborildi`,
+							NotificationType.NEW_SUBMISSION,
+							submissionId
+						);
+					} catch (notifyError) {
+						console.error("Error sending notification:", notifyError);
+						// Don't block submission if notification fails
+					}
+				}
 			}
 
 			// Upload file if selected
@@ -512,7 +551,7 @@ export default function TaskDetailsScreen() {
 						{submission.rating ? (
 							<View style={styles.gradeContainer}>
 								<Text style={styles.gradeLabel}>Baho:</Text>
-								<Text style={styles.gradeValue}>{submission.rating}/100</Text>
+								<Text style={styles.gradeValue}>{submission.rating}/10</Text>
 							</View>
 						) : null}
 

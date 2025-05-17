@@ -1,6 +1,11 @@
 import { supabase } from './supabase';
 
-export type NotificationType = 'task_assigned' | 'group_invitation';
+export type NotificationType =
+  | 'task_assigned'
+  | 'group_invitation'
+  | 'submission_graded'
+  | 'new_submission'
+  | 'student_joined_group';
 
 export interface NotificationData {
   message: string;
@@ -90,6 +95,30 @@ export async function notifyGroupInvitation({
     type: 'group_invitation',
     data: {
       message: `You've been added to the group: ${groupName}`,
+      groupId,
+    },
+  });
+}
+
+/**
+ * Notifies a teacher when a student joins their group
+ */
+export async function notifyTeacherStudentJoined({
+  teacherId,
+  studentName,
+  groupName,
+  groupId,
+}: {
+  teacherId: string;
+  studentName: string;
+  groupName: string;
+  groupId: string;
+}) {
+  return createNotification({
+    userId: teacherId,
+    type: 'student_joined_group',
+    data: {
+      message: `${studentName} guruhingizga qo'shildi: ${groupName}`,
       groupId,
     },
   });
