@@ -71,9 +71,9 @@ export default function TeacherLayout() {
 	if (loading || !user) return null;
 
 	// Calculate tab bar height and padding based on screen size
-	const tabBarHeight = isSmallScreen ? 50 : 60;
-	const tabBarPaddingBottom = isSmallScreen ? 4 : 8;
-	const tabBarPaddingTop = isSmallScreen ? 4 : 6;
+	const tabBarHeight = isSmallScreen ? 60 : 65;
+	const tabBarPaddingBottom = isSmallScreen ? 8 : 10;
+	const tabBarPaddingTop = isSmallScreen ? 8 : 8;
 	const iconSize = isSmallScreen ? 20 : 24;
 
 	return (

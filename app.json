@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Solo Study",
-    "slug": "student-teacher-app",
+    "slug": "solo-study",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "StudentTeacher",
+    "scheme": "SoloStudy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.studentteacherapp",
+      "bundleIdentifier": "com.yourcompany.solostudy",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch"
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourcompany.studentteacherapp",
+      "package": "com.yourcompany.solostudy",
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -53,7 +53,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "434168af-2f04-4953-90d8-ed6ffc9279e6"
+        "projectId": "22312615-3974-42fd-b488-da6b5bf342c5"
       }
     }
   }
