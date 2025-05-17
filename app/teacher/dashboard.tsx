@@ -10,6 +10,7 @@ import {
 	FlatList,
 	useWindowDimensions,
 	Platform,
+	RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -43,6 +44,7 @@ export default function TeacherDashboard() {
 		submissions: 0,
 	});
 	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
 	const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
 	const [recentSubmissions, setRecentSubmissions] = useState<Submission[]>([]);
 	const { width: screenWidth } = useWindowDimensions();
@@ -62,119 +64,126 @@ export default function TeacherDashboard() {
 	};
 
 	// Fetch dashboard data
-	useEffect(() => {
-		const fetchDashboardData = async () => {
-			if (!user) return;
+	const fetchDashboardData = async () => {
+		if (!user) return;
 
-			try {
-				setLoading(true);
+		try {
+			setLoading(true);
 
-				// Fetch group count
-				const { data: groupsData, error: groupsError } = await supabase
-					.from("groups")
-					.select("id")
-					.eq("teacher_id", user.id);
+			// Fetch group count
+			const { data: groupsData, error: groupsError } = await supabase
+				.from("groups")
+				.select("id")
+				.eq("teacher_id", user.id);
 
-				if (groupsError) throw groupsError;
+			if (groupsError) throw groupsError;
 
-				// Get all group IDs
-				const groupIds = groupsData.map((group) => group.id);
+			// Get all group IDs
+			const groupIds = groupsData.map((group) => group.id);
 
-				// Fetch upcoming tasks
-				let upcomingTasksData: Task[] = [];
-				if (groupIds.length > 0) {
-					const { data: tasksData, error: tasksError } = await supabase
-						.from("tasks")
-						.select(
-							`
-							id, 
-							title, 
+			// Fetch upcoming tasks
+			let upcomingTasksData: Task[] = [];
+			if (groupIds.length > 0) {
+				const { data: tasksData, error: tasksError } = await supabase
+					.from("tasks")
+					.select(
+						`
+						id, 
+						title, 
+						due_date,
+						group_id,
+						groups(name)
+					`
+					)
+					.in("group_id", groupIds)
+					.gte("due_date", new Date().toISOString())
+					.order("due_date", { ascending: true })
+					.limit(3); // Only get 3 tasks
+
+				if (tasksError) throw tasksError;
+
+				// Format task data
+				upcomingTasksData = tasksData.map((task) => ({
+					id: task.id,
+					title: task.title,
+					group_name: task.groups?.name || "Unknown Group",
+					due_date: task.due_date,
+				}));
+			}
+
+			// Fetch recent submissions with task details
+			let submissionsData: Submission[] = [];
+			if (groupIds.length > 0) {
+				const { data, error } = await supabase
+					.from("submissions")
+					.select(
+						`
+						id,
+						tasks!inner(
+							id,
+							title,
+							description,
 							due_date,
 							group_id,
 							groups(name)
-						`
 						)
-						.in("group_id", groupIds)
-						.gte("due_date", new Date().toISOString())
-						.order("due_date", { ascending: true })
-						.limit(3); // Only get 3 tasks
+					`
+					)
+					.in("tasks.group_id", groupIds)
+					.order("updated_at", { ascending: false })
+					.limit(2);
 
-					if (tasksError) throw tasksError;
+				if (error) throw error;
 
-					// Format task data
-					upcomingTasksData = tasksData.map((task) => ({
-						id: task.id,
-						title: task.title,
-						group_name: task.groups?.name || "Unknown Group",
-						due_date: task.due_date,
+				if (data) {
+					submissionsData = data.map((item) => ({
+						id: item.id,
+						title: item.tasks.title,
+						description: item.tasks.description,
+						due_date: item.tasks.due_date,
+						group_name: item.tasks.groups?.name || "Unknown Group",
 					}));
 				}
-
-				// Fetch recent submissions with task details
-				let submissionsData: Submission[] = [];
-				if (groupIds.length > 0) {
-					const { data, error } = await supabase
-						.from("submissions")
-						.select(
-							`
-							id,
-							tasks!inner(
-								id,
-								title,
-								description,
-								due_date,
-								group_id,
-								groups(name)
-							)
-						`
-						)
-						.in("tasks.group_id", groupIds)
-						.order("updated_at", { ascending: false })
-						.limit(2);
-
-					if (error) throw error;
-
-					if (data) {
-						submissionsData = data.map((item) => ({
-							id: item.id,
-							title: item.tasks.title,
-							description: item.tasks.description,
-							due_date: item.tasks.due_date,
-							group_name: item.tasks.groups?.name || "Unknown Group",
-						}));
-					}
-				}
-
-				// Fetch submission count
-				let submissionCount = 0;
-				if (groupIds.length > 0) {
-					const { data: submissionsCountData, error: submissionsError } =
-						await supabase
-							.from("submissions")
-							.select("id, task_id, tasks!inner(group_id)")
-							.in("tasks.group_id", groupIds);
-
-					if (submissionsError) throw submissionsError;
-					submissionCount = submissionsCountData?.length || 0;
-				}
-
-				setStats({
-					groups: groupsData?.length || 0,
-					upcomingTasks: upcomingTasksData.length,
-					submissions: submissionCount,
-				});
-
-				setUpcomingTasks(upcomingTasksData);
-				setRecentSubmissions(submissionsData);
-			} catch (error) {
-				console.error("Error fetching dashboard data:", error);
-			} finally {
-				setLoading(false);
 			}
-		};
 
+			// Fetch submission count
+			let submissionCount = 0;
+			if (groupIds.length > 0) {
+				const { data: submissionsCountData, error: submissionsError } =
+					await supabase
+						.from("submissions")
+						.select("id, task_id, tasks!inner(group_id)")
+						.in("tasks.group_id", groupIds);
+
+				if (submissionsError) throw submissionsError;
+				submissionCount = submissionsCountData?.length || 0;
+			}
+
+			setStats({
+				groups: groupsData?.length || 0,
+				upcomingTasks: upcomingTasksData.length,
+				submissions: submissionCount,
+			});
+
+			setUpcomingTasks(upcomingTasksData);
+			setRecentSubmissions(submissionsData);
+		} catch (error) {
+			console.error("Error fetching dashboard data:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
 		fetchDashboardData();
 	}, [user]);
+
+	// Add onRefresh handler
+	const onRefresh = React.useCallback(async () => {
+		setRefreshing(true);
+		await fetchDashboardData();
+		setRefreshing(false);
+	}, [fetchDashboardData]);
 
 	// Check if a deadline is approaching (within 48 hours)
 	const isDeadlineApproaching = (dateString: string) => {
@@ -314,7 +323,10 @@ export default function TeacherDashboard() {
 			<CustomBackground image={icons.bg4} overlayColor='rgba(0,0,0,0.4)'>
 				<ScrollView
 					style={styles.scrollView}
-					showsVerticalScrollIndicator={false}>
+					showsVerticalScrollIndicator={false}
+					refreshControl={
+						<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+					}>
 					{/* Header Section */}
 					<View
 						style={[

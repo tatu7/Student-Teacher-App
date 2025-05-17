@@ -11,6 +11,7 @@ import {
 	ImageBackground,
 	useWindowDimensions,
 	Platform,
+	RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -44,6 +45,7 @@ export default function StudentDashboard() {
 	const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
 	const [submittedTasks, setSubmittedTasks] = useState<SubmittedTask[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
 	const [stats, setStats] = useState({
 		groupCount: 0,
 		pendingTasks: 0,
@@ -249,6 +251,13 @@ export default function StudentDashboard() {
 		return isSmallScreen ? smallSize : baseSize;
 	};
 
+	// Add onRefresh handler
+	const onRefresh = React.useCallback(async () => {
+		setRefreshing(true);
+		await fetchDashboardData();
+		setRefreshing(false);
+	}, []);
+
 	if (loading) {
 		return (
 			<SafeAreaView style={styles.container}>
@@ -264,7 +273,10 @@ export default function StudentDashboard() {
 			<CustomBackground image={icons.bg6}>
 				<ScrollView
 					style={styles.scrollView}
-					showsVerticalScrollIndicator={false}>
+					showsVerticalScrollIndicator={false}
+					refreshControl={
+						<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+					}>
 					{/* Header Section */}
 					<View
 						style={[
