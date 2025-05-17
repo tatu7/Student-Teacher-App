@@ -28,6 +28,8 @@ import {
 	eachDayOfInterval,
 	isSameDay,
 } from "date-fns";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Group = {
@@ -434,89 +436,105 @@ export default function CalendarScreen() {
 			/>
 
 			{/* Header */}
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Kalendar</Text>
-			</View>
+			<CustomBackground image={icons.bg5}>
+				<View style={styles.header}>
+					<Text style={styles.headerTitle}>Kalendar</Text>
+				</View>
 
-			<View style={styles.calendarContainer}>
-				{/* Month navigation */}
-				<View style={styles.monthNavigator}>
-					<TouchableOpacity onPress={handlePreviousMonth}>
-						<Ionicons name='chevron-back' size={24} color='#4169E1' />
-					</TouchableOpacity>
+				<View style={styles.calendarContainer}>
+					{/* Month navigation */}
+					<View style={styles.monthNavigator}>
+						<TouchableOpacity onPress={handlePreviousMonth}>
+							<Ionicons name='chevron-back' size={24} color='#4169E1' />
+						</TouchableOpacity>
 
-					<Text style={styles.monthTitle}>
-						{format(selectedMonth, "MMMM yyyy")}
+						<Text style={styles.monthTitle}>
+							{format(selectedMonth, "MMMM yyyy")}
+						</Text>
+
+						<TouchableOpacity onPress={handleNextMonth}>
+							<Ionicons name='chevron-forward' size={24} color='#4169E1' />
+						</TouchableOpacity>
+					</View>
+
+					{/* Weekday headers */}
+					<View style={styles.weekdayHeader}>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "S" : "Sun"}
+						</Text>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "M" : "Mon"}
+						</Text>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "T" : "Tue"}
+						</Text>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "W" : "Wed"}
+						</Text>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "T" : "Thu"}
+						</Text>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "F" : "Fri"}
+						</Text>
+						<Text style={styles.weekdayText}>
+							{isSmallScreen ? "S" : "Sat"}
+						</Text>
+					</View>
+
+					{/* Calendar grid */}
+					<View style={styles.calendarGrid}>
+						{calendarDays.map((day) => renderDay(day))}
+					</View>
+				</View>
+
+				{/* Tasks for selected date */}
+				<View style={styles.selectedDateContainer}>
+					<Text style={styles.selectedDateTitle}>
+						{isSmallScreen
+							? format(selectedDate, "d-MMM-yyyy") + " uchun vazifalar"
+							: format(selectedDate, "EEEE, d-MMMM, yyyy") + " uchun vazifalar"}
 					</Text>
 
-					<TouchableOpacity onPress={handleNextMonth}>
-						<Ionicons name='chevron-forward' size={24} color='#4169E1' />
-					</TouchableOpacity>
-				</View>
-
-				{/* Weekday headers */}
-				<View style={styles.weekdayHeader}>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "S" : "Sun"}</Text>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "M" : "Mon"}</Text>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "T" : "Tue"}</Text>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "W" : "Wed"}</Text>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "T" : "Thu"}</Text>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "F" : "Fri"}</Text>
-					<Text style={styles.weekdayText}>{isSmallScreen ? "S" : "Sat"}</Text>
-				</View>
-
-				{/* Calendar grid */}
-				<View style={styles.calendarGrid}>
-					{calendarDays.map((day) => renderDay(day))}
-				</View>
-			</View>
-
-			{/* Tasks for selected date */}
-			<View style={styles.selectedDateContainer}>
-				<Text style={styles.selectedDateTitle}>
-					{isSmallScreen
-						? format(selectedDate, "d-MMM-yyyy") + " uchun vazifalar"
-						: format(selectedDate, "EEEE, d-MMMM, yyyy") + " uchun vazifalar"}
-				</Text>
-
-				{tasksForSelectedDate.length > 0 ? (
-					<FlatList
-						data={tasksForSelectedDate}
-						renderItem={({ item }) => (
-							<View style={styles.taskItem}>
-								<View style={styles.taskIcon}>
-									<Ionicons
-										name='document-text-outline'
-										size={isSmallScreen ? 20 : 24}
-										color='#4169E1'
-									/>
-								</View>
-								<View style={styles.taskContent}>
-									<Text style={styles.taskTitle} numberOfLines={1}>
-										{item.title}
-									</Text>
-									<Text style={styles.taskGroup} numberOfLines={1}>
-										{item.group_name || "Guruh nomi"}
-									</Text>
-									{item.description && (
-										<Text style={styles.taskDescription} numberOfLines={1}>
-											{item.description}
+					{tasksForSelectedDate.length > 0 ? (
+						<FlatList
+							data={tasksForSelectedDate}
+							renderItem={({ item }) => (
+								<View style={styles.taskItem}>
+									<View style={styles.taskIcon}>
+										<Ionicons
+											name='document-text-outline'
+											size={isSmallScreen ? 20 : 24}
+											color='#4169E1'
+										/>
+									</View>
+									<View style={styles.taskContent}>
+										<Text style={styles.taskTitle} numberOfLines={1}>
+											{item.title}
 										</Text>
-									)}
+										<Text style={styles.taskGroup} numberOfLines={1}>
+											{item.group_name || "Guruh nomi"}
+										</Text>
+										{item.description && (
+											<Text style={styles.taskDescription} numberOfLines={1}>
+												{item.description}
+											</Text>
+										)}
+									</View>
 								</View>
-							</View>
-						)}
-						keyExtractor={(item) => item.id}
-						contentContainerStyle={styles.tasksList}
-					/>
-				) : (
-					<View style={styles.noTasksContainer}>
-						<Text style={styles.noTasksText}>Bu kunda vazifalar yo'q</Text>
-					</View>
-				)}
-			</View>
+							)}
+							keyExtractor={(item) => item.id}
+							contentContainerStyle={styles.tasksList}
+						/>
+					) : (
+						<View style={styles.noTasksContainer}>
+							<Text style={styles.noTasksText}>Bu kunda vazifalar yo'q</Text>
+						</View>
+					)}
+				</View>
 
-			{renderFilterModal()}
+				{renderFilterModal()}
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }

@@ -16,6 +16,8 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 type Group = {
 	id: string;
@@ -423,54 +425,56 @@ export default function TeacherRatingsScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<View style={[styles.header, isSmallScreen && styles.headerSmall]}>
-				<Text
-					style={[
-						styles.headerTitle,
-						isSmallScreen && styles.headerTitleSmall,
-					]}>
-					O'quvchilar reytingi
-				</Text>
-			</View>
+			<CustomBackground image={icons.bg6} overlayColor='rgba(0,0,0,0.4)'>
+				<View style={[styles.header, isSmallScreen && styles.headerSmall]}>
+					<Text
+						style={[
+							styles.headerTitle,
+							isSmallScreen && styles.headerTitleSmall,
+						]}>
+						O'quvchilar reytingi
+					</Text>
+				</View>
 
-			{state.groups.length > 0 ? (
-				<>
-					{renderGroupTabs()}
+				{state.groups.length > 0 ? (
+					<>
+						{renderGroupTabs()}
 
-					{state.loading && state.students.length === 0 ? (
-						<View style={styles.loadingContainer}>
-							<ActivityIndicator size='large' color='#4169E1' />
-						</View>
-					) : (
-						<FlatList
-							data={state.students}
-							renderItem={renderStudentItem}
-							keyExtractor={(item) => item.id}
-							contentContainerStyle={[
-								styles.listContainer,
-								isSmallScreen && styles.listContainerSmall,
-							]}
-							ListEmptyComponent={renderEmptyList}
-							refreshControl={
-								<RefreshControl
-									refreshing={state.refreshing}
-									onRefresh={handleRefresh}
-								/>
-							}
-						/>
-					)}
-				</>
-			) : (
-				<>
-					{state.loading ? (
-						<View style={styles.loadingContainer}>
-							<ActivityIndicator size='large' color='#4169E1' />
-						</View>
-					) : (
-						renderNoGroups()
-					)}
-				</>
-			)}
+						{state.loading && state.students.length === 0 ? (
+							<View style={styles.loadingContainer}>
+								<ActivityIndicator size='large' color='#4169E1' />
+							</View>
+						) : (
+							<FlatList
+								data={state.students}
+								renderItem={renderStudentItem}
+								keyExtractor={(item) => item.id}
+								contentContainerStyle={[
+									styles.listContainer,
+									isSmallScreen && styles.listContainerSmall,
+								]}
+								ListEmptyComponent={renderEmptyList}
+								refreshControl={
+									<RefreshControl
+										refreshing={state.refreshing}
+										onRefresh={handleRefresh}
+									/>
+								}
+							/>
+						)}
+					</>
+				) : (
+					<>
+						{state.loading ? (
+							<View style={styles.loadingContainer}>
+								<ActivityIndicator size='large' color='#4169E1' />
+							</View>
+						) : (
+							renderNoGroups()
+						)}
+					</>
+				)}
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }
@@ -693,7 +697,7 @@ const styles = StyleSheet.create({
 	},
 	emptySubtitle: {
 		fontSize: 16,
-		color: "#666",
+		color: "#fff",
 		textAlign: "center",
 		lineHeight: 22,
 	},

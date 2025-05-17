@@ -24,6 +24,8 @@ import { format } from "date-fns";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { pickDocument, uploadTaskFile, FileInfo } from "../../../lib/files";
 import FilePicker from "../../../components/FilePicker";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Group = {
@@ -797,248 +799,260 @@ export default function GroupsScreen() {
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<View style={styles.container}>
-				<View style={styles.header}>
-					<Text
-						style={[
-							styles.headerTitle,
-							isSmallScreen && styles.smallHeaderTitle,
-						]}>
-						Mening guruhlarim
-					</Text>
-					<TouchableOpacity
-						onPress={openCreateModal}
-						style={[
-							styles.headerButton,
-							isSmallScreen && styles.smallHeaderButton,
-						]}>
-						<Ionicons name='add' size={isSmallScreen ? 20 : 24} color='white' />
-					</TouchableOpacity>
-				</View>
-
-				{loading ? (
-					<View style={styles.loaderContainer}>
-						<ActivityIndicator size='large' color='#4285F4' />
+				<CustomBackground image={icons.bg6} overlayColor='rgba(0,0,0,0.4)'>
+					<View style={styles.header}>
+						<Text
+							style={[
+								styles.headerTitle,
+								isSmallScreen && styles.smallHeaderTitle,
+							]}>
+							Mening guruhlarim
+						</Text>
+						<TouchableOpacity
+							onPress={openCreateModal}
+							style={[
+								styles.headerButton,
+								isSmallScreen && styles.smallHeaderButton,
+							]}>
+							<Ionicons
+								name='add'
+								size={isSmallScreen ? 20 : 24}
+								color='white'
+							/>
+						</TouchableOpacity>
 					</View>
-				) : (
-					<FlatList
-						data={groups}
-						renderItem={renderGroupItem}
-						keyExtractor={(item) => item.id}
-						contentContainerStyle={[
-							styles.listContent,
-							isSmallScreen && styles.smallListContent,
-						]}
-						ListEmptyComponent={renderEmptyList}
-						refreshing={loading}
-						onRefresh={fetchGroups}
-					/>
-				)}
 
-				{/* Group Creation Modal */}
-				<Modal
-					animationType='slide'
-					transparent={true}
-					visible={modalVisible}
-					onRequestClose={closeModal}>
-					<TouchableWithoutFeedback onPress={closeModal}>
-						<View style={styles.modalOverlay}>
-							<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-								<View style={styles.modalContent}>
-									<Text style={styles.modalTitle}>Yangi guruh yaratish</Text>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Guruh nomi</Text>
-										<TextInput
-											style={styles.input}
-											placeholder='Guruh nomini kiriting'
-											value={newGroupName}
-											onChangeText={setNewGroupName}
-											autoCapitalize='words'
-										/>
-									</View>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Tavsif (Ixtiyoriy)</Text>
-										<TextInput
-											style={[styles.input, styles.multilineInput]}
-											placeholder='Guruh tavsifini kiriting'
-											value={newGroupDescription}
-											onChangeText={setNewGroupDescription}
-											multiline
-											numberOfLines={4}
-										/>
-									</View>
-
-									<View style={styles.modalButtons}>
-										<TouchableOpacity
-											style={styles.cancelButton}
-											onPress={closeModal}>
-											<Text style={styles.cancelButtonText}>Bekor qilish</Text>
-										</TouchableOpacity>
-
-										<TouchableOpacity
-											style={styles.createModalButton}
-											onPress={handleCreateGroup}
-											disabled={creatingGroup}>
-											{creatingGroup ? (
-												<ActivityIndicator size='small' color='#fff' />
-											) : (
-												<Text style={styles.createModalButtonText}>
-													Yaratish
-												</Text>
-											)}
-										</TouchableOpacity>
-									</View>
-								</View>
-							</TouchableWithoutFeedback>
+					{loading ? (
+						<View style={styles.loaderContainer}>
+							<ActivityIndicator size='large' color='#4285F4' />
 						</View>
-					</TouchableWithoutFeedback>
-				</Modal>
+					) : (
+						<FlatList
+							data={groups}
+							renderItem={renderGroupItem}
+							keyExtractor={(item) => item.id}
+							contentContainerStyle={[
+								styles.listContent,
+								isSmallScreen && styles.smallListContent,
+							]}
+							ListEmptyComponent={renderEmptyList}
+							refreshing={loading}
+							onRefresh={fetchGroups}
+						/>
+					)}
 
-				{/* Task Creation/Edit Modal */}
-				<Modal
-					animationType='slide'
-					transparent={true}
-					visible={taskModalVisible}
-					onRequestClose={isEditMode ? closeEditTaskModal : closeTaskModal}>
-					<TouchableWithoutFeedback
-						onPress={isEditMode ? closeEditTaskModal : closeTaskModal}>
-						<View style={styles.modalOverlay}>
-							<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-								<View style={styles.modalContent}>
-									<Text style={styles.modalTitle}>
-										{isEditMode
-											? "Vazifani tahrirlash"
-											: "Yangi vazifa yaratish"}
-									</Text>
+					{/* Group Creation Modal */}
+					<Modal
+						animationType='slide'
+						transparent={true}
+						visible={modalVisible}
+						onRequestClose={closeModal}>
+						<TouchableWithoutFeedback onPress={closeModal}>
+							<View style={styles.modalOverlay}>
+								<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+									<View style={styles.modalContent}>
+										<Text style={styles.modalTitle}>Yangi guruh yaratish</Text>
 
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Vazifa nomi</Text>
-										<TextInput
-											style={styles.input}
-											placeholder='Vazifa nomini kiriting'
-											value={taskTitle}
-											onChangeText={setTaskTitle}
-										/>
-									</View>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Tavsif (Ixtiyoriy)</Text>
-										<TextInput
-											style={[styles.input, styles.multilineInput]}
-											placeholder='Vazifa tavsifini kiriting'
-											value={taskDescription}
-											onChangeText={setTaskDescription}
-											multiline
-											numberOfLines={4}
-										/>
-									</View>
-
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Muddati</Text>
-										<TouchableOpacity
-											style={styles.datePickerButton}
-											onPress={() => setShowDatePicker(true)}>
-											<Text style={styles.dateText}>
-												{taskDueDate.toISOString().split("T")[0]}
-											</Text>
-										</TouchableOpacity>
-
-										{showDatePicker && (
-											<DateTimePicker
-												value={taskDueDate}
-												mode='date'
-												display='default'
-												onChange={handleDateChange}
+										<View style={styles.inputGroup}>
+											<Text style={styles.inputLabel}>Guruh nomi</Text>
+											<TextInput
+												style={styles.input}
+												placeholder='Guruh nomini kiriting'
+												value={newGroupName}
+												onChangeText={setNewGroupName}
+												autoCapitalize='words'
 											/>
-										)}
-									</View>
+										</View>
 
-									<View style={styles.inputGroup}>
-										<Text style={styles.inputLabel}>Fayl (Ixtiyoriy)</Text>
+										<View style={styles.inputGroup}>
+											<Text style={styles.inputLabel}>Tavsif (Ixtiyoriy)</Text>
+											<TextInput
+												style={[styles.input, styles.multilineInput]}
+												placeholder='Guruh tavsifini kiriting'
+												value={newGroupDescription}
+												onChangeText={setNewGroupDescription}
+												multiline
+												numberOfLines={4}
+											/>
+										</View>
 
-										{/* Show current file if in edit mode and has files */}
-										{isEditMode &&
-										taskToEdit?.has_files &&
-										taskToEdit?.file_info &&
-										!selectedFile ? (
-											<View style={styles.fileInfoContainer}>
-												<View style={styles.fileInfo}>
-													<Ionicons
-														name='document-text'
-														size={20}
-														color='#4285F4'
-													/>
-													<Text style={styles.fileName} numberOfLines={1}>
-														{taskToEdit.file_info.name}
-													</Text>
-												</View>
-												<TouchableOpacity
-													style={styles.deleteFileButton}
-													onPress={handleDeleteFile}>
-													<Ionicons
-														name='trash-outline'
-														size={20}
-														color='#FF3B30'
-													/>
-												</TouchableOpacity>
-											</View>
-										) : (
+										<View style={styles.modalButtons}>
 											<TouchableOpacity
-												style={styles.filePickerButton}
-												onPress={handlePickFile}>
-												<Ionicons
-													name='cloud-upload-outline'
-													size={20}
-													color='#4285F4'
-												/>
-												<Text style={styles.filePickerText}>
-													{selectedFile
-														? selectedFile.name
-														: "Fayl qo'shish (PDF yoki DOCX)"}
+												style={styles.cancelButton}
+												onPress={closeModal}>
+												<Text style={styles.cancelButtonText}>
+													Bekor qilish
 												</Text>
-												{selectedFile && (
-													<TouchableOpacity
-														style={styles.deleteSelectedFileButton}
-														onPress={() => setSelectedFile(null)}>
+											</TouchableOpacity>
+
+											<TouchableOpacity
+												style={styles.createModalButton}
+												onPress={handleCreateGroup}
+												disabled={creatingGroup}>
+												{creatingGroup ? (
+													<ActivityIndicator size='small' color='#fff' />
+												) : (
+													<Text style={styles.createModalButtonText}>
+														Yaratish
+													</Text>
+												)}
+											</TouchableOpacity>
+										</View>
+									</View>
+								</TouchableWithoutFeedback>
+							</View>
+						</TouchableWithoutFeedback>
+					</Modal>
+
+					{/* Task Creation/Edit Modal */}
+					<Modal
+						animationType='slide'
+						transparent={true}
+						visible={taskModalVisible}
+						onRequestClose={isEditMode ? closeEditTaskModal : closeTaskModal}>
+						<TouchableWithoutFeedback
+							onPress={isEditMode ? closeEditTaskModal : closeTaskModal}>
+							<View style={styles.modalOverlay}>
+								<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+									<View style={styles.modalContent}>
+										<Text style={styles.modalTitle}>
+											{isEditMode
+												? "Vazifani tahrirlash"
+												: "Yangi vazifa yaratish"}
+										</Text>
+
+										<View style={styles.inputGroup}>
+											<Text style={styles.inputLabel}>Vazifa nomi</Text>
+											<TextInput
+												style={styles.input}
+												placeholder='Vazifa nomini kiriting'
+												value={taskTitle}
+												onChangeText={setTaskTitle}
+											/>
+										</View>
+
+										<View style={styles.inputGroup}>
+											<Text style={styles.inputLabel}>Tavsif (Ixtiyoriy)</Text>
+											<TextInput
+												style={[styles.input, styles.multilineInput]}
+												placeholder='Vazifa tavsifini kiriting'
+												value={taskDescription}
+												onChangeText={setTaskDescription}
+												multiline
+												numberOfLines={4}
+											/>
+										</View>
+
+										<View style={styles.inputGroup}>
+											<Text style={styles.inputLabel}>Muddati</Text>
+											<TouchableOpacity
+												style={styles.datePickerButton}
+												onPress={() => setShowDatePicker(true)}>
+												<Text style={styles.dateText}>
+													{taskDueDate.toISOString().split("T")[0]}
+												</Text>
+											</TouchableOpacity>
+
+											{showDatePicker && (
+												<DateTimePicker
+													value={taskDueDate}
+													mode='date'
+													display='default'
+													onChange={handleDateChange}
+												/>
+											)}
+										</View>
+
+										<View style={styles.inputGroup}>
+											<Text style={styles.inputLabel}>Fayl (Ixtiyoriy)</Text>
+
+											{/* Show current file if in edit mode and has files */}
+											{isEditMode &&
+											taskToEdit?.has_files &&
+											taskToEdit?.file_info &&
+											!selectedFile ? (
+												<View style={styles.fileInfoContainer}>
+													<View style={styles.fileInfo}>
 														<Ionicons
-															name='close-circle'
+															name='document-text'
+															size={20}
+															color='#4285F4'
+														/>
+														<Text style={styles.fileName} numberOfLines={1}>
+															{taskToEdit.file_info.name}
+														</Text>
+													</View>
+													<TouchableOpacity
+														style={styles.deleteFileButton}
+														onPress={handleDeleteFile}>
+														<Ionicons
+															name='trash-outline'
 															size={20}
 															color='#FF3B30'
 														/>
 													</TouchableOpacity>
+												</View>
+											) : (
+												<TouchableOpacity
+													style={styles.filePickerButton}
+													onPress={handlePickFile}>
+													<Ionicons
+														name='cloud-upload-outline'
+														size={20}
+														color='#4285F4'
+													/>
+													<Text style={styles.filePickerText}>
+														{selectedFile
+															? selectedFile.name
+															: "Fayl qo'shish (PDF yoki DOCX)"}
+													</Text>
+													{selectedFile && (
+														<TouchableOpacity
+															style={styles.deleteSelectedFileButton}
+															onPress={() => setSelectedFile(null)}>
+															<Ionicons
+																name='close-circle'
+																size={20}
+																color='#FF3B30'
+															/>
+														</TouchableOpacity>
+													)}
+												</TouchableOpacity>
+											)}
+										</View>
+
+										<View style={styles.modalButtons}>
+											<TouchableOpacity
+												style={styles.cancelButton}
+												onPress={
+													isEditMode ? closeEditTaskModal : closeTaskModal
+												}>
+												<Text style={styles.cancelButtonText}>
+													Bekor qilish
+												</Text>
+											</TouchableOpacity>
+
+											<TouchableOpacity
+												style={styles.createModalButton}
+												onPress={
+													isEditMode ? handleUpdateTask : handleCreateTask
+												}
+												disabled={taskLoading || fileUploading}>
+												{taskLoading || fileUploading ? (
+													<ActivityIndicator size='small' color='#fff' />
+												) : (
+													<Text style={styles.createModalButtonText}>
+														{isEditMode ? "Saqlash" : "Vazifa yaratish"}
+													</Text>
 												)}
 											</TouchableOpacity>
-										)}
+										</View>
 									</View>
-
-									<View style={styles.modalButtons}>
-										<TouchableOpacity
-											style={styles.cancelButton}
-											onPress={
-												isEditMode ? closeEditTaskModal : closeTaskModal
-											}>
-											<Text style={styles.cancelButtonText}>Bekor qilish</Text>
-										</TouchableOpacity>
-
-										<TouchableOpacity
-											style={styles.createModalButton}
-											onPress={isEditMode ? handleUpdateTask : handleCreateTask}
-											disabled={taskLoading || fileUploading}>
-											{taskLoading || fileUploading ? (
-												<ActivityIndicator size='small' color='#fff' />
-											) : (
-												<Text style={styles.createModalButtonText}>
-													{isEditMode ? "Saqlash" : "Vazifa yaratish"}
-												</Text>
-											)}
-										</TouchableOpacity>
-									</View>
-								</View>
-							</TouchableWithoutFeedback>
-						</View>
-					</TouchableWithoutFeedback>
-				</Modal>
+								</TouchableWithoutFeedback>
+							</View>
+						</TouchableWithoutFeedback>
+					</Modal>
+				</CustomBackground>
 			</View>
 		</SafeAreaView>
 	);

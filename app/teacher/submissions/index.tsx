@@ -17,6 +17,8 @@ import { router, Stack } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../context/AuthContext";
+import CustomBackground from "@/components/CustomBackground";
+import { icons } from "@/constants/icons";
 
 // Types
 type Submission = {
@@ -300,73 +302,74 @@ export default function SubmissionsScreen() {
 					headerShown: false,
 				}}
 			/>
-
-			<View style={styles.header}>
-				<Text style={styles.headerTitle}>Javoblar</Text>
-			</View>
-
-			{loading ? (
-				<View style={styles.loaderContainer}>
-					<ActivityIndicator size='large' color='#4169E1' />
+			<CustomBackground image={icons.bg3}>
+				<View style={styles.header}>
+					<Text style={styles.headerTitle}>Javoblar</Text>
 				</View>
-			) : (
-				<FlatList
-					data={submissions}
-					renderItem={renderSubmissionItem}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={styles.listContent}
-					ListEmptyComponent={renderEmptyList}
-					refreshing={loading}
-					onRefresh={fetchSubmissions}
-				/>
-			)}
 
-			{/* Rating Modal */}
-			<Modal
-				animationType='fade'
-				transparent={true}
-				visible={modalVisible}
-				onRequestClose={closeModal}>
-				<View style={styles.modalOverlay}>
-					<View
-						style={[
-							styles.modalContainer,
-							width < 350 && styles.smallModalContainer,
-						]}>
-						<Text style={styles.modalTitle}>Javobni baholash</Text>
+				{loading ? (
+					<View style={styles.loaderContainer}>
+						<ActivityIndicator size='large' color='#4169E1' />
+					</View>
+				) : (
+					<FlatList
+						data={submissions}
+						renderItem={renderSubmissionItem}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={styles.listContent}
+						ListEmptyComponent={renderEmptyList}
+						refreshing={loading}
+						onRefresh={fetchSubmissions}
+					/>
+				)}
 
-						<View style={styles.starsContainer}>{renderStars()}</View>
+				{/* Rating Modal */}
+				<Modal
+					animationType='fade'
+					transparent={true}
+					visible={modalVisible}
+					onRequestClose={closeModal}>
+					<View style={styles.modalOverlay}>
+						<View
+							style={[
+								styles.modalContainer,
+								width < 350 && styles.smallModalContainer,
+							]}>
+							<Text style={styles.modalTitle}>Javobni baholash</Text>
 
-						<TextInput
-							style={styles.feedbackInput}
-							placeholder='Izoh yozing...'
-							value={feedback}
-							onChangeText={setFeedback}
-							multiline
-							numberOfLines={4}
-						/>
+							<View style={styles.starsContainer}>{renderStars()}</View>
 
-						<View style={styles.buttonContainer}>
-							<TouchableOpacity
-								style={styles.cancelButton}
-								onPress={closeModal}>
-								<Text style={styles.cancelButtonText}>Bekor qilish</Text>
-							</TouchableOpacity>
+							<TextInput
+								style={styles.feedbackInput}
+								placeholder='Izoh yozing...'
+								value={feedback}
+								onChangeText={setFeedback}
+								multiline
+								numberOfLines={4}
+							/>
 
-							<TouchableOpacity
-								style={styles.submitButton}
-								onPress={handleRating}
-								disabled={saving}>
-								{saving ? (
-									<ActivityIndicator size='small' color='#fff' />
-								) : (
-									<Text style={styles.submitButtonText}>Baholash</Text>
-								)}
-							</TouchableOpacity>
+							<View style={styles.buttonContainer}>
+								<TouchableOpacity
+									style={styles.cancelButton}
+									onPress={closeModal}>
+									<Text style={styles.cancelButtonText}>Bekor qilish</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={styles.submitButton}
+									onPress={handleRating}
+									disabled={saving}>
+									{saving ? (
+										<ActivityIndicator size='small' color='#fff' />
+									) : (
+										<Text style={styles.submitButtonText}>Baholash</Text>
+									)}
+								</TouchableOpacity>
+							</View>
 						</View>
 					</View>
-				</View>
-			</Modal>
+				</Modal>
+			</CustomBackground>
 		</SafeAreaView>
 	);
 }
